@@ -1,0 +1,16 @@
+package hr.kotwave.gameslibrary.di
+
+import hr.kotwave.gameslibrary.data.GameRepository
+import hr.kotwave.gameslibrary.data.GamesLibraryDatabase
+import org.koin.core.module.Module
+import org.koin.dsl.module
+
+/** Supplies the platform-specific [GamesLibraryDatabase] (Android needs a Context; JVM needs a file path). */
+expect val platformModule: Module
+
+val dataModule = module {
+    single { get<GamesLibraryDatabase>().gameDao() }
+    single { GameRepository(get()) }
+}
+
+val sharedModules: List<Module> = listOf(platformModule, dataModule)

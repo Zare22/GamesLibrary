@@ -31,3 +31,15 @@ google-services.json
 
 # Android Profiling
 *.hprof
+
+# Planning / design docs — kept on disk for reference, only code is tracked
+/CONTEXT.md
+/docs/
+
+# AI tooling — kept untracked
+/.claude/
+
+# Design mockups & planning artifacts — kept on disk for reference, only code is tracked
+/.design-mockups/
+/feasibility-analysis.html
+/kickstarter.md

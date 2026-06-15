@@ -20,4 +20,4 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "GamesLibrary"
-include(":app")
+include(":shared", ":composeApp")
