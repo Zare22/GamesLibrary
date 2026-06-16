@@ -19,6 +19,7 @@ targetSdk = "36"
 
 # Libraries
 coroutines = "1.11.0"
+kotlinxSerialization = "1.8.1"
 koin-bom = "4.1.1"
 ktor = "3.5.0"
 
@@ -32,6 +33,9 @@ sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "sql
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 kotlinx-coroutines-swing = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-swing", version.ref = "coroutines" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
+
+# Serialization
+kotlinx-serialization-core = { module = "org.jetbrains.kotlinx:kotlinx-serialization-core", version.ref = "kotlinxSerialization" }
 
 # Koin (DI)
 koin-bom = { module = "io.insert-koin:koin-bom", version.ref = "koin-bom" }
@@ -48,7 +52,7 @@ navigation-compose = { module = "org.jetbrains.androidx.navigation:navigation-co
 # Android target
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
 
-# Ktor (wired in the IGDB slice; bumped here per the toolchain refresh)
+# Ktor
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
 ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }

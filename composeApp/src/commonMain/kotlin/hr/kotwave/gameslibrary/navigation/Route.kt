@@ -1,6 +1,13 @@
 package hr.kotwave.gameslibrary.navigation
 
-/** Navigation destinations. A minimal single-destination shell for now; the full nav shell lands in the design-backbone slice. */
-object Route {
-    const val LIBRARY = "library"
+import kotlinx.serialization.Serializable
+
+/** Type-safe navigation destinations. */
+sealed interface Route {
+    @Serializable data object Library : Route
+    @Serializable data object Wishlist : Route
+    @Serializable data object Import : Route
+    @Serializable data object Settings : Route
+    @Serializable data object Add : Route
+    @Serializable data object Gallery : Route
 }
