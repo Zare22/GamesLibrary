@@ -11,7 +11,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import hr.kotwave.gameslibrary.ui.model.Status
+import hr.kotwave.gameslibrary.data.Status
 import hr.kotwave.gameslibrary.ui.theme.AppTheme
 
 private val PipRing = Color(0xB3080A10) // rgba(8,10,16,.7)

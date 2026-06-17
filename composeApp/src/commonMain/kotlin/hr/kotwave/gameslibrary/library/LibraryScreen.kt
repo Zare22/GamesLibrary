@@ -1,6 +1,7 @@
 package hr.kotwave.gameslibrary.library
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -10,10 +11,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -21,23 +22,24 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import hr.kotwave.gameslibrary.ui.components.AppIconButton
 import hr.kotwave.gameslibrary.ui.components.BrandWordmark
+import hr.kotwave.gameslibrary.ui.components.GameTile
 import hr.kotwave.gameslibrary.ui.components.GlassSurface
-import hr.kotwave.gameslibrary.ui.components.SecondaryButton
 import hr.kotwave.gameslibrary.ui.icons.AppIcons
 import hr.kotwave.gameslibrary.ui.shell.LocalIsCompact
 import hr.kotwave.gameslibrary.ui.theme.AppTheme
 import org.koin.compose.viewmodel.koinViewModel
 
-/** Library home: header chrome over the game list. */
+/** Library home: header chrome over the owned-games grid. */
 @Composable
 fun LibraryScreen(
     onAdd: () -> Unit,
-    viewModel: GameListViewModel = koinViewModel(),
+    viewModel: LibraryViewModel = koinViewModel(),
 ) {
-    val games by viewModel.games.collectAsState()
+    val games by viewModel.ownedGames.collectAsState()
     val compact = LocalIsCompact.current
     val tokens = AppTheme.tokens
 
@@ -52,24 +54,48 @@ fun LibraryScreen(
                 AppIconButton(AppIcons.Plus, onClick = onAdd, contentDescription = "Add game", accent = true)
             }
             Spacer(Modifier.height(12.dp))
+        } else {
+            Text("Library", style = AppTheme.type.display, color = tokens.colors.text)
+            Spacer(Modifier.height(14.dp))
         }
         SearchField()
         Spacer(Modifier.height(16.dp))
 
-        // Temporary dev affordance.
-        SecondaryButton("Add sample game", onClick = viewModel::addSampleGame, modifier = Modifier.fillMaxWidth())
-        Spacer(Modifier.height(12.dp))
-
-        LazyColumn(Modifier.fillMaxSize()) {
-            items(games, key = { it.id }) { game ->
-                Text(
-                    game.name,
-                    style = AppTheme.type.bodyStrong,
-                    color = tokens.colors.text,
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp),
-                )
-                HorizontalDivider(color = tokens.colors.border)
+        if (games.isEmpty()) {
+            EmptyLibrary()
+        } else {
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(if (compact) 3 else 6),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 24.dp),
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                items(games, key = { it.game.id }) { owned ->
+                    GameTile(
+                        title = owned.game.name,
+                        stores = owned.ownerships.map { it.store },
+                        status = owned.game.status,
+                    )
+                }
             }
+        }
+    }
+}
+
+@Composable
+private fun EmptyLibrary() {
+    val tokens = AppTheme.tokens
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text("No games yet", style = AppTheme.type.display, color = tokens.colors.text)
+            Spacer(Modifier.height(6.dp))
+            Text(
+                "Add your first game to start your library.",
+                style = AppTheme.type.body,
+                color = tokens.colors.faint,
+                textAlign = TextAlign.Center,
+            )
         }
     }
 }

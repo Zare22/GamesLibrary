@@ -9,6 +9,9 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
@@ -20,6 +23,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import hr.kotwave.gameslibrary.add.AddGameModal
+import hr.kotwave.gameslibrary.add.AddGameScreen
 import hr.kotwave.gameslibrary.library.LibraryScreen
 import hr.kotwave.gameslibrary.navigation.Route
 import hr.kotwave.gameslibrary.ui.gallery.ComponentGalleryScreen
@@ -66,14 +71,20 @@ private fun CompactShell(navController: NavHostController) {
 @Composable
 private fun ExpandedShell(navController: NavHostController) {
     val current = navController.currentTopDestination()
-    Row(Modifier.fillMaxSize().safeDrawingPadding()) {
-        NavRail(
-            current = current,
-            onSelect = navController::navigateTop,
-            onAdd = { navController.navigate(Route.Add) },
-        )
-        Box(Modifier.fillMaxSize().weight(1f)) {
-            AppNavHost(navController, Modifier.fillMaxSize())
+    var showAdd by remember { mutableStateOf(false) }
+    Box(Modifier.fillMaxSize()) {
+        Row(Modifier.fillMaxSize().safeDrawingPadding()) {
+            NavRail(
+                current = current,
+                onSelect = navController::navigateTop,
+                onAdd = { showAdd = true },
+            )
+            Box(Modifier.fillMaxSize().weight(1f)) {
+                AppNavHost(navController, Modifier.fillMaxSize())
+            }
+        }
+        if (showAdd) {
+            AddGameModal(onDismiss = { showAdd = false })
         }
     }
 }
@@ -94,7 +105,7 @@ private fun AppNavHost(navController: NavHostController, modifier: Modifier = Mo
             SettingsScreen(onOpenGallery = { navController.navigate(Route.Gallery) })
         }
         composable<Route.Add> {
-            PlaceholderScreen("Add a game", "Add a game by hand.")
+            AddGameScreen(onClose = { navController.popBackStack() })
         }
         composable<Route.Gallery> {
             ComponentGalleryScreen(onBack = { navController.popBackStack() })

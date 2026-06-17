@@ -16,7 +16,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import hr.kotwave.gameslibrary.ui.model.Store
+import hr.kotwave.gameslibrary.data.Store
+import hr.kotwave.gameslibrary.ui.model.glyph
 import hr.kotwave.gameslibrary.ui.theme.AppTheme
 
 private val BadgeFill = Color(0x8C080A10) // rgba(8,10,16,.55)

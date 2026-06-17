@@ -5,8 +5,8 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import hr.kotwave.gameslibrary.ui.model.Status
-import hr.kotwave.gameslibrary.ui.model.Store
+import hr.kotwave.gameslibrary.data.Status
+import hr.kotwave.gameslibrary.data.Store
 
 @Immutable
 data class AppColors(

@@ -10,4 +10,5 @@ internal const val DATABASE_FILE_NAME = "games_library.db"
 internal fun RoomDatabase.Builder<GamesLibraryDatabase>.buildGamesLibraryDatabase(): GamesLibraryDatabase =
     setDriver(BundledSQLiteDriver())
         .setQueryCoroutineContext(Dispatchers.IO)
+        .addMigrations(MIGRATION_1_2)
         .build()

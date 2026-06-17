@@ -1,0 +1,134 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 2,
+    "identityHash": "ac3547fd448c8d2f046fa9c2dc94fd6b",
+    "entities": [
+      {
+        "tableName": "game",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `igdbId` INTEGER, `wishlist` INTEGER NOT NULL, `status` TEXT)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "igdbId",
+            "columnName": "igdbId",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "wishlist",
+            "columnName": "wishlist",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_game_igdbId",
+            "unique": true,
+            "columnNames": [
+              "igdbId"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_game_igdbId` ON `${TABLE_NAME}` (`igdbId`)"
+          }
+        ]
+      },
+      {
+        "tableName": "ownership",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `gameId` INTEGER NOT NULL, `store` TEXT NOT NULL, `source` TEXT NOT NULL, FOREIGN KEY(`gameId`) REFERENCES `game`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "gameId",
+            "columnName": "gameId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "store",
+            "columnName": "store",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "source",
+            "columnName": "source",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_ownership_gameId_store",
+            "unique": true,
+            "columnNames": [
+              "gameId",
+              "store"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_ownership_gameId_store` ON `${TABLE_NAME}` (`gameId`, `store`)"
+          },
+          {
+            "name": "index_ownership_gameId",
+            "unique": false,
+            "columnNames": [
+              "gameId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_ownership_gameId` ON `${TABLE_NAME}` (`gameId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "game",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "gameId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'ac3547fd448c8d2f046fa9c2dc94fd6b')"
+    ]
+  }
+}

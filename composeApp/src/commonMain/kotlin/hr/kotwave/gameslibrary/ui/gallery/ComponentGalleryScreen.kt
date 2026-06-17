@@ -35,9 +35,10 @@ import hr.kotwave.gameslibrary.ui.components.SecondaryButton
 import hr.kotwave.gameslibrary.ui.components.StatusDot
 import hr.kotwave.gameslibrary.ui.components.StoreBadge
 import hr.kotwave.gameslibrary.ui.components.StoreBadgeRow
+import hr.kotwave.gameslibrary.data.Status
+import hr.kotwave.gameslibrary.data.Store
 import hr.kotwave.gameslibrary.ui.icons.AppIcons
-import hr.kotwave.gameslibrary.ui.model.Status
-import hr.kotwave.gameslibrary.ui.model.Store
+import hr.kotwave.gameslibrary.ui.model.label
 import hr.kotwave.gameslibrary.ui.theme.AppTheme
 
 /** Renders every backbone component with its variants. */
