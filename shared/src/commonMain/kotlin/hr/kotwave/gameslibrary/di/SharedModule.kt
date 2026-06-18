@@ -2,6 +2,7 @@ package hr.kotwave.gameslibrary.di
 
 import hr.kotwave.gameslibrary.data.GameRepository
 import hr.kotwave.gameslibrary.data.GamesLibraryDatabase
+import hr.kotwave.gameslibrary.igdb.igdbModule
 import org.koin.core.module.Module
 import org.koin.dsl.module
 
@@ -13,4 +14,4 @@ val dataModule = module {
     single { GameRepository(get()) }
 }
 
-val sharedModules: List<Module> = listOf(platformModule, dataModule)
+val sharedModules: List<Module> = listOf(platformModule, dataModule, igdbModule)
