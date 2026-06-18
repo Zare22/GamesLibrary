@@ -1,8 +1,8 @@
 package hr.kotwave.gameslibrary.ui.model
 
-import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import kotlin.time.Instant
 
 /** The release year for an IGDB epoch-second timestamp, or null. */
 fun releaseYear(epochSeconds: Long?): Int? =

@@ -23,7 +23,7 @@ kotlinxSerialization = "1.8.1"
 koin-bom = "4.1.1"
 ktor = "3.5.0"
 coil = "3.5.0"
-kotlinxDatetime = "0.6.2"
+kotlinxDatetime = "0.7.1"
 
 [libraries]
 # Room + SQLite (KMP, bundled driver)
