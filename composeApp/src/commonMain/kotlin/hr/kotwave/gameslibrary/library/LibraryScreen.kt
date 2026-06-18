@@ -37,6 +37,7 @@ import org.koin.compose.viewmodel.koinViewModel
 @Composable
 fun LibraryScreen(
     onAdd: () -> Unit,
+    onOpenGame: (Long) -> Unit,
     viewModel: LibraryViewModel = koinViewModel(),
 ) {
     val games by viewModel.ownedGames.collectAsState()
@@ -77,6 +78,7 @@ fun LibraryScreen(
                         stores = owned.ownerships.map { it.store },
                         status = owned.game.status,
                         coverImageId = owned.game.coverImageId,
+                        onClick = { onOpenGame(owned.game.id) },
                     )
                 }
             }

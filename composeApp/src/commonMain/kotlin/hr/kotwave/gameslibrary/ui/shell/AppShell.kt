@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -25,6 +26,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import hr.kotwave.gameslibrary.add.AddGameModal
 import hr.kotwave.gameslibrary.add.AddGameScreen
+import hr.kotwave.gameslibrary.detail.DetailScreen
 import hr.kotwave.gameslibrary.library.LibraryScreen
 import hr.kotwave.gameslibrary.navigation.Route
 import hr.kotwave.gameslibrary.ui.gallery.ComponentGalleryScreen
@@ -59,12 +61,16 @@ fun AppShell() {
 
 @Composable
 private fun CompactShell(navController: NavHostController) {
-    val current = navController.currentTopDestination()
-    Column(Modifier.fillMaxSize().safeDrawingPadding()) {
+    val entry by navController.currentBackStackEntryAsState()
+    // Detail is immersive: it draws its hero under the status bar and hides the bottom nav.
+    val immersive = entry?.destination?.hasRoute<Route.Detail>() == true
+    Column(Modifier.fillMaxSize().then(if (immersive) Modifier else Modifier.safeDrawingPadding())) {
         Box(Modifier.fillMaxSize().weight(1f)) {
             AppNavHost(navController, Modifier.fillMaxSize())
         }
-        BottomNavBar(current = current, onSelect = navController::navigateTop)
+        if (!immersive) {
+            BottomNavBar(current = topDestinationForRoute(entry?.destination?.route), onSelect = navController::navigateTop)
+        }
     }
 }
 
@@ -93,7 +99,10 @@ private fun ExpandedShell(navController: NavHostController) {
 private fun AppNavHost(navController: NavHostController, modifier: Modifier = Modifier) {
     NavHost(navController, startDestination = Route.Library, modifier = modifier) {
         composable<Route.Library> {
-            LibraryScreen(onAdd = { navController.navigate(Route.Add) })
+            LibraryScreen(
+                onAdd = { navController.navigate(Route.Add) },
+                onOpenGame = { navController.navigate(Route.Detail(it)) },
+            )
         }
         composable<Route.Wishlist> {
             PlaceholderScreen("Wishlist", "Games you want but don't own yet.")
@@ -102,13 +111,19 @@ private fun AppNavHost(navController: NavHostController, modifier: Modifier = Mo
             PlaceholderScreen("Import", "Paste a store library to bulk-add.")
         }
         composable<Route.Settings> {
-            SettingsScreen(onOpenGallery = { navController.navigate(Route.Gallery) })
+            SettingsScreen(
+                onOpenGallery = { navController.navigate(Route.Gallery) },
+                onOpenGame = { navController.navigate(Route.Detail(it)) },
+            )
         }
         composable<Route.Add> {
             AddGameScreen(onClose = { navController.popBackStack() })
         }
         composable<Route.Gallery> {
             ComponentGalleryScreen(onBack = { navController.popBackStack() })
+        }
+        composable<Route.Detail> {
+            DetailScreen(onBack = { navController.popBackStack() })
         }
     }
 }

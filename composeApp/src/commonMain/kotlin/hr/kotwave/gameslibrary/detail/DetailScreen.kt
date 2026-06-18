@@ -1,0 +1,745 @@
+package hr.kotwave.gameslibrary.detail
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import hr.kotwave.gameslibrary.data.Game
+import hr.kotwave.gameslibrary.data.GameWithOwnerships
+import hr.kotwave.gameslibrary.data.Status
+import hr.kotwave.gameslibrary.data.Store
+import hr.kotwave.gameslibrary.search.IgdbResultRow
+import hr.kotwave.gameslibrary.search.IgdbSearchField
+import hr.kotwave.gameslibrary.search.IgdbSearchStatus
+import hr.kotwave.gameslibrary.ui.components.CircularButton
+import hr.kotwave.gameslibrary.ui.components.CoverArt
+import hr.kotwave.gameslibrary.ui.components.DestructiveButton
+import hr.kotwave.gameslibrary.ui.components.PrimaryButton
+import hr.kotwave.gameslibrary.ui.components.SecondaryButton
+import hr.kotwave.gameslibrary.ui.components.StatusDot
+import hr.kotwave.gameslibrary.ui.icons.AppIcons
+import hr.kotwave.gameslibrary.ui.model.glyph
+import hr.kotwave.gameslibrary.ui.model.label
+import hr.kotwave.gameslibrary.ui.model.releaseYear
+import hr.kotwave.gameslibrary.ui.shell.LocalIsCompact
+import hr.kotwave.gameslibrary.ui.theme.AppTheme
+import org.koin.compose.viewmodel.koinViewModel
+import kotlin.math.roundToInt
+
+private val RatingGreen = Color(0xFF7DF0B6)
+private val RatingGreenBorder = Color(0xFF39D98A)
+private val RatingBlue = Color(0xFFBCD4FF)
+private val Amber = Color(0xFFFFD24A)
+private val OrphanRed = Color(0xFFF4707A)
+private val HeroHeight = 380.dp
+
+/** Actions a detail screen invokes — wired to the [DetailViewModel], or faked in render tests. */
+class DetailActions(
+    val onBack: () -> Unit,
+    val onRefresh: () -> Unit,
+    val onRematch: () -> Unit,
+    val onDelete: () -> Unit,
+    val setRating: (Double?) -> Unit,
+    val setStatus: (Status) -> Unit,
+    val addStore: (Store) -> Unit,
+    val removeStore: (Store) -> Unit,
+)
+
+/** Game detail: cover hero + IGDB metadata + editable local state, refresh, and Orphaned Re-match. */
+@Composable
+fun DetailScreen(onBack: () -> Unit, viewModel: DetailViewModel = koinViewModel()) {
+    val owned = viewModel.game.collectAsState().value ?: return
+    DetailContent(
+        owned = owned,
+        igdbUnreachable = viewModel.igdbUnreachable,
+        actions = DetailActions(
+            onBack = onBack,
+            onRefresh = viewModel::refresh,
+            onRematch = viewModel::startRematch,
+            onDelete = { viewModel.delete(onBack) },
+            setRating = viewModel::setUserRating,
+            setStatus = viewModel::setStatus,
+            addStore = viewModel::addOwnership,
+            removeStore = viewModel::removeOwnership,
+        ),
+    )
+    if (viewModel.rematching) {
+        RematchOverlay(viewModel)
+    }
+}
+
+/** The presentational detail layout — no ViewModel, so it is render-testable. */
+@Composable
+fun DetailContent(owned: GameWithOwnerships, igdbUnreachable: Boolean, actions: DetailActions) {
+    if (LocalIsCompact.current) {
+        PhoneDetail(owned, igdbUnreachable, actions)
+    } else {
+        DesktopDetail(owned, igdbUnreachable, actions)
+    }
+}
+
+// ---- Phone: immersive hero over a scrolling body ----
+
+@Composable
+private fun PhoneDetail(owned: GameWithOwnerships, igdbUnreachable: Boolean, actions: DetailActions) {
+    var confirmDelete by remember { mutableStateOf(false) }
+    Box(Modifier.fillMaxSize()) {
+        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+            PhoneHero(owned, actions)
+            Column(
+                Modifier.fillMaxWidth().padding(horizontal = 22.dp).padding(top = 18.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp),
+            ) {
+                DetailBody(owned, igdbUnreachable, actions)
+                DeleteAction(onClick = { confirmDelete = true })
+                Spacer(Modifier.height(12.dp).navigationBarsPadding())
+            }
+        }
+    }
+    if (confirmDelete) {
+        ConfirmDeleteDialog(
+            name = owned.game.name,
+            onConfirm = { confirmDelete = false; actions.onDelete() },
+            onDismiss = { confirmDelete = false },
+        )
+    }
+}
+
+@Composable
+private fun PhoneHero(owned: GameWithOwnerships, actions: DetailActions) {
+    val tokens = AppTheme.tokens
+    Box(Modifier.fillMaxWidth().height(HeroHeight)) {
+        CoverArt(
+            title = owned.game.name,
+            coverImageId = owned.game.coverImageId,
+            modifier = Modifier.matchParentSize(),
+            shape = RoundedCornerShape(0.dp),
+        )
+        Box(
+            Modifier.matchParentSize().background(
+                Brush.verticalGradient(
+                    0f to Color(0x59080A10),
+                    0.32f to Color.Transparent,
+                    0.72f to Color(0x99080A10),
+                    1f to tokens.colors.bg,
+                ),
+            ),
+        )
+        Row(
+            Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 18.dp, vertical = 10.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            CircularButton(AppIcons.ChevronLeft, onClick = actions.onBack, contentDescription = "Back")
+            if (owned.game.igdbId != null) {
+                CircularButton(AppIcons.Sync, onClick = actions.onRefresh, contentDescription = "Refresh metadata")
+            }
+        }
+        Column(Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(horizontal = 22.dp, vertical = 16.dp)) {
+            if (owned.game.wishlist) {
+                WishlistPill()
+                Spacer(Modifier.height(11.dp))
+            }
+            Text(owned.game.name, style = AppTheme.type.display, color = tokens.colors.text)
+            Spacer(Modifier.height(9.dp))
+            Subline(owned.game)
+        }
+    }
+}
+
+// ---- Desktop: two-pane (hero left, info right) ----
+
+@Composable
+private fun DesktopDetail(owned: GameWithOwnerships, igdbUnreachable: Boolean, actions: DetailActions) {
+    val tokens = AppTheme.tokens
+    var confirmDelete by remember { mutableStateOf(false) }
+    Column(Modifier.fillMaxSize().padding(start = 30.dp, end = 30.dp, top = 18.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            CircularButton(AppIcons.ChevronLeft, onClick = actions.onBack, contentDescription = "Back")
+            Text("Library", style = AppTheme.type.bodyStrong, color = tokens.colors.muted)
+            Text("/", style = AppTheme.type.bodyStrong, color = tokens.colors.faint)
+            Text(owned.game.name, style = AppTheme.type.bodyStrong, color = tokens.colors.text, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+        Spacer(Modifier.height(18.dp))
+        Row(Modifier.fillMaxSize()) {
+            Box(
+                Modifier.width(380.dp).fillMaxHeight().padding(bottom = 30.dp)
+                    .clip(RoundedCornerShape(20.dp)).border(1.dp, tokens.colors.border, RoundedCornerShape(20.dp)),
+            ) {
+                CoverArt(
+                    title = owned.game.name,
+                    coverImageId = owned.game.coverImageId,
+                    modifier = Modifier.matchParentSize(),
+                    shape = RoundedCornerShape(20.dp),
+                )
+                if (!owned.game.wishlist && owned.game.status != null) {
+                    Row(
+                        Modifier.align(Alignment.BottomStart).padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        StatusDot(status = owned.game.status!!)
+                        Text(owned.game.status!!.label, style = AppTheme.type.bodyStrong, color = tokens.colors.text)
+                    }
+                }
+            }
+            Spacer(Modifier.width(34.dp))
+            Column(
+                Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState()).padding(bottom = 30.dp),
+                verticalArrangement = Arrangement.spacedBy(22.dp),
+            ) {
+                Column {
+                    Text(owned.game.name, style = AppTheme.type.display.copy(fontSize = 34.sp), color = tokens.colors.text)
+                    Spacer(Modifier.height(11.dp))
+                    Subline(owned.game)
+                }
+                DetailBody(owned, igdbUnreachable, actions)
+                DeleteAction(onClick = { confirmDelete = true })
+            }
+        }
+    }
+    if (confirmDelete) {
+        ConfirmDeleteDialog(
+            name = owned.game.name,
+            onConfirm = { confirmDelete = false; actions.onDelete() },
+            onDismiss = { confirmDelete = false },
+        )
+    }
+}
+
+// ---- Shared body: rating / ownership / status (or not-owned), platforms, refresh + orphan state ----
+
+@Composable
+private fun DetailBody(owned: GameWithOwnerships, igdbUnreachable: Boolean, actions: DetailActions) {
+    val game = owned.game
+    if (game.orphaned) {
+        OrphanedBanner(onRematch = actions.onRematch)
+    }
+    if (igdbUnreachable) {
+        InlineNote("Couldn't reach IGDB — check your connection.", OrphanRed)
+    }
+    if (game.wishlist) {
+        NotOwnedSection()
+    } else {
+        RatingSection(value = game.userRating, onChange = actions.setRating)
+        OwnershipSection(
+            stores = owned.ownerships.map { it.store },
+            onAdd = actions.addStore,
+            onRemove = actions.removeStore,
+        )
+        StatusSection(selected = game.status, onSelect = actions.setStatus)
+    }
+    if (game.platforms.isNotEmpty()) {
+        PlatformsSection(game.platforms.map { it.name })
+    }
+}
+
+@Composable
+private fun Subline(game: Game) {
+    val tokens = AppTheme.tokens
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        val parts = listOfNotNull(game.developer, releaseYear(game.firstReleaseDate)?.toString())
+        parts.forEachIndexed { index, part ->
+            if (index > 0) Text("•", style = AppTheme.type.body, color = tokens.colors.faint)
+            Text(part, style = AppTheme.type.body, color = tokens.colors.muted)
+        }
+        igdbScore(game.totalRating)?.let { score ->
+            Spacer(Modifier.weight(1f))
+            IgdbRatingBadge(score)
+        }
+    }
+}
+
+@Composable
+private fun IgdbRatingBadge(score: Int) {
+    Row(
+        Modifier
+            .clip(RoundedCornerShape(10.dp))
+            .background(Brush.linearGradient(listOf(RatingGreenBorder.copy(alpha = 0.18f), RatingGreenBorder.copy(alpha = 0.06f))))
+            .border(1.dp, RatingGreenBorder.copy(alpha = 0.40f), RoundedCornerShape(10.dp))
+            .padding(horizontal = 10.dp, vertical = 5.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(5.dp),
+    ) {
+        Icon(AppIcons.Star, null, Modifier.size(12.dp), tint = RatingGreen)
+        Text("IGDB", style = AppTheme.type.caption.copy(fontSize = 10.sp), color = RatingGreen)
+        Text("$score", style = AppTheme.type.bodyStrong.copy(fontSize = 13.sp), color = RatingGreen)
+        Text("/100", style = AppTheme.type.caption.copy(fontSize = 10.sp), color = RatingGreen.copy(alpha = 0.7f))
+    }
+}
+
+@Composable
+private fun WishlistPill() {
+    Row(
+        Modifier
+            .clip(RoundedCornerShape(999.dp))
+            .background(Amber.copy(alpha = 0.14f))
+            .border(1.dp, Amber.copy(alpha = 0.40f), RoundedCornerShape(999.dp))
+            .padding(horizontal = 11.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(7.dp),
+    ) {
+        Icon(AppIcons.HeartFilled, null, Modifier.size(13.dp), tint = Amber)
+        Text("On your wishlist", style = AppTheme.type.caption.copy(fontSize = 11.sp), color = Amber)
+    }
+}
+
+// ---- Your rating ----
+
+@Composable
+private fun RatingSection(value: Double?, onChange: (Double?) -> Unit) {
+    val tokens = AppTheme.tokens
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(Brush.linearGradient(listOf(tokens.colors.accent.copy(alpha = 0.10f), tokens.colors.accent.copy(alpha = 0.02f))))
+            .border(1.dp, tokens.colors.accent.copy(alpha = 0.28f), RoundedCornerShape(16.dp))
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(13.dp),
+    ) {
+        Box(
+            Modifier.size(36.dp).clip(RoundedCornerShape(11.dp))
+                .background(tokens.colors.accent.copy(alpha = 0.14f))
+                .border(1.dp, tokens.colors.accent.copy(alpha = 0.35f), RoundedCornerShape(11.dp)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(AppIcons.Star, null, Modifier.size(17.dp), tint = RatingBlue)
+        }
+        Column(Modifier.weight(1f)) {
+            Text("Your rating", style = AppTheme.type.bodyStrong, color = tokens.colors.text)
+            Text("Your own score, out of 10", style = AppTheme.type.caption.copy(fontSize = 11.5.sp), color = tokens.colors.faint)
+        }
+        RatingStepper(value, onChange)
+    }
+}
+
+@Composable
+private fun RatingStepper(value: Double?, onChange: (Double?) -> Unit) {
+    val tokens = AppTheme.tokens
+    var editing by remember { mutableStateOf(false) }
+    var text by remember(value) { mutableStateOf(value?.let(::formatUserRating) ?: "") }
+
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        StepButton(AppIcons.Minus, "Lower") { editing = false; onChange(stepped(value, -0.5)) }
+        Box(Modifier.widthIn(min = 56.dp), contentAlignment = Alignment.Center) {
+            if (editing) {
+                BasicTextField(
+                    value = text,
+                    onValueChange = { text = it.filter { c -> c.isDigit() || c == '.' }.take(4) },
+                    singleLine = true,
+                    textStyle = AppTheme.type.numeric.copy(color = RatingBlue, textAlign = TextAlign.Center),
+                    cursorBrush = SolidColor(tokens.colors.accent),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(onDone = { editing = false; onChange(parseRating(text)) }),
+                    modifier = Modifier.width(56.dp),
+                )
+            } else {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable {
+                        text = value?.let(::formatUserRating) ?: ""
+                        editing = true
+                    },
+                ) {
+                    Text(value?.let(::formatUserRating) ?: "—", style = AppTheme.type.numeric, color = RatingBlue)
+                    Text(if (value == null) "Unrated" else "/ 10", style = AppTheme.type.caption.copy(fontSize = 10.sp), color = tokens.colors.faint)
+                }
+            }
+        }
+        StepButton(AppIcons.Plus, "Raise") { editing = false; onChange(stepped(value, 0.5)) }
+        if (value != null) {
+            StepButton(AppIcons.Close, "Clear rating") { editing = false; onChange(null) }
+        }
+    }
+}
+
+@Composable
+private fun StepButton(icon: androidx.compose.ui.graphics.vector.ImageVector, description: String, onClick: () -> Unit) {
+    val tokens = AppTheme.tokens
+    Box(
+        Modifier.size(30.dp).clip(RoundedCornerShape(9.dp))
+            .background(tokens.colors.surfaceRaised)
+            .border(1.dp, tokens.colors.borderStrong, RoundedCornerShape(9.dp))
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(icon, description, Modifier.size(14.dp), tint = tokens.colors.text)
+    }
+}
+
+// ---- Ownership ----
+
+@Composable
+private fun OwnershipSection(stores: List<Store>, onAdd: (Store) -> Unit, onRemove: (Store) -> Unit) {
+    val tokens = AppTheme.tokens
+    SectionHeader("Ownership")
+    Column(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
+            .background(tokens.colors.surface).border(1.dp, tokens.colors.border, RoundedCornerShape(16.dp))
+            .padding(15.dp),
+        verticalArrangement = Arrangement.spacedBy(9.dp),
+    ) {
+        if (stores.isEmpty()) {
+            Text("Not tracked on any store yet.", style = AppTheme.type.caption, color = tokens.colors.faint)
+        } else {
+            stores.forEach { store -> OwnedStoreRow(store, onRemove = { onRemove(store) }) }
+        }
+        val addable = Store.entries.filter { it !in stores }
+        if (addable.isNotEmpty()) {
+            Spacer(Modifier.height(2.dp))
+            Text("ADD A STORE", style = AppTheme.type.section.copy(fontSize = 10.sp), color = tokens.colors.faint)
+            AddStoreChips(addable, onAdd)
+        }
+    }
+}
+
+@Composable
+private fun OwnedStoreRow(store: Store, onRemove: () -> Unit) {
+    val tokens = AppTheme.tokens
+    val accent = tokens.store.accent(store)
+    Row(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
+            .background(Color(0x05FFFFFF)).border(1.dp, tokens.colors.border, RoundedCornerShape(12.dp))
+            .padding(10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Box(
+            Modifier.size(34.dp).clip(RoundedCornerShape(10.dp))
+                .background(accent.copy(alpha = 0.12f)).border(1.dp, accent.copy(alpha = 0.40f), RoundedCornerShape(10.dp)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(store.glyph, style = AppTheme.type.brand.copy(fontSize = 13.sp), color = tokens.store.glyph(store))
+        }
+        Text(store.label, style = AppTheme.type.bodyStrong, color = tokens.colors.text, modifier = Modifier.weight(1f))
+        Box(
+            Modifier.size(28.dp).clip(RoundedCornerShape(8.dp)).clickable(onClick = onRemove),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(AppIcons.Close, "Remove ${store.label}", Modifier.size(15.dp), tint = tokens.colors.faint)
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun AddStoreChips(stores: List<Store>, onAdd: (Store) -> Unit) {
+    val tokens = AppTheme.tokens
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        stores.forEach { store ->
+            Row(
+                Modifier.clip(RoundedCornerShape(11.dp)).background(tokens.colors.surface)
+                    .border(1.dp, tokens.colors.border, RoundedCornerShape(11.dp))
+                    .clickable { onAdd(store) }.padding(horizontal = 11.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Icon(AppIcons.Plus, null, Modifier.size(13.dp), tint = tokens.store.accent(store))
+                Text(store.label, style = AppTheme.type.bodyStrong.copy(fontSize = 13.sp), color = tokens.colors.muted)
+            }
+        }
+    }
+}
+
+// ---- Status ----
+
+@Composable
+private fun StatusSection(selected: Status?, onSelect: (Status) -> Unit) {
+    SectionHeader("Completion status")
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+        Status.entries.forEach { status ->
+            StatusCell(Modifier.weight(1f), status = status, active = selected == status) { onSelect(status) }
+        }
+    }
+}
+
+@Composable
+private fun StatusCell(modifier: Modifier, status: Status, active: Boolean, onClick: () -> Unit) {
+    val tokens = AppTheme.tokens
+    val color = tokens.status.color(status)
+    val shape = RoundedCornerShape(13.dp)
+    Column(
+        modifier
+            .clip(shape)
+            .background(if (active) color.copy(alpha = 0.12f) else tokens.colors.surface)
+            .border(1.dp, if (active) color.copy(alpha = 0.55f) else tokens.colors.border, shape)
+            .clickable(onClick = onClick)
+            .padding(vertical = 12.dp, horizontal = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        StatusDot(status = status, size = 9.dp, bordered = false)
+        Text(
+            status.label,
+            style = AppTheme.type.caption.copy(fontSize = 11.5.sp),
+            color = if (active) tokens.colors.text else tokens.colors.muted,
+        )
+    }
+}
+
+// ---- Wishlist (not owned) ----
+
+@Composable
+private fun NotOwnedSection() {
+    val tokens = AppTheme.tokens
+    SectionHeader("Ownership")
+    Row(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
+            .background(Brush.linearGradient(listOf(Amber.copy(alpha = 0.10f), Amber.copy(alpha = 0.02f))))
+            .border(1.dp, Amber.copy(alpha = 0.28f), RoundedCornerShape(16.dp))
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(13.dp),
+    ) {
+        Box(
+            Modifier.size(40.dp).clip(RoundedCornerShape(12.dp))
+                .background(Amber.copy(alpha = 0.14f)).border(1.dp, Amber.copy(alpha = 0.40f), RoundedCornerShape(12.dp)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(AppIcons.HeartFilled, null, Modifier.size(19.dp), tint = Amber)
+        }
+        Column(Modifier.weight(1f)) {
+            Text("Not owned yet · On your wishlist", style = AppTheme.type.bodyStrong, color = tokens.colors.text)
+            Text(
+                "Add it to a store after you buy, and your status & rating unlock.",
+                style = AppTheme.type.caption.copy(fontSize = 11.5.sp),
+                color = tokens.colors.faint,
+            )
+        }
+    }
+}
+
+// ---- Platforms ----
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun PlatformsSection(platforms: List<String>) {
+    val tokens = AppTheme.tokens
+    SectionHeader("Platforms")
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        platforms.forEach { name ->
+            Text(
+                name,
+                style = AppTheme.type.bodyStrong.copy(fontSize = 12.sp),
+                color = tokens.colors.muted,
+                modifier = Modifier.clip(RoundedCornerShape(10.dp)).background(tokens.colors.surface)
+                    .border(1.dp, tokens.colors.border, RoundedCornerShape(10.dp)).padding(horizontal = 12.dp, vertical = 7.dp),
+            )
+        }
+    }
+}
+
+// ---- Orphaned banner + Re-match overlay ----
+
+@Composable
+private fun OrphanedBanner(onRematch: () -> Unit) {
+    val tokens = AppTheme.tokens
+    Column(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
+            .background(OrphanRed.copy(alpha = 0.08f)).border(1.dp, OrphanRed.copy(alpha = 0.35f), RoundedCornerShape(16.dp))
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(11.dp)) {
+            Box(
+                Modifier.size(36.dp).clip(RoundedCornerShape(11.dp))
+                    .background(OrphanRed.copy(alpha = 0.14f)).border(1.dp, OrphanRed.copy(alpha = 0.40f), RoundedCornerShape(11.dp)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(AppIcons.Sync, null, Modifier.size(18.dp), tint = OrphanRed)
+            }
+            Column(Modifier.weight(1f)) {
+                Text("IGDB link broke", style = AppTheme.type.bodyStrong, color = tokens.colors.text)
+                Text(
+                    "This game's IGDB entry no longer resolves. Its data is kept — re-match to a new entry to refresh.",
+                    style = AppTheme.type.caption.copy(fontSize = 11.5.sp),
+                    color = tokens.colors.muted,
+                )
+            }
+        }
+        SecondaryButton(text = "Re-match", onClick = onRematch, leadingIcon = AppIcons.Search, modifier = Modifier.fillMaxWidth())
+    }
+}
+
+@Composable
+private fun RematchOverlay(vm: DetailViewModel) {
+    val tokens = AppTheme.tokens
+    val scrim = remember { MutableInteractionSource() }
+    val card = remember { MutableInteractionSource() }
+    Box(
+        Modifier.fillMaxSize().background(Color(0xB2060810))
+            .clickable(interactionSource = scrim, indication = null, onClick = vm::cancelRematch),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            Modifier.widthIn(max = 560.dp).fillMaxWidth().padding(20.dp)
+                .clip(RoundedCornerShape(22.dp)).background(tokens.colors.bg2)
+                .border(1.dp, tokens.colors.borderStrong, RoundedCornerShape(22.dp))
+                .clickable(interactionSource = card, indication = null, onClick = {})
+                .padding(20.dp),
+        ) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Text("Re-match game", style = AppTheme.type.bodyStrong.copy(fontSize = 16.sp), color = tokens.colors.text)
+                Box(
+                    Modifier.size(32.dp).clip(RoundedCornerShape(10.dp)).clickable(onClick = vm::cancelRematch),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(AppIcons.Close, "Close", Modifier.size(16.dp), tint = tokens.colors.muted)
+                }
+            }
+            Spacer(Modifier.height(4.dp))
+            Text("Pick the correct IGDB entry — its metadata replaces the broken one.", style = AppTheme.type.caption, color = tokens.colors.faint)
+            Spacer(Modifier.height(14.dp))
+            IgdbSearchField(value = vm.rematchSearch.query, onValueChange = vm.rematchSearch::updateQuery)
+            if (vm.rematchConflict) {
+                Spacer(Modifier.height(10.dp))
+                InlineNote("That game is already in your library — pick a different entry.", Amber)
+            }
+            if (vm.rematchSearch.query.isNotBlank()) {
+                Spacer(Modifier.height(12.dp))
+                IgdbSearchStatus(
+                    searching = vm.rematchSearch.searching || vm.rematchPicking,
+                    count = vm.rematchSearch.results.size,
+                    failed = vm.rematchSearch.searchFailed,
+                )
+                Spacer(Modifier.height(6.dp))
+                vm.rematchSearch.results.forEach { result ->
+                    IgdbResultRow(result = result, onClick = { vm.pickRematch(result) })
+                }
+            }
+        }
+    }
+}
+
+// ---- Delete ----
+
+@Composable
+private fun DeleteAction(onClick: () -> Unit) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+        DestructiveButton(onClick = onClick)
+    }
+}
+
+@Composable
+private fun ConfirmDeleteDialog(name: String, onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    val tokens = AppTheme.tokens
+    val scrim = remember { MutableInteractionSource() }
+    val card = remember { MutableInteractionSource() }
+    Box(
+        Modifier.fillMaxSize().background(Color(0xB2060810))
+            .clickable(interactionSource = scrim, indication = null, onClick = onDismiss),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            Modifier.widthIn(max = 380.dp).padding(28.dp)
+                .clip(RoundedCornerShape(20.dp)).background(tokens.colors.bg2)
+                .border(1.dp, tokens.colors.borderStrong, RoundedCornerShape(20.dp))
+                .clickable(interactionSource = card, indication = null, onClick = {})
+                .padding(22.dp),
+        ) {
+            Text("Delete this game?", style = AppTheme.type.bodyStrong.copy(fontSize = 17.sp), color = tokens.colors.text)
+            Spacer(Modifier.height(8.dp))
+            Text(
+                "“$name” will be removed from your library, along with its ownerships. This can't be undone.",
+                style = AppTheme.type.body.copy(fontSize = 13.sp),
+                color = tokens.colors.muted,
+            )
+            Spacer(Modifier.height(20.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(11.dp)) {
+                SecondaryButton(text = "Cancel", onClick = onDismiss, modifier = Modifier.weight(1f))
+                PrimaryButton(text = "Delete", onClick = onConfirm, leadingIcon = AppIcons.Trash, modifier = Modifier.weight(1f))
+            }
+        }
+    }
+}
+
+// ---- Small shared pieces ----
+
+@Composable
+private fun SectionHeader(label: String) {
+    Text(
+        label.uppercase(),
+        style = AppTheme.type.section.copy(fontSize = 12.sp),
+        color = AppTheme.tokens.colors.faint,
+        modifier = Modifier.padding(bottom = 11.dp),
+    )
+}
+
+@Composable
+private fun InlineNote(text: String, accent: Color) {
+    Row(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
+            .background(accent.copy(alpha = 0.10f)).border(1.dp, accent.copy(alpha = 0.35f), RoundedCornerShape(12.dp))
+            .padding(horizontal = 13.dp, vertical = 11.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(text, style = AppTheme.type.caption, color = AppTheme.tokens.colors.muted)
+    }
+}
+
+// ---- Formatting ----
+
+/** One-decimal display of a 0.0–10.0 score, without platform String.format. */
+private fun formatUserRating(value: Double): String {
+    val tenths = (value * 10).roundToInt()
+    return "${tenths / 10}.${tenths % 10}"
+}
+
+/** Steps a nullable rating by ±0.5 within 0.0–10.0; stepping down from Unrated stays Unrated. */
+private fun stepped(current: Double?, delta: Double): Double? {
+    if (current == null) return if (delta > 0) 0.5 else null
+    val tenths = ((current + delta).coerceIn(0.0, 10.0) * 10).roundToInt()
+    return tenths / 10.0
+}
+
+private fun parseRating(text: String): Double? {
+    val parsed = text.toDoubleOrNull() ?: return null
+    return ((parsed.coerceIn(0.0, 10.0)) * 10).roundToInt() / 10.0
+}
+
+private fun igdbScore(totalRating: Double?): Int? = totalRating?.roundToInt()
