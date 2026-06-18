@@ -29,3 +29,33 @@ val MIGRATION_1_2 = object : Migration(1, 2) {
         connection.execSQL("CREATE INDEX IF NOT EXISTS `index_ownership_gameId` ON `ownership` (`gameId`)")
     }
 }
+
+/**
+ * v2 -> v3: widens Game with the IGDB metadata set (scalars nullable; platforms/alternativeNames as
+ * JSON, defaulting empty) and adds the external_game table for cross-store references.
+ */
+val MIGRATION_2_3 = object : Migration(2, 3) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL("ALTER TABLE `game` ADD COLUMN `slug` TEXT")
+        connection.execSQL("ALTER TABLE `game` ADD COLUMN `firstReleaseDate` INTEGER")
+        connection.execSQL("ALTER TABLE `game` ADD COLUMN `coverImageId` TEXT")
+        connection.execSQL("ALTER TABLE `game` ADD COLUMN `developer` TEXT")
+        connection.execSQL("ALTER TABLE `game` ADD COLUMN `totalRating` REAL")
+        connection.execSQL("ALTER TABLE `game` ADD COLUMN `totalRatingCount` INTEGER")
+        connection.execSQL("ALTER TABLE `game` ADD COLUMN `platforms` TEXT NOT NULL DEFAULT '[]'")
+        connection.execSQL("ALTER TABLE `game` ADD COLUMN `alternativeNames` TEXT NOT NULL DEFAULT '[]'")
+        connection.execSQL(
+            "CREATE TABLE IF NOT EXISTS `external_game` (" +
+                "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                "`gameId` INTEGER NOT NULL, " +
+                "`category` INTEGER NOT NULL, " +
+                "`uid` TEXT NOT NULL, " +
+                "`url` TEXT, " +
+                "FOREIGN KEY(`gameId`) REFERENCES `game`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE)",
+        )
+        connection.execSQL("CREATE INDEX IF NOT EXISTS `index_external_game_gameId` ON `external_game` (`gameId`)")
+        connection.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_external_game_category_uid` ON `external_game` (`category`, `uid`)",
+        )
+    }
+}

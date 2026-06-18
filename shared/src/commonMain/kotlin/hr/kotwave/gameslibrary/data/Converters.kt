@@ -1,8 +1,11 @@
 package hr.kotwave.gameslibrary.data
 
 import androidx.room.TypeConverter
+import kotlinx.serialization.json.Json
 
-/** Persists the domain enums as their `name` strings. */
+private val json = Json { ignoreUnknownKeys = true }
+
+/** Persists the domain enums as their `name` strings and the metadata lists as JSON. */
 class Converters {
     @TypeConverter fun storeToString(value: Store): String = value.name
     @TypeConverter fun stringToStore(value: String): Store = Store.valueOf(value)
@@ -12,4 +15,10 @@ class Converters {
 
     @TypeConverter fun sourceToString(value: Source): String = value.name
     @TypeConverter fun stringToSource(value: String): Source = Source.valueOf(value)
+
+    @TypeConverter fun platformsToJson(value: List<Platform>): String = json.encodeToString(value)
+    @TypeConverter fun jsonToPlatforms(value: String): List<Platform> = json.decodeFromString(value)
+
+    @TypeConverter fun stringsToJson(value: List<String>): String = json.encodeToString(value)
+    @TypeConverter fun jsonToStrings(value: String): List<String> = json.decodeFromString(value)
 }

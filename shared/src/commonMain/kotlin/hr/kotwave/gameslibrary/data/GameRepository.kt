@@ -44,4 +44,36 @@ class GameRepository(private val gameDao: GameDao) {
 
     /** Existing Games whose title matches case-insensitively, for the soft duplicate warning. */
     suspend fun similarTitles(name: String): List<Game> = gameDao.gamesByTitle(name)
+
+    /**
+     * Adds a Game discovered via IGDB search, caching its metadata and keyed by `igdbId`. Dedups
+     * by `igdbId` (Match): if the `igdbId` is already present, attaches to that Game instead of
+     * duplicating — own-it adds the chosen Stores (clearing Wishlist if set); a Wishlist pick on an
+     * already-added Game is a no-op. Never overwrites cached metadata. Returns the Game id and
+     * whether it already existed.
+     */
+    suspend fun addMatchedGame(
+        igdb: IgdbGame,
+        wishlist: Boolean,
+        status: Status = Status.BACKLOG,
+        stores: Set<Store> = emptySet(),
+    ): MatchedAddResult {
+        gameDao.getGameByIgdbId(igdb.igdbId)?.let { existing ->
+            if (!wishlist) {
+                if (existing.wishlist) {
+                    gameDao.updateGame(existing.copy(wishlist = false, status = existing.status ?: status))
+                }
+                stores.forEach { store ->
+                    gameDao.insertOwnership(Ownership(gameId = existing.id, store = store, source = Source.MANUAL))
+                }
+            }
+            return MatchedAddResult(existing.id, alreadyExisted = true)
+        }
+        val gameId = gameDao.insertMatchedGame(
+            game = igdb.toGame(wishlist = wishlist, status = if (wishlist) null else status),
+            stores = if (wishlist) emptySet() else stores,
+            externals = igdb.externalGames.map { it.toEntity() },
+        )
+        return MatchedAddResult(gameId, alreadyExisted = false)
+    }
 }
