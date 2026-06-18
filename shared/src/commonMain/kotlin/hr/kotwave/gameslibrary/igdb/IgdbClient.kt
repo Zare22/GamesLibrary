@@ -23,7 +23,9 @@ class IgdbClient internal constructor(
     suspend fun searchGames(query: String): List<IgdbSearchResult> {
         val trimmed = query.trim()
         if (trimmed.isEmpty()) return emptyList()
-        val body = "search \"${escape(trimmed)}\"; fields name,cover.image_id,first_release_date; limit 20;"
+        val body = "search \"${escape(trimmed)}\"; " +
+            "fields name,cover.image_id,first_release_date," +
+            "involved_companies.company.name,involved_companies.developer; limit 20;"
         return IgdbJson.decodeFromString<List<GameDto>>(post("games", body)).map { it.toSearchResult() }
     }
 

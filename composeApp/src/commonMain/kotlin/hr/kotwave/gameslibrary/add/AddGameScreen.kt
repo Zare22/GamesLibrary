@@ -34,16 +34,21 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import hr.kotwave.gameslibrary.data.IgdbGame
+import hr.kotwave.gameslibrary.data.IgdbSearchResult
 import hr.kotwave.gameslibrary.data.Status
 import hr.kotwave.gameslibrary.data.Store
 import hr.kotwave.gameslibrary.ui.components.CloseButton
+import hr.kotwave.gameslibrary.ui.components.CoverArt
 import hr.kotwave.gameslibrary.ui.components.GlassSurface
 import hr.kotwave.gameslibrary.ui.components.GlowBox
 import hr.kotwave.gameslibrary.ui.components.PrimaryButton
 import hr.kotwave.gameslibrary.ui.components.StatusDot
 import hr.kotwave.gameslibrary.ui.icons.AppIcons
+import hr.kotwave.gameslibrary.ui.model.gameMeta
 import hr.kotwave.gameslibrary.ui.model.glyph
 import hr.kotwave.gameslibrary.ui.model.label
 import hr.kotwave.gameslibrary.ui.theme.AppTheme
@@ -65,7 +70,7 @@ fun AddGameScreen(onClose: () -> Unit, modifier: Modifier = Modifier) {
         Spacer(Modifier.height(14.dp))
         Text("Add a game", style = AppTheme.type.display, color = tokens.colors.text)
         Spacer(Modifier.height(3.dp))
-        Text("Add a game by hand — match it to IGDB later.", style = AppTheme.type.body, color = tokens.colors.faint)
+        Text("Search IGDB and tap to add — metadata fills itself.", style = AppTheme.type.body, color = tokens.colors.faint)
         Spacer(Modifier.height(18.dp))
         AddGameContent(onDismiss = onClose, modifier = Modifier.fillMaxWidth())
         Spacer(Modifier.height(24.dp))
@@ -103,7 +108,7 @@ fun AddGameModal(onDismiss: () -> Unit) {
                     Column(Modifier.weight(1f)) {
                         Text("Add a game", style = AppTheme.type.display, color = tokens.colors.text)
                         Spacer(Modifier.height(3.dp))
-                        Text("Add a game by hand.", style = AppTheme.type.body, color = tokens.colors.faint)
+                        Text("Search IGDB and tap to add.", style = AppTheme.type.body, color = tokens.colors.faint)
                     }
                     Spacer(Modifier.width(12.dp))
                     CloseButton(onClick = onDismiss)
@@ -121,25 +126,84 @@ fun AddGameModal(onDismiss: () -> Unit) {
     }
 }
 
-/** Shared manual-add form: title, own/wishlist branch, store picker + status (own only), save. */
+/** IGDB search up top, then the adding card for the picked result (or the manual fallback). */
 @Composable
 fun AddGameContent(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
     state: AddGameState = rememberAddGameState(),
 ) {
-    val wishlist = state.mode == AddMode.WISHLIST
     Column(modifier) {
-        TitleField(value = state.title, onValueChange = state::updateTitle)
-        state.similarTitle?.let { existing ->
-            Spacer(Modifier.height(10.dp))
-            SimilarTitleWarning(existing)
+        SearchBox(value = state.query, onValueChange = state::updateQuery)
+
+        if (state.query.isNotBlank()) {
+            Spacer(Modifier.height(12.dp))
+            LiveIndicator(searching = state.searching, count = state.results.size, failed = state.searchFailed)
+            Spacer(Modifier.height(6.dp))
+            state.results.forEach { result ->
+                ResultRow(
+                    result = result,
+                    selected = state.selected?.igdbId == result.igdbId,
+                    onClick = { state.selectResult(result) },
+                )
+            }
+            if (!state.searching && state.results.isEmpty() && !state.searchFailed) {
+                Spacer(Modifier.height(8.dp))
+                ManualLink(text = "Add “${state.query.trim()}” manually", onClick = state::addManually)
+            }
+        } else if (!state.configuring) {
+            SearchPrompt(onAddManually = state::addManually)
+        }
+
+        if (state.loadingSelection) {
+            Spacer(Modifier.height(12.dp))
+            Text("Loading details…", style = AppTheme.type.caption, color = AppTheme.tokens.colors.faint)
+        }
+
+        if (state.configuring) {
+            Spacer(Modifier.height(16.dp))
+            SectionDivider("Adding to library")
+            Spacer(Modifier.height(12.dp))
+            AddingCard(state = state, onDismiss = onDismiss)
+        }
+    }
+}
+
+/** The gradient/glow card holding the cover header (or manual title) and the own/wishlist form. */
+@Composable
+private fun AddingCard(state: AddGameState, onDismiss: () -> Unit) {
+    val tokens = AppTheme.tokens
+    val wishlist = state.mode == AddMode.WISHLIST
+    val game = state.selected
+    val shape = RoundedCornerShape(20.dp)
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .background(
+                Brush.linearGradient(
+                    listOf(
+                        tokens.colors.accent.copy(alpha = 0.12f),
+                        tokens.colors.brandGradient.last().copy(alpha = 0.06f),
+                    ),
+                ),
+            )
+            .border(1.dp, tokens.colors.accent.copy(alpha = 0.30f), shape)
+            .padding(16.dp),
+    ) {
+        if (game != null) {
+            MatchedHeader(game = game)
+        } else {
+            TitleField(value = state.title, onValueChange = state::updateTitle)
+            state.similarTitle?.let { existing ->
+                Spacer(Modifier.height(10.dp))
+                SimilarTitleWarning(existing)
+            }
         }
         Spacer(Modifier.height(16.dp))
 
         OwnWishlistSegment(mode = state.mode, onSelect = state::selectMode)
         Spacer(Modifier.height(8.dp))
-
         if (wishlist) {
             WishlistHint()
             Spacer(Modifier.height(8.dp))
@@ -155,13 +219,202 @@ fun AddGameContent(
             Spacer(Modifier.height(18.dp))
         }
 
-        PrimaryButton(
-            text = if (wishlist) "Add to wishlist" else "Add to library",
-            onClick = { state.save(onDismiss) },
-            leadingIcon = AppIcons.Check,
-            enabled = state.canSave,
-            modifier = Modifier.fillMaxWidth(),
+        if (state.alreadyInLibrary) {
+            AlreadyInLibraryBanner(wishlist = wishlist, stores = state.selectedStores)
+            Spacer(Modifier.height(12.dp))
+            PrimaryButton(text = "Done", onClick = onDismiss, leadingIcon = AppIcons.Check, modifier = Modifier.fillMaxWidth())
+        } else {
+            PrimaryButton(
+                text = if (wishlist) "Add to wishlist" else "Add to library",
+                onClick = { state.save(onDismiss) },
+                leadingIcon = AppIcons.Check,
+                enabled = state.canSave,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+    }
+}
+
+@Composable
+private fun SearchBox(value: String, onValueChange: (String) -> Unit) {
+    val tokens = AppTheme.tokens
+    GlassSurface(
+        modifier = Modifier.fillMaxWidth().height(50.dp),
+        shape = RoundedCornerShape(15.dp),
+        borderColor = tokens.colors.borderStrong,
+    ) {
+        Row(
+            Modifier.fillMaxSize().padding(horizontal = 15.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(11.dp),
+        ) {
+            Icon(AppIcons.Search, null, Modifier.size(18.dp), tint = tokens.colors.accent)
+            Box(Modifier.weight(1f)) {
+                if (value.isEmpty()) {
+                    Text("Search IGDB…", style = AppTheme.type.body, color = tokens.colors.faint)
+                }
+                BasicTextField(
+                    value = value,
+                    onValueChange = onValueChange,
+                    singleLine = true,
+                    textStyle = AppTheme.type.body.copy(color = tokens.colors.text),
+                    cursorBrush = SolidColor(tokens.colors.accent),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+            Text("IGDB", style = AppTheme.type.caption.copy(fontSize = 10.sp), color = tokens.colors.faint)
+        }
+    }
+}
+
+@Composable
+private fun LiveIndicator(searching: Boolean, count: Int, failed: Boolean) {
+    val tokens = AppTheme.tokens
+    val text = when {
+        searching -> "Searching IGDB…"
+        failed -> "Couldn't reach IGDB — check your connection."
+        count > 0 -> "$count result${if (count == 1) "" else "s"}"
+        else -> "No matches"
+    }
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+        Box(Modifier.size(7.dp).clip(CircleShape).background(if (failed) Color(0xFFF4707A) else tokens.colors.accent))
+        Text(text, style = AppTheme.type.caption, color = tokens.colors.faint)
+    }
+}
+
+@Composable
+private fun ResultRow(result: IgdbSearchResult, selected: Boolean, onClick: () -> Unit) {
+    val tokens = AppTheme.tokens
+    val shape = RoundedCornerShape(14.dp)
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .then(if (selected) Modifier.background(tokens.colors.surface).border(1.dp, tokens.colors.border, shape) else Modifier)
+            .clickable(onClick = onClick)
+            .padding(10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(13.dp),
+    ) {
+        CoverArt(
+            title = result.name,
+            coverImageId = result.coverImageId,
+            modifier = Modifier.size(width = 46.dp, height = 61.dp),
+            shape = RoundedCornerShape(9.dp),
         )
+        Column(Modifier.weight(1f)) {
+            Text(
+                result.name,
+                style = AppTheme.type.bodyStrong,
+                color = tokens.colors.text,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            gameMeta(result.firstReleaseDate, result.developer)?.let {
+                Spacer(Modifier.height(2.dp))
+                Text(it, style = AppTheme.type.caption, color = tokens.colors.faint, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+        }
+        Box(
+            Modifier
+                .size(32.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(tokens.colors.surface)
+                .border(1.dp, tokens.colors.border, RoundedCornerShape(10.dp)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                if (selected) AppIcons.Check else AppIcons.Plus,
+                null,
+                Modifier.size(15.dp),
+                tint = if (selected) tokens.colors.accent else tokens.colors.muted,
+            )
+        }
+    }
+}
+
+@Composable
+private fun MatchedHeader(game: IgdbGame) {
+    val tokens = AppTheme.tokens
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(13.dp)) {
+        CoverArt(
+            title = game.name,
+            coverImageId = game.coverImageId,
+            modifier = Modifier.size(width = 54.dp, height = 72.dp),
+            shape = RoundedCornerShape(10.dp),
+        )
+        Column(Modifier.weight(1f)) {
+            Text(
+                game.name,
+                style = AppTheme.type.bodyStrong,
+                color = tokens.colors.text,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+            gameMeta(game.firstReleaseDate, game.developer)?.let {
+                Spacer(Modifier.height(3.dp))
+                Text(it, style = AppTheme.type.caption, color = tokens.colors.muted)
+            }
+        }
+    }
+}
+
+@Composable
+private fun SectionDivider(label: String) {
+    val tokens = AppTheme.tokens
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        HorizontalDivider(Modifier.weight(1f), color = tokens.colors.border)
+        Text(label.uppercase(), style = AppTheme.type.section.copy(fontSize = 11.sp), color = tokens.colors.faint)
+        HorizontalDivider(Modifier.weight(1f), color = tokens.colors.border)
+    }
+}
+
+@Composable
+private fun SearchPrompt(onAddManually: () -> Unit) {
+    val tokens = AppTheme.tokens
+    Column(
+        Modifier.fillMaxWidth().padding(vertical = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text("Search IGDB to add a game.", style = AppTheme.type.body, color = tokens.colors.faint)
+        Spacer(Modifier.height(8.dp))
+        ManualLink(text = "Add a game manually", onClick = onAddManually)
+    }
+}
+
+@Composable
+private fun ManualLink(text: String, onClick: () -> Unit) {
+    val tokens = AppTheme.tokens
+    Row(
+        Modifier.clip(RoundedCornerShape(10.dp)).clickable(onClick = onClick).padding(horizontal = 10.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(7.dp),
+    ) {
+        Icon(AppIcons.Edit, null, Modifier.size(14.dp), tint = tokens.colors.accent)
+        Text(text, style = AppTheme.type.bodyStrong.copy(fontSize = 13.sp), color = tokens.colors.accent)
+    }
+}
+
+@Composable
+private fun AlreadyInLibraryBanner(wishlist: Boolean, stores: Set<Store>) {
+    val tokens = AppTheme.tokens
+    val message = if (wishlist || stores.isEmpty()) {
+        "Already in your library."
+    } else {
+        "Already in your library — added ${stores.joinToString { it.label }}."
+    }
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(tokens.colors.accent.copy(alpha = 0.10f))
+            .border(1.dp, tokens.colors.accent.copy(alpha = 0.35f), RoundedCornerShape(12.dp))
+            .padding(horizontal = 13.dp, vertical = 11.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(9.dp),
+    ) {
+        Icon(AppIcons.Check, null, Modifier.size(14.dp), tint = tokens.colors.accent)
+        Text(message, style = AppTheme.type.caption, color = tokens.colors.muted)
     }
 }
 

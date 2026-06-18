@@ -15,13 +15,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil3.compose.AsyncImage
 import hr.kotwave.gameslibrary.data.Status
 import hr.kotwave.gameslibrary.data.Store
-import hr.kotwave.gameslibrary.igdb.IgdbImage
 import hr.kotwave.gameslibrary.ui.theme.AppTheme
 
 /** Library cover tile: IGDB cover (or a gradient stand-in), store badges, and a status pip. */
@@ -35,22 +32,15 @@ fun GameTile(
     onClick: (() -> Unit)? = null,
 ) {
     val tokens = AppTheme.tokens
+    val shape = RoundedCornerShape(tokens.radii.tile)
     Box(
         modifier
             .aspectRatio(3f / 4f)
-            .clip(RoundedCornerShape(tokens.radii.tile))
-            .border(1.dp, tokens.colors.border, RoundedCornerShape(tokens.radii.tile))
-            .background(Brush.linearGradient(coverGradient(title)))
+            .clip(shape)
+            .border(1.dp, tokens.colors.border, shape)
             .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier),
     ) {
-        if (coverImageId != null) {
-            AsyncImage(
-                model = IgdbImage.coverUrl(coverImageId),
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize(),
-            )
-        }
+        CoverArt(title = title, coverImageId = coverImageId, modifier = Modifier.matchParentSize(), shape = shape)
         Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0.38f to Color.Transparent, 1f to CoverScrim)))
 
         if (stores.isNotEmpty()) {
@@ -71,20 +61,3 @@ fun GameTile(
 }
 
 private val CoverScrim = Color(0xC7000000) // black .78
-
-private val CoverGradients = listOf(
-    listOf(Color(0xFFCAA24A), Color(0xFF231405)),
-    listOf(Color(0xFFB03A2E), Color(0xFF1C0A0A)),
-    listOf(Color(0xFF3A5A8C), Color(0xFF05070F)),
-    listOf(Color(0xFFFF5A3C), Color(0xFF1A0820)),
-    listOf(Color(0xFF6FB04A), Color(0xFF234D2C)),
-    listOf(Color(0xFF8A4DFF), Color(0xFF2A1240)),
-    listOf(Color(0xFF2AA8D9), Color(0xFF0A2A4A)),
-    listOf(Color(0xFFD9356A), Color(0xFF140510)),
-)
-
-/** Deterministic gradient stand-in for missing IGDB cover art (manual Games). */
-private fun coverGradient(title: String): List<Color> {
-    val index = (title.hashCode() % CoverGradients.size + CoverGradients.size) % CoverGradients.size
-    return CoverGradients[index]
-}

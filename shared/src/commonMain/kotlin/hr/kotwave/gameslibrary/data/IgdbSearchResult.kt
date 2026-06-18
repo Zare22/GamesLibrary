@@ -6,4 +6,5 @@ data class IgdbSearchResult(
     val name: String,
     val coverImageId: String? = null,
     val firstReleaseDate: Long? = null,
+    val developer: String? = null,
 )

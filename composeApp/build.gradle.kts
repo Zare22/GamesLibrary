@@ -33,6 +33,7 @@ kotlin {
             implementation(libs.coil.network.ktor3)
 
             implementation(libs.kotlinx.serialization.core)
+            implementation(libs.kotlinx.datetime)
 
             implementation(libs.androidx.lifecycle.viewmodel)
             implementation(libs.androidx.lifecycle.viewmodel.compose)

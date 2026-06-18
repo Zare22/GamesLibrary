@@ -28,8 +28,10 @@ class IgdbClientTest {
 
     @Test
     fun searchReturnsLightweightResults() = runTest {
-        val games =
-            """[{"id":1942,"name":"The Witcher 3","cover":{"image_id":"co1wyy"},"first_release_date":1431993600}]"""
+        val games = """[{
+            "id":1942,"name":"The Witcher 3","cover":{"image_id":"co1wyy"},"first_release_date":1431993600,
+            "involved_companies":[{"developer":true,"company":{"name":"CD Projekt RED"}}]
+        }]"""
         val client = clientWith(
             MockEngine { request ->
                 if (isTwitch(request.url.host)) respond(tokenJson, HttpStatusCode.OK, jsonHeaders)
@@ -42,6 +44,7 @@ class IgdbClientTest {
         assertEquals("The Witcher 3", result.name)
         assertEquals("co1wyy", result.coverImageId)
         assertEquals(1431993600L, result.firstReleaseDate)
+        assertEquals("CD Projekt RED", result.developer)
     }
 
     @Test

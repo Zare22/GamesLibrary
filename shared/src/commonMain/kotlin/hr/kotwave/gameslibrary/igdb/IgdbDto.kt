@@ -34,6 +34,7 @@ internal fun GameDto.toSearchResult(): IgdbSearchResult = IgdbSearchResult(
     name = name,
     coverImageId = cover?.imageId,
     firstReleaseDate = firstReleaseDate,
+    developer = involvedCompanies?.firstOrNull { it.developer }?.company?.name,
 )
 
 internal fun GameDto.toIgdbGame(): IgdbGame = IgdbGame(
