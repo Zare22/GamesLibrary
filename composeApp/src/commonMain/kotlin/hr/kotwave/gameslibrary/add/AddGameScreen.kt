@@ -38,9 +38,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import hr.kotwave.gameslibrary.data.IgdbGame
-import hr.kotwave.gameslibrary.data.IgdbSearchResult
 import hr.kotwave.gameslibrary.data.Status
 import hr.kotwave.gameslibrary.data.Store
+import hr.kotwave.gameslibrary.search.IgdbResultRow
+import hr.kotwave.gameslibrary.search.IgdbSearchField
+import hr.kotwave.gameslibrary.search.IgdbSearchStatus
 import hr.kotwave.gameslibrary.ui.components.CloseButton
 import hr.kotwave.gameslibrary.ui.components.CoverArt
 import hr.kotwave.gameslibrary.ui.components.GlassSurface
@@ -134,14 +136,14 @@ fun AddGameContent(
     state: AddGameState = rememberAddGameState(),
 ) {
     Column(modifier) {
-        SearchBox(value = state.query, onValueChange = state::updateQuery)
+        IgdbSearchField(value = state.query, onValueChange = state::updateQuery)
 
         if (state.query.isNotBlank()) {
             Spacer(Modifier.height(12.dp))
-            LiveIndicator(searching = state.searching, count = state.results.size, failed = state.searchFailed)
+            IgdbSearchStatus(searching = state.searching, count = state.results.size, failed = state.searchFailed)
             Spacer(Modifier.height(6.dp))
             state.results.forEach { result ->
-                ResultRow(
+                IgdbResultRow(
                     result = result,
                     selected = state.selected?.igdbId == result.igdbId,
                     onClick = { state.selectResult(result) },
@@ -230,104 +232,6 @@ private fun AddingCard(state: AddGameState, onDismiss: () -> Unit) {
                 leadingIcon = AppIcons.Check,
                 enabled = state.canSave,
                 modifier = Modifier.fillMaxWidth(),
-            )
-        }
-    }
-}
-
-@Composable
-private fun SearchBox(value: String, onValueChange: (String) -> Unit) {
-    val tokens = AppTheme.tokens
-    GlassSurface(
-        modifier = Modifier.fillMaxWidth().height(50.dp),
-        shape = RoundedCornerShape(15.dp),
-        borderColor = tokens.colors.borderStrong,
-    ) {
-        Row(
-            Modifier.fillMaxSize().padding(horizontal = 15.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(11.dp),
-        ) {
-            Icon(AppIcons.Search, null, Modifier.size(18.dp), tint = tokens.colors.accent)
-            Box(Modifier.weight(1f)) {
-                if (value.isEmpty()) {
-                    Text("Search IGDB…", style = AppTheme.type.body, color = tokens.colors.faint)
-                }
-                BasicTextField(
-                    value = value,
-                    onValueChange = onValueChange,
-                    singleLine = true,
-                    textStyle = AppTheme.type.body.copy(color = tokens.colors.text),
-                    cursorBrush = SolidColor(tokens.colors.accent),
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-            Text("IGDB", style = AppTheme.type.caption.copy(fontSize = 10.sp), color = tokens.colors.faint)
-        }
-    }
-}
-
-@Composable
-private fun LiveIndicator(searching: Boolean, count: Int, failed: Boolean) {
-    val tokens = AppTheme.tokens
-    val text = when {
-        searching -> "Searching IGDB…"
-        failed -> "Couldn't reach IGDB — check your connection."
-        count > 0 -> "$count result${if (count == 1) "" else "s"}"
-        else -> "No matches"
-    }
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-        Box(Modifier.size(7.dp).clip(CircleShape).background(if (failed) Color(0xFFF4707A) else tokens.colors.accent))
-        Text(text, style = AppTheme.type.caption, color = tokens.colors.faint)
-    }
-}
-
-@Composable
-private fun ResultRow(result: IgdbSearchResult, selected: Boolean, onClick: () -> Unit) {
-    val tokens = AppTheme.tokens
-    val shape = RoundedCornerShape(14.dp)
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .clip(shape)
-            .then(if (selected) Modifier.background(tokens.colors.surface).border(1.dp, tokens.colors.border, shape) else Modifier)
-            .clickable(onClick = onClick)
-            .padding(10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(13.dp),
-    ) {
-        CoverArt(
-            title = result.name,
-            coverImageId = result.coverImageId,
-            modifier = Modifier.size(width = 46.dp, height = 61.dp),
-            shape = RoundedCornerShape(9.dp),
-        )
-        Column(Modifier.weight(1f)) {
-            Text(
-                result.name,
-                style = AppTheme.type.bodyStrong,
-                color = tokens.colors.text,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            gameMeta(result.firstReleaseDate, result.developer)?.let {
-                Spacer(Modifier.height(2.dp))
-                Text(it, style = AppTheme.type.caption, color = tokens.colors.faint, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            }
-        }
-        Box(
-            Modifier
-                .size(32.dp)
-                .clip(RoundedCornerShape(10.dp))
-                .background(tokens.colors.surface)
-                .border(1.dp, tokens.colors.border, RoundedCornerShape(10.dp)),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                if (selected) AppIcons.Check else AppIcons.Plus,
-                null,
-                Modifier.size(15.dp),
-                tint = if (selected) tokens.colors.accent else tokens.colors.muted,
             )
         }
     }

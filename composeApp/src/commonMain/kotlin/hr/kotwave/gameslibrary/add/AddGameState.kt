@@ -13,6 +13,7 @@ import hr.kotwave.gameslibrary.data.IgdbSearchResult
 import hr.kotwave.gameslibrary.data.Status
 import hr.kotwave.gameslibrary.data.Store
 import hr.kotwave.gameslibrary.igdb.IgdbClient
+import hr.kotwave.gameslibrary.search.IgdbSearchState
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -34,14 +35,12 @@ class AddGameState(
     private val igdbClient: IgdbClient,
     private val scope: CoroutineScope,
 ) {
-    var query by mutableStateOf("")
-        private set
-    var results by mutableStateOf<List<IgdbSearchResult>>(emptyList())
-        private set
-    var searching by mutableStateOf(false)
-        private set
-    var searchFailed by mutableStateOf(false)
-        private set
+    private val search = IgdbSearchState(igdbClient, scope)
+
+    val query: String get() = search.query
+    val results: List<IgdbSearchResult> get() = search.results
+    val searching: Boolean get() = search.searching
+    val searchFailed: Boolean get() = search.searchFailed
 
     /** The picked IGDB result, fully fetched, being configured for add. Null in the manual path. */
     var selected by mutableStateOf<IgdbGame?>(null)
@@ -76,41 +75,17 @@ class AddGameState(
     var title by mutableStateOf("")
         private set
 
-    private var searchJob: Job? = null
     private var similarJob: Job? = null
 
     fun updateQuery(value: String) {
-        query = value
         selected = null
         manualEntry = false
         alreadyInLibrary = false
-        searchJob?.cancel()
-        val trimmed = value.trim()
-        if (trimmed.isEmpty()) {
-            results = emptyList()
-            searching = false
-            searchFailed = false
-            return
-        }
-        searchJob = scope.launch {
-            delay(300.milliseconds)
-            searching = true
-            searchFailed = false
-            try {
-                results = igdbClient.searchGames(trimmed)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                results = emptyList()
-                searchFailed = true
-            } finally {
-                searching = false
-            }
-        }
+        search.updateQuery(value)
     }
 
     fun selectResult(result: IgdbSearchResult) {
-        searchJob?.cancel()
+        search.cancelPending()
         manualEntry = false
         alreadyInLibrary = false
         loadingSelection = true
@@ -129,7 +104,7 @@ class AddGameState(
 
     /** Switch to adding the typed query as a raw, unmatched Game. */
     fun addManually() {
-        searchJob?.cancel()
+        search.cancelPending()
         selected = null
         alreadyInLibrary = false
         manualEntry = true
