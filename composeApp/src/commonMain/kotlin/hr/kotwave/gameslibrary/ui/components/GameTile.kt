@@ -15,19 +15,23 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
 import hr.kotwave.gameslibrary.data.Status
 import hr.kotwave.gameslibrary.data.Store
+import hr.kotwave.gameslibrary.igdb.IgdbImage
 import hr.kotwave.gameslibrary.ui.theme.AppTheme
 
-/** Library cover tile: gradient placeholder cover, store badges, and a status pip. */
+/** Library cover tile: IGDB cover (or a gradient stand-in), store badges, and a status pip. */
 @Composable
 fun GameTile(
     title: String,
     stores: List<Store>,
     status: Status?,
     modifier: Modifier = Modifier,
+    coverImageId: String? = null,
     onClick: (() -> Unit)? = null,
 ) {
     val tokens = AppTheme.tokens
@@ -39,6 +43,14 @@ fun GameTile(
             .background(Brush.linearGradient(coverGradient(title)))
             .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier),
     ) {
+        if (coverImageId != null) {
+            AsyncImage(
+                model = IgdbImage.coverUrl(coverImageId),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
         Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0.38f to Color.Transparent, 1f to CoverScrim)))
 
         if (stores.isNotEmpty()) {

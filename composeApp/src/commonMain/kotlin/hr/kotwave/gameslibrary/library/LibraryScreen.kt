@@ -76,6 +76,7 @@ fun LibraryScreen(
                         title = owned.game.name,
                         stores = owned.ownerships.map { it.store },
                         status = owned.game.status,
+                        coverImageId = owned.game.coverImageId,
                     )
                 }
             }
