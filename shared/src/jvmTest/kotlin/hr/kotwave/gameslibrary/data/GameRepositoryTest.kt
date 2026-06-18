@@ -230,6 +230,173 @@ class GameRepositoryTest {
         assertTrue(migratedDao.externalGamesFor(tile.game.id).isEmpty())
     }
 
+    @Test
+    fun setUserRatingStoresAndClears() = runTest {
+        val id = repository.addOwnedGame(name = "Hades")
+
+        repository.setUserRating(id, 8.5)
+        assertEquals(8.5, dao.getGame(id)!!.userRating)
+
+        repository.setUserRating(id, null)
+        assertNull(dao.getGame(id)!!.userRating)
+    }
+
+    @Test
+    fun setStatusUpdatesOwnedGameButIsNoOpOnWishlisted() = runTest {
+        val owned = repository.addOwnedGame(name = "Celeste", status = Status.BACKLOG)
+        repository.setStatus(owned, Status.COMPLETED)
+        assertEquals(Status.COMPLETED, dao.getGame(owned)!!.status)
+
+        val wished = repository.addWishlistGame(name = "Silksong")
+        repository.setStatus(wished, Status.PLAYING)
+        assertNull(dao.getGame(wished)!!.status)
+    }
+
+    @Test
+    fun removeOwnershipLeavesGameOwnedNotWishlisted() = runTest {
+        val id = repository.addOwnedGame(
+            name = "Stardew Valley",
+            status = Status.PLAYING,
+            stores = setOf(Store.STEAM, Store.GOG),
+        )
+
+        repository.removeOwnership(id, Store.STEAM)
+        assertEquals(listOf(Store.GOG), dao.ownershipsFor(id).map { it.store })
+
+        repository.removeOwnership(id, Store.GOG)
+        val game = dao.getGame(id)!!
+        assertTrue(dao.ownershipsFor(id).isEmpty())
+        assertEquals(false, game.wishlist)
+        assertEquals(Status.PLAYING, game.status)
+    }
+
+    @Test
+    fun deleteGameCascadesOwnershipsAndExternals() = runTest {
+        val id = repository.addMatchedGame(
+            sampleIgdb(igdbId = 100L),
+            wishlist = false,
+            stores = setOf(Store.STEAM),
+        ).gameId
+        assertTrue(dao.ownershipsFor(id).isNotEmpty())
+        assertTrue(dao.externalGamesFor(id).isNotEmpty())
+
+        repository.deleteGame(id)
+
+        assertNull(dao.getGame(id))
+        assertTrue(dao.ownershipsFor(id).isEmpty())
+        assertTrue(dao.externalGamesFor(id).isEmpty())
+    }
+
+    @Test
+    fun applyRefreshOverwritesIgdbFieldsKeepingLocalState() = runTest {
+        val added = repository.addMatchedGame(
+            sampleIgdb(igdbId = 7346L, name = "Old Name"),
+            wishlist = false,
+            status = Status.PLAYING,
+            stores = setOf(Store.STEAM),
+        )
+        repository.setUserRating(added.gameId, 9.0)
+
+        repository.applyRefresh(
+            added.gameId,
+            IgdbGame(
+                igdbId = 7346L,
+                name = "New Name",
+                slug = "new-slug",
+                developer = "New Dev",
+                totalRating = 80.0,
+                totalRatingCount = 50,
+                platforms = listOf(Platform("PC", "PC")),
+                alternativeNames = listOf("NN"),
+                externalGames = listOf(ExternalRef(category = 5, uid = "9999")),
+            ),
+        )
+
+        val game = dao.getGame(added.gameId)!!
+        assertEquals("New Name", game.name)
+        assertEquals("new-slug", game.slug)
+        assertEquals("New Dev", game.developer)
+        assertEquals(80.0, game.totalRating)
+        assertEquals(listOf(Platform("PC", "PC")), game.platforms)
+        assertEquals(false, game.orphaned)
+        // Local state is never touched by a refresh.
+        assertEquals(9.0, game.userRating)
+        assertEquals(Status.PLAYING, game.status)
+        assertEquals(listOf(Store.STEAM), dao.ownershipsFor(added.gameId).map { it.store })
+        // External refs are replaced, not appended.
+        assertEquals(listOf("9999"), dao.externalGamesFor(added.gameId).map { it.uid })
+    }
+
+    @Test
+    fun applyRefreshWithNullFetchMarksOrphanedKeepingMetadata() = runTest {
+        val added = repository.addMatchedGame(
+            sampleIgdb(igdbId = 26226L, name = "Celeste"),
+            wishlist = false,
+            stores = setOf(Store.STEAM),
+        )
+
+        repository.applyRefresh(added.gameId, null)
+
+        val game = dao.getGame(added.gameId)!!
+        assertTrue(game.orphaned)
+        assertEquals("Celeste", game.name)
+        assertEquals("a-slug", game.slug)
+        assertEquals(listOf(Store.STEAM), dao.ownershipsFor(added.gameId).map { it.store })
+    }
+
+    @Test
+    fun applyRematchRepointsMetadataAndClearsOrphaned() = runTest {
+        val added = repository.addMatchedGame(
+            sampleIgdb(igdbId = 1L, name = "Wrong Match"),
+            wishlist = false,
+            stores = setOf(Store.STEAM),
+        )
+        repository.setUserRating(added.gameId, 7.0)
+        repository.applyRefresh(added.gameId, null)
+
+        val outcome = repository.applyRematch(added.gameId, sampleIgdb(igdbId = 2L, name = "Right Match"))
+
+        assertEquals(RematchResult.Success, outcome)
+        val game = dao.getGame(added.gameId)!!
+        assertEquals(2L, game.igdbId)
+        assertEquals("Right Match", game.name)
+        assertEquals(false, game.orphaned)
+        assertEquals(7.0, game.userRating)
+        assertEquals(listOf(Store.STEAM), dao.ownershipsFor(added.gameId).map { it.store })
+    }
+
+    @Test
+    fun applyRematchBlocksWhenIgdbIdAlreadyInLibrary() = runTest {
+        val keep = repository.addMatchedGame(sampleIgdb(igdbId = 50L), wishlist = false, stores = setOf(Store.GOG))
+        val orphan = repository.addMatchedGame(sampleIgdb(igdbId = 51L), wishlist = false, stores = setOf(Store.STEAM))
+        repository.applyRefresh(orphan.gameId, null)
+
+        val outcome = repository.applyRematch(orphan.gameId, sampleIgdb(igdbId = 50L))
+
+        assertEquals(RematchResult.AlreadyInLibrary(keep.gameId), outcome)
+        val game = dao.getGame(orphan.gameId)!!
+        assertEquals(51L, game.igdbId)
+        assertTrue(game.orphaned)
+    }
+
+    @Test
+    fun migratesV3DatabasePreservingGamesAndDefaultingNewColumns() = runTest {
+        database.close()
+        dbFile.delete()
+        seedVersion3Database(dbFile)
+
+        database = Room.databaseBuilder<GamesLibraryDatabase>(name = dbFile.absolutePath)
+            .buildGamesLibraryDatabase()
+        repository = GameRepository(database.gameDao())
+
+        val tile = repository.ownedGames.first().single()
+        assertEquals("Existing Game", tile.game.name)
+        assertEquals(Status.PLAYING, tile.game.status)
+        assertNull(tile.game.userRating)
+        assertEquals(false, tile.game.orphaned)
+        assertEquals(listOf(Store.STEAM), tile.ownerships.map { it.store })
+    }
+
     private fun sampleIgdb(igdbId: Long, name: String = "Sample Game"): IgdbGame = IgdbGame(
         igdbId = igdbId,
         name = name,
@@ -282,6 +449,47 @@ class GameRepositoryTest {
             )
             connection.execSQL("INSERT INTO `ownership` (`gameId`, `store`, `source`) VALUES (1, 'STEAM', 'MANUAL')")
             connection.execSQL("PRAGMA user_version = 2")
+        } finally {
+            connection.close()
+        }
+    }
+
+    /** Writes a v3 schema database (Game widened with the IGDB metadata set + external_game, user_version = 3). */
+    private fun seedVersion3Database(file: File) {
+        val connection = BundledSQLiteDriver().open(file.absolutePath)
+        try {
+            connection.execSQL(
+                "CREATE TABLE IF NOT EXISTS `game` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "`name` TEXT NOT NULL, `igdbId` INTEGER, `wishlist` INTEGER NOT NULL, `status` TEXT, " +
+                    "`slug` TEXT, `firstReleaseDate` INTEGER, `coverImageId` TEXT, `developer` TEXT, " +
+                    "`totalRating` REAL, `totalRatingCount` INTEGER, `platforms` TEXT NOT NULL, " +
+                    "`alternativeNames` TEXT NOT NULL)",
+            )
+            connection.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_game_igdbId` ON `game` (`igdbId`)")
+            connection.execSQL(
+                "CREATE TABLE IF NOT EXISTS `ownership` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "`gameId` INTEGER NOT NULL, `store` TEXT NOT NULL, `source` TEXT NOT NULL, " +
+                    "FOREIGN KEY(`gameId`) REFERENCES `game`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE)",
+            )
+            connection.execSQL(
+                "CREATE UNIQUE INDEX IF NOT EXISTS `index_ownership_gameId_store` ON `ownership` (`gameId`, `store`)",
+            )
+            connection.execSQL("CREATE INDEX IF NOT EXISTS `index_ownership_gameId` ON `ownership` (`gameId`)")
+            connection.execSQL(
+                "CREATE TABLE IF NOT EXISTS `external_game` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "`gameId` INTEGER NOT NULL, `category` INTEGER NOT NULL, `uid` TEXT NOT NULL, `url` TEXT, " +
+                    "FOREIGN KEY(`gameId`) REFERENCES `game`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE)",
+            )
+            connection.execSQL("CREATE INDEX IF NOT EXISTS `index_external_game_gameId` ON `external_game` (`gameId`)")
+            connection.execSQL(
+                "CREATE INDEX IF NOT EXISTS `index_external_game_category_uid` ON `external_game` (`category`, `uid`)",
+            )
+            connection.execSQL(
+                "INSERT INTO `game` (`name`, `igdbId`, `wishlist`, `status`, `platforms`, `alternativeNames`) " +
+                    "VALUES ('Existing Game', 42, 0, 'PLAYING', '[]', '[]')",
+            )
+            connection.execSQL("INSERT INTO `ownership` (`gameId`, `store`, `source`) VALUES (1, 'STEAM', 'MANUAL')")
+            connection.execSQL("PRAGMA user_version = 3")
         } finally {
             connection.close()
         }

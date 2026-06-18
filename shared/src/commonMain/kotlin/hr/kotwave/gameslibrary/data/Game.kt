@@ -14,6 +14,7 @@ data class Game(
     val igdbId: Long? = null,
     val wishlist: Boolean = false,
     val status: Status? = null,
+    val userRating: Double? = null,
     val slug: String? = null,
     val firstReleaseDate: Long? = null,
     val coverImageId: String? = null,
@@ -22,4 +23,5 @@ data class Game(
     val totalRatingCount: Int? = null,
     val platforms: List<Platform> = emptyList(),
     val alternativeNames: List<String> = emptyList(),
+    val orphaned: Boolean = false,
 )

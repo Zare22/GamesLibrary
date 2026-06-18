@@ -15,6 +15,15 @@ interface GameDao {
     @Query("SELECT * FROM game WHERE wishlist = 0 ORDER BY name COLLATE NOCASE")
     fun observeOwnedGames(): Flow<List<GameWithOwnerships>>
 
+    /** A single Game with its Ownerships, for the detail screen; emits null once it is deleted. */
+    @Transaction
+    @Query("SELECT * FROM game WHERE id = :id")
+    fun observeGame(id: Long): Flow<GameWithOwnerships?>
+
+    /** Orphaned Games (igdb_id no longer resolves), for the bulk re-match entry. */
+    @Query("SELECT * FROM game WHERE orphaned = 1 ORDER BY name COLLATE NOCASE")
+    fun observeOrphanedGames(): Flow<List<Game>>
+
     @Query("SELECT * FROM game WHERE id = :id")
     suspend fun getGame(id: Long): Game?
 
@@ -42,8 +51,28 @@ interface GameDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertOwnership(ownership: Ownership): Long
 
+    @Query("DELETE FROM ownership WHERE gameId = :gameId AND store = :store")
+    suspend fun deleteOwnership(gameId: Long, store: Store)
+
     @Insert
     suspend fun insertExternalGames(externals: List<ExternalGame>)
+
+    @Query("DELETE FROM external_game WHERE gameId = :gameId")
+    suspend fun deleteExternalGamesFor(gameId: Long)
+
+    /** Removes a Game; its Ownerships and external references cascade away (FK ON DELETE CASCADE). */
+    @Query("DELETE FROM game WHERE id = :id")
+    suspend fun deleteGame(id: Long)
+
+    /** Overwrites a Game's row and replaces its external references in one transaction (refresh/re-match). */
+    @Transaction
+    suspend fun replaceMetadata(game: Game, externals: List<ExternalGame>) {
+        updateGame(game)
+        deleteExternalGamesFor(game.id)
+        if (externals.isNotEmpty()) {
+            insertExternalGames(externals.map { it.copy(gameId = game.id) })
+        }
+    }
 
     /** Inserts a matched Game with its Ownerships and external references atomically. */
     @Transaction

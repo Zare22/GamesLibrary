@@ -59,3 +59,14 @@ val MIGRATION_2_3 = object : Migration(2, 3) {
         )
     }
 }
+
+/**
+ * v3 -> v4: adds the local-only `userRating` (nullable, 0.0–10.0) and the `orphaned` flag (whether
+ * the Game's igdb_id no longer resolves). Both default to "no value" for existing rows.
+ */
+val MIGRATION_3_4 = object : Migration(3, 4) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL("ALTER TABLE `game` ADD COLUMN `userRating` REAL")
+        connection.execSQL("ALTER TABLE `game` ADD COLUMN `orphaned` INTEGER NOT NULL DEFAULT 0")
+    }
+}

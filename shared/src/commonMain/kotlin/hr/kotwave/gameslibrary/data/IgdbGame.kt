@@ -38,3 +38,21 @@ internal fun IgdbGame.toGame(wishlist: Boolean, status: Status?): Game = Game(
 
 internal fun ExternalRef.toEntity(): ExternalGame =
     ExternalGame(gameId = 0, category = category, uid = uid, url = url)
+
+/**
+ * Overwrites this Game's IGDB-sourced fields (including `igdbId` and `name`) from a fresh fetch,
+ * leaving local state — `userRating`, `status`, `wishlist`, `orphaned` — untouched. Used by refresh
+ * (same id) and re-match (new id).
+ */
+internal fun Game.withMetadataFrom(igdb: IgdbGame): Game = copy(
+    name = igdb.name,
+    igdbId = igdb.igdbId,
+    slug = igdb.slug,
+    firstReleaseDate = igdb.firstReleaseDate,
+    coverImageId = igdb.coverImageId,
+    developer = igdb.developer,
+    totalRating = igdb.totalRating,
+    totalRatingCount = igdb.totalRatingCount,
+    platforms = igdb.platforms,
+    alternativeNames = igdb.alternativeNames,
+)
