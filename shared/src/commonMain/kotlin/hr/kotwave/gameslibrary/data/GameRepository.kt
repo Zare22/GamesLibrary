@@ -178,6 +178,48 @@ class GameRepository(private val gameDao: GameDao) {
     }
 
     /**
+     * Confirms a paste Import from already-resolved [entries] (the ViewModel does the IGDB networking).
+     * Additive only, tagged `PASTE_IMPORT`: a [ImportEntry.Matched] dedups by `igdbId` — attaching an
+     * Ownership on its Store to the existing Game (clearing Wishlist) or adding the Game new; an
+     * [ImportEntry.Unmatched] adds an `igdb_id`-null Game with that Ownership. Never removes anything or
+     * overwrites cached metadata or local state — ADR 0006.
+     */
+    suspend fun confirmImport(entries: List<ImportEntry>): ImportSummary {
+        var added = 0
+        var attached = 0
+        entries.forEach { entry ->
+            when (entry) {
+                is ImportEntry.Matched -> {
+                    val existing = gameDao.getGameByIgdbId(entry.igdb.igdbId)
+                    if (existing != null) {
+                        if (existing.wishlist) {
+                            gameDao.updateGame(existing.copy(wishlist = false, status = existing.status ?: Status.BACKLOG))
+                        }
+                        gameDao.insertOwnership(Ownership(gameId = existing.id, store = entry.store, source = Source.PASTE_IMPORT))
+                        attached++
+                    } else {
+                        gameDao.insertMatchedGame(
+                            game = entry.igdb.toGame(wishlist = false, status = Status.BACKLOG),
+                            stores = setOf(entry.store),
+                            externals = entry.igdb.externalGames.map { it.toEntity() },
+                            source = Source.PASTE_IMPORT,
+                        )
+                        added++
+                    }
+                }
+                is ImportEntry.Unmatched -> {
+                    val gameId = gameDao.insertGame(
+                        Game(name = entry.name, igdbId = null, wishlist = false, status = Status.BACKLOG),
+                    )
+                    gameDao.insertOwnership(Ownership(gameId = gameId, store = entry.store, source = Source.PASTE_IMPORT))
+                    added++
+                }
+            }
+        }
+        return ImportSummary(added = added, attached = attached)
+    }
+
+    /**
      * Re-match: repoints a Game's `igdb_id` to a chosen IGDB entry and overwrites its metadata,
      * clearing Orphaned. Blocked if another Game already holds that `igdb_id` (Match is unique).
      */

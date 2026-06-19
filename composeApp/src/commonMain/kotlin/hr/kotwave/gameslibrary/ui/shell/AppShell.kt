@@ -27,6 +27,7 @@ import androidx.navigation.compose.rememberNavController
 import hr.kotwave.gameslibrary.add.AddGameModal
 import hr.kotwave.gameslibrary.add.AddGameScreen
 import hr.kotwave.gameslibrary.detail.DetailScreen
+import hr.kotwave.gameslibrary.importer.ImportScreen
 import hr.kotwave.gameslibrary.library.LibraryScreen
 import hr.kotwave.gameslibrary.navigation.Route
 import hr.kotwave.gameslibrary.steam.SteamScreen
@@ -109,7 +110,7 @@ private fun AppNavHost(navController: NavHostController, modifier: Modifier = Mo
             PlaceholderScreen("Wishlist", "Games you want but don't own yet.")
         }
         composable<Route.Import> {
-            PlaceholderScreen("Import", "Paste a store library to bulk-add.")
+            ImportScreen()
         }
         composable<Route.Settings> {
             SettingsScreen(
