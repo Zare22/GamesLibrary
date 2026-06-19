@@ -24,6 +24,19 @@ interface GameDao {
     @Query("SELECT * FROM game WHERE orphaned = 1 ORDER BY name COLLATE NOCASE")
     fun observeOrphanedGames(): Flow<List<Game>>
 
+    /** Wishlisted Games (no Ownerships by invariant), for the Wishlist view. */
+    @Query("SELECT * FROM game WHERE wishlist = 1 ORDER BY name COLLATE NOCASE")
+    fun observeWishlistGames(): Flow<List<Game>>
+
+    /** Every Game (owned + wishlisted) with its Ownerships, for a full-library export. */
+    @Transaction
+    @Query("SELECT * FROM game ORDER BY name COLLATE NOCASE")
+    suspend fun allGamesWithOwnerships(): List<GameWithOwnerships>
+
+    /** Every external reference, grouped by Game on export. */
+    @Query("SELECT * FROM external_game")
+    suspend fun allExternalGames(): List<ExternalGame>
+
     @Query("SELECT * FROM game WHERE id = :id")
     suspend fun getGame(id: Long): Game?
 

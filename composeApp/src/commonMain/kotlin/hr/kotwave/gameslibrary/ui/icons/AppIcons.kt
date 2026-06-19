@@ -29,6 +29,10 @@ object AppIcons {
         "M12 7v5l3 2",
     )
 
+    val Export: ImageVector = strokeIcon("Export", "M12 3v12M8 11l4 4 4-4M5 21h14")
+
+    val ImportFile: ImageVector = strokeIcon("ImportFile", "M12 15V3M8 7l4-4 4 4M5 21h14")
+
     val Settings: ImageVector = strokeIcon(
         "Settings",
         circleD(12f, 12f, 3f),

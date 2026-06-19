@@ -12,8 +12,9 @@ class AppIconsTest {
             AppIcons.Grid, AppIcons.Heart, AppIcons.HeartFilled, AppIcons.Import, AppIcons.Settings,
             AppIcons.Plus, AppIcons.Search, AppIcons.Sliders, AppIcons.ChevronDown, AppIcons.ChevronLeft,
             AppIcons.ChevronRight, AppIcons.Close, AppIcons.Check, AppIcons.Trash, AppIcons.Edit, AppIcons.Sync,
+            AppIcons.Export, AppIcons.ImportFile,
         )
-        assertEquals(16, icons.size)
+        assertEquals(18, icons.size)
         assertTrue(icons.all { it.name.isNotBlank() })
     }
 }

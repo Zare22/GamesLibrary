@@ -31,9 +31,10 @@ import hr.kotwave.gameslibrary.importer.ImportScreen
 import hr.kotwave.gameslibrary.library.LibraryScreen
 import hr.kotwave.gameslibrary.navigation.Route
 import hr.kotwave.gameslibrary.steam.SteamScreen
+import hr.kotwave.gameslibrary.transfer.LibraryImportScreen
 import hr.kotwave.gameslibrary.ui.gallery.ComponentGalleryScreen
-import hr.kotwave.gameslibrary.ui.screens.PlaceholderScreen
 import hr.kotwave.gameslibrary.ui.screens.SettingsScreen
+import hr.kotwave.gameslibrary.wishlist.WishlistScreen
 
 /** True on phone-width layouts (bottom nav); false on wide layouts (left rail). */
 val LocalIsCompact = staticCompositionLocalOf { true }
@@ -107,7 +108,7 @@ private fun AppNavHost(navController: NavHostController, modifier: Modifier = Mo
             )
         }
         composable<Route.Wishlist> {
-            PlaceholderScreen("Wishlist", "Games you want but don't own yet.")
+            WishlistScreen(onOpenGame = { navController.navigate(Route.Detail(it)) })
         }
         composable<Route.Import> {
             ImportScreen()
@@ -117,6 +118,8 @@ private fun AppNavHost(navController: NavHostController, modifier: Modifier = Mo
                 onOpenGallery = { navController.navigate(Route.Gallery) },
                 onOpenGame = { navController.navigate(Route.Detail(it)) },
                 onOpenSteam = { navController.navigate(Route.Steam) },
+                onOpenImport = { navController.navigate(Route.LibraryImport) },
+                onOpenPasteImport = { navController.navigate(Route.Import) },
             )
         }
         composable<Route.Add> {
@@ -127,6 +130,9 @@ private fun AppNavHost(navController: NavHostController, modifier: Modifier = Mo
         }
         composable<Route.Steam> {
             SteamScreen(onBack = { navController.popBackStack() })
+        }
+        composable<Route.LibraryImport> {
+            LibraryImportScreen(onBack = { navController.popBackStack() })
         }
         composable<Route.Detail> {
             DetailScreen(onBack = { navController.popBackStack() })

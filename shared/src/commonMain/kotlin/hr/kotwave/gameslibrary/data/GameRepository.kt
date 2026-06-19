@@ -1,5 +1,14 @@
 package hr.kotwave.gameslibrary.data
 
+import hr.kotwave.gameslibrary.transfer.ExportedGame
+import hr.kotwave.gameslibrary.transfer.LibraryExport
+import hr.kotwave.gameslibrary.transfer.LibraryImportDecision
+import hr.kotwave.gameslibrary.transfer.LibraryImportRow
+import hr.kotwave.gameslibrary.transfer.LibraryTransfer
+import hr.kotwave.gameslibrary.transfer.classifyLibraryImport
+import hr.kotwave.gameslibrary.transfer.externalEntities
+import hr.kotwave.gameslibrary.transfer.ownershipEntities
+import hr.kotwave.gameslibrary.transfer.toGame
 import kotlinx.coroutines.flow.Flow
 
 /** IGDB's (deprecated) integer external-game category for Steam (ADR 0014); the Steam appid's `uid`. */
@@ -12,6 +21,9 @@ class GameRepository(private val gameDao: GameDao) {
 
     /** Orphaned Games, for the bulk "re-match all orphaned" entry. */
     val orphanedGames: Flow<List<Game>> = gameDao.observeOrphanedGames()
+
+    /** Wishlisted Games, for the Wishlist view. */
+    val wishlistGames: Flow<List<Game>> = gameDao.observeWishlistGames()
 
     /** A single Game with its Ownerships, for the detail screen; emits null once it is deleted. */
     fun observeGame(gameId: Long): Flow<GameWithOwnerships?> = gameDao.observeGame(gameId)
@@ -217,6 +229,63 @@ class GameRepository(private val gameDao: GameDao) {
             }
         }
         return ImportSummary(added = added, attached = attached)
+    }
+
+    /** Serializes the whole library (Games, Ownerships, external refs) to the export file format (ADR 0007). */
+    suspend fun exportLibrary(): String =
+        LibraryTransfer.encode(gameDao.allGamesWithOwnerships(), gameDao.allExternalGames().groupBy { it.gameId })
+
+    /** Classifies a decoded [export] against the current library (live keys) for the import Review. */
+    suspend fun classifyImport(export: LibraryExport): List<LibraryImportRow> {
+        val games = gameDao.allGamesWithOwnerships().map { it.game }
+        return classifyLibraryImport(
+            export,
+            existingIgdbIds = games.mapNotNull { it.igdbId }.toSet(),
+            existingTitlesLower = games.map { it.name.trim().lowercase() }.toSet(),
+        )
+    }
+
+    /**
+     * Applies a library import from already-reviewed [decisions]. Additive only (ADR 0006): an `igdbId`
+     * row dedups by id; an `igdb`-null row merges onto a same-titled Game when [LibraryImportDecision.mergeByTitle]
+     * is set, else adds new. Merging unions Ownerships (clearing Wishlist if it brings one) and never
+     * overwrites an existing Game's cached metadata or local state. New Games carry their full imported metadata.
+     */
+    suspend fun importLibrary(decisions: List<LibraryImportDecision>): ImportSummary {
+        var added = 0
+        var attached = 0
+        decisions.forEach { decision ->
+            val imported = decision.game
+            val existing = when {
+                imported.igdbId != null -> gameDao.getGameByIgdbId(imported.igdbId)
+                decision.mergeByTitle -> gameDao.gamesByTitle(imported.name).firstOrNull()
+                else -> null
+            }
+            if (existing != null) {
+                mergeImportedInto(existing, imported)
+                attached++
+            } else {
+                insertImported(imported)
+                added++
+            }
+        }
+        return ImportSummary(added = added, attached = attached)
+    }
+
+    /** Unions an imported game's Ownerships onto an existing Game, clearing Wishlist if it brings one (ADR 0004). */
+    private suspend fun mergeImportedInto(existing: Game, imported: ExportedGame) {
+        val ownerships = imported.ownershipEntities(existing.id)
+        if (ownerships.isNotEmpty() && existing.wishlist) {
+            gameDao.updateGame(existing.copy(wishlist = false, status = existing.status ?: Status.BACKLOG))
+        }
+        ownerships.forEach { gameDao.insertOwnership(it) }
+    }
+
+    /** Inserts an imported Game new, with its full cached metadata, Ownerships, and external references. */
+    private suspend fun insertImported(imported: ExportedGame) {
+        val gameId = gameDao.insertGame(imported.toGame())
+        imported.ownershipEntities(gameId).forEach { gameDao.insertOwnership(it) }
+        imported.externalEntities(gameId).takeIf { it.isNotEmpty() }?.let { gameDao.insertExternalGames(it) }
     }
 
     /**
