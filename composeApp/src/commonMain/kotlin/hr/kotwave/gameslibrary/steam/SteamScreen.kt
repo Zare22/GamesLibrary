@@ -16,27 +16,22 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.text.KeyboardOptions
+import coil3.compose.AsyncImage
 import hr.kotwave.gameslibrary.ui.components.GlassSurface
 import hr.kotwave.gameslibrary.ui.components.PrimaryButton
 import hr.kotwave.gameslibrary.ui.icons.AppIcons
@@ -44,11 +39,12 @@ import hr.kotwave.gameslibrary.ui.theme.AppTheme
 import org.koin.compose.viewmodel.koinViewModel
 
 private val SteamWarn = Color(0xFFFFCE4A)
+private val SteamError = Color(0xFFF4707A)
 private const val STEAM_PRIVACY_URL = "https://steamcommunity.com/my/edit/settings"
 
 /**
- * The Steam screen: connect (a temporary SteamID entry until OpenID lands), then additively sync the
- * owned library. A private profile returns zero games — the privacy helper explains how to fix it.
+ * The Steam screen: sign in through Steam (OpenID), then additively sync the owned library. A private
+ * profile returns zero games — the privacy helper explains how to fix it.
  */
 @Composable
 fun SteamScreen(
@@ -72,7 +68,7 @@ fun SteamScreen(
         if (viewModel.connected) {
             ConnectedCard(viewModel = viewModel, steam = steam)
         } else {
-            ConnectSection(viewModel = viewModel)
+            ConnectSection(viewModel = viewModel, steam = steam)
         }
 
         Spacer(Modifier.height(16.dp))
@@ -139,57 +135,58 @@ private fun Hero(connected: Boolean, steam: Color) {
 }
 
 @Composable
-private fun ConnectSection(viewModel: SteamViewModel) {
+private fun ConnectSection(viewModel: SteamViewModel, steam: Color) {
     val tokens = AppTheme.tokens
-    var input by remember { mutableStateOf("") }
     GlassSurface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(18.dp)) {
         Column(Modifier.fillMaxWidth().padding(16.dp)) {
             Text(
-                "Temporary: paste your public SteamID64 (17 digits). Real \"Sign in through Steam\" arrives next.",
+                "We never see your password — Steam returns only your public profile, which GamesLibrary verifies.",
                 style = AppTheme.type.caption.copy(fontSize = 11.5.sp),
                 color = tokens.colors.faint,
             )
-            Spacer(Modifier.height(12.dp))
-            SteamIdField(value = input, onValueChange = { input = it }, error = viewModel.idError)
-            if (viewModel.idError) {
-                Spacer(Modifier.height(8.dp))
-                Text("That isn't a SteamID64 — it's 17 digits.", style = AppTheme.type.caption, color = Color(0xFFF4707A))
-            }
             Spacer(Modifier.height(14.dp))
-            PrimaryButton(
-                text = "Connect",
-                onClick = { viewModel.connect(input) },
-                leadingIcon = AppIcons.Check,
-                enabled = input.isNotBlank(),
-                modifier = Modifier.fillMaxWidth(),
-            )
+            when (val state = viewModel.connectState) {
+                SteamConnectState.Connecting -> ConnectingRow(steam = steam, onCancel = viewModel::cancelConnect)
+                else -> {
+                    PrimaryButton(
+                        text = "Sign in through Steam",
+                        onClick = viewModel::connect,
+                        leadingIcon = AppIcons.Steam,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    if (state is SteamConnectState.Failed) {
+                        Spacer(Modifier.height(10.dp))
+                        Text(state.reason.message(), style = AppTheme.type.caption, color = SteamError)
+                    }
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun SteamIdField(value: String, onValueChange: (String) -> Unit, error: Boolean) {
+private fun ConnectingRow(steam: Color, onCancel: () -> Unit) {
     val tokens = AppTheme.tokens
-    GlassSurface(
-        modifier = Modifier.fillMaxWidth().height(50.dp),
-        shape = RoundedCornerShape(15.dp),
-        borderColor = if (error) Color(0xFFF4707A) else tokens.colors.borderStrong,
-    ) {
-        Box(Modifier.fillMaxSize().padding(horizontal = 15.dp), contentAlignment = Alignment.CenterStart) {
-            if (value.isEmpty()) {
-                Text("7656119…", style = AppTheme.type.body, color = tokens.colors.faint)
-            }
-            BasicTextField(
-                value = value,
-                onValueChange = onValueChange,
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                textStyle = AppTheme.type.body.copy(color = tokens.colors.text),
-                cursorBrush = SolidColor(tokens.colors.accent),
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        CircularProgressIndicator(Modifier.size(18.dp), color = steam, strokeWidth = 2.dp)
+        Text(
+            "Waiting for Steam — finish signing in, in your browser.",
+            style = AppTheme.type.body.copy(fontSize = 13.sp),
+            color = tokens.colors.muted,
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            "Cancel",
+            style = AppTheme.type.caption,
+            color = tokens.colors.faint,
+            modifier = Modifier.clickable(onClick = onCancel),
+        )
     }
+}
+
+private fun SteamConnectFailure.message(): String = when (this) {
+    SteamConnectFailure.Verification -> "Steam couldn't verify that sign-in. Try again."
+    SteamConnectFailure.Network -> "Couldn't reach Steam — check your connection and try again."
 }
 
 @Composable
@@ -203,16 +200,31 @@ private fun ConnectedCard(viewModel: SteamViewModel, steam: Color) {
                     Modifier.size(46.dp).clip(RoundedCornerShape(14.dp))
                         .background(Brush.linearGradient(listOf(steam, Color(0xFF0E1722))))
                         .border(1.dp, steam.copy(alpha = 0.40f), RoundedCornerShape(14.dp)),
-                )
+                ) {
+                    viewModel.persona?.avatarUrl?.let { avatar ->
+                        AsyncImage(
+                            model = avatar,
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(14.dp)),
+                        )
+                    }
+                }
                 Column(Modifier.weight(1f)) {
                     Text(
-                        viewModel.steamId ?: "",
+                        viewModel.persona?.personaName ?: viewModel.steamId.orEmpty(),
                         style = AppTheme.type.bodyStrong,
                         color = tokens.colors.text,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
-                    Text("Signed in via SteamID", style = AppTheme.type.caption, color = tokens.colors.faint)
+                    Text(
+                        if (viewModel.persona != null) viewModel.steamId.orEmpty() else "Signed in through Steam",
+                        style = AppTheme.type.caption,
+                        color = tokens.colors.faint,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
                 }
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     Box(Modifier.size(8.dp).clip(CircleShape).background(ok))
@@ -248,7 +260,7 @@ private fun ConnectedCard(viewModel: SteamViewModel, steam: Color) {
                 Text(
                     "Couldn't reach Steam or IGDB — check your connection and the API key.",
                     style = AppTheme.type.caption,
-                    color = Color(0xFFF4707A),
+                    color = SteamError,
                 )
             }
 

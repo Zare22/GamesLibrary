@@ -12,22 +12,33 @@ import hr.kotwave.gameslibrary.igdb.IgdbClient
 import hr.kotwave.gameslibrary.secure.STEAM_ID_KEY
 import hr.kotwave.gameslibrary.secure.SecureStorage
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 /** IGDB's external-game category for Steam (ADR 0014); the Steam appid is its `uid`. */
 private const val STEAM_EXTERNAL_CATEGORY = 1
 
+/** Where the connect flow stands: idle, waiting on the browser, or failed (the browser leg never started over). */
+sealed interface SteamConnectState {
+    data object Idle : SteamConnectState
+    data object Connecting : SteamConnectState
+    data class Failed(val reason: SteamConnectFailure) : SteamConnectState
+}
+
+enum class SteamConnectFailure { Verification, Network }
+
 /**
- * Steam screen state: the connected SteamID (from [SecureStorage]) and the additive sync. Does the
- * Steam + IGDB networking, then hands resolved entries to [GameRepository.syncSteamGames] — the
- * additive merge lives in `:shared` (ADR 0015). The connect step is a temporary manual SteamID entry;
- * real OpenID sign-in replaces it next session (ADR 0016).
+ * Steam screen state: "Sign in through Steam" (OpenID, [SteamAuthFlow] + [SteamOpenId]) persists a
+ * verified SteamID64 through [SecureStorage], then the additive sync does the Steam + IGDB networking
+ * and hands resolved entries to [GameRepository.syncSteamGames] — the merge lives in `:shared` (ADR 0015).
  */
 class SteamViewModel(
     private val repository: GameRepository,
     private val steamClient: SteamClient,
     private val igdbClient: IgdbClient,
     private val secureStorage: SecureStorage,
+    private val openId: SteamOpenId,
+    private val authFlow: SteamAuthFlow,
 ) : ViewModel() {
 
     var steamId by mutableStateOf<String?>(null)
@@ -35,7 +46,11 @@ class SteamViewModel(
 
     val connected: Boolean get() = steamId != null
 
-    var idError by mutableStateOf(false)
+    /** The signed-in player's display name + avatar; null until fetched (cosmetic, never blocks sign-in). */
+    var persona by mutableStateOf<SteamPlayerSummary?>(null)
+        private set
+
+    var connectState by mutableStateOf<SteamConnectState>(SteamConnectState.Idle)
         private set
 
     var syncing by mutableStateOf(false)
@@ -52,34 +67,63 @@ class SteamViewModel(
     var syncFailed by mutableStateOf(false)
         private set
 
+    private var connectJob: Job? = null
+
     init {
-        viewModelScope.launch { steamId = secureStorage.get(STEAM_ID_KEY) }
+        viewModelScope.launch {
+            secureStorage.get(STEAM_ID_KEY)?.let { id ->
+                steamId = id
+                persona = runCatching { steamClient.getPlayerSummary(id) }.getOrNull()
+            }
+        }
     }
 
     /**
-     * Temporary stub for OpenID sign-in: accepts a pasted public SteamID64 (17 digits) and persists it
-     * through [SecureStorage]. Real "Sign in through Steam" replaces this next session.
+     * Runs "Sign in through Steam": opens the browser ([SteamAuthFlow]), verifies the redirect with
+     * Steam ([SteamOpenId.verify]), and persists the verified SteamID64. A cancelled/timed-out browser
+     * leg returns to [SteamConnectState.Idle]; a rejected assertion or network error surfaces as Failed.
      */
-    fun connect(rawId: String) {
-        val id = rawId.trim()
-        if (id.length != 17 || !id.all { it.isDigit() }) {
-            idError = true
-            return
+    fun connect() {
+        if (connectState is SteamConnectState.Connecting) return
+        connectState = SteamConnectState.Connecting
+        connectJob = viewModelScope.launch {
+            try {
+                val params = authFlow.authenticate { returnTo -> openId.authUrl(returnTo) }
+                if (params == null) {
+                    connectState = SteamConnectState.Idle
+                    return@launch
+                }
+                val id = openId.verify(params)
+                if (id == null) {
+                    connectState = SteamConnectState.Failed(SteamConnectFailure.Verification)
+                    return@launch
+                }
+                secureStorage.put(STEAM_ID_KEY, id)
+                steamId = id
+                connectState = SteamConnectState.Idle
+                persona = runCatching { steamClient.getPlayerSummary(id) }.getOrNull()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                connectState = SteamConnectState.Failed(SteamConnectFailure.Network)
+            }
         }
-        idError = false
-        viewModelScope.launch {
-            secureStorage.put(STEAM_ID_KEY, id)
-            steamId = id
-        }
+    }
+
+    fun cancelConnect() {
+        connectJob?.cancel()
+        connectState = SteamConnectState.Idle
     }
 
     fun disconnect() {
         viewModelScope.launch {
             secureStorage.remove(STEAM_ID_KEY)
             steamId = null
+            persona = null
             ownedCount = null
             lastSummary = null
             syncFailed = false
+            connectState = SteamConnectState.Idle
         }
     }
 

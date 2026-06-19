@@ -29,6 +29,21 @@ class SteamClient internal constructor(
         val body = SteamJson.decodeFromString<OwnedGamesResponse>(response.bodyAsText())
         return body.response.games.orEmpty().mapNotNull { it.toOwnedGame() }
     }
+
+    /**
+     * The public persona (display name + avatar) for [steamId], or null if unavailable. Persona is
+     * cosmetic, so a failed/empty response degrades to null rather than throwing.
+     */
+    suspend fun getPlayerSummary(steamId: String): SteamPlayerSummary? {
+        val response = httpClient.get("${config.baseUrl}/ISteamUser/GetPlayerSummaries/v2/") {
+            parameter("key", config.apiKey)
+            parameter("steamids", steamId)
+            parameter("format", "json")
+        }
+        if (!response.status.isSuccess()) return null
+        val body = SteamJson.decodeFromString<PlayerSummariesResponse>(response.bodyAsText())
+        return body.response.players.firstOrNull()?.toPlayerSummary()
+    }
 }
 
 class SteamException(message: String) : Exception(message)

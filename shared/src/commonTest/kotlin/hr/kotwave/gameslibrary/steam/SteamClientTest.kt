@@ -70,6 +70,33 @@ class SteamClientTest {
     }
 
     @Test
+    fun parsesPlayerSummary() = runTest {
+        val json = """{"response":{"players":[
+            {"steamid":"76561198000000001","personaname":"Gaben","avatarfull":"https://cdn/avatar_full.jpg"}
+        ]}}"""
+        val client = clientWith(MockEngine { respond(json, HttpStatusCode.OK, jsonHeaders) })
+
+        assertEquals(
+            SteamPlayerSummary("Gaben", "https://cdn/avatar_full.jpg"),
+            client.getPlayerSummary("76561198000000001"),
+        )
+    }
+
+    @Test
+    fun playerSummaryNullWhenNoPlayers() = runTest {
+        val client = clientWith(MockEngine { respond("""{"response":{"players":[]}}""", HttpStatusCode.OK, jsonHeaders) })
+
+        assertEquals(null, client.getPlayerSummary("76561198000000001"))
+    }
+
+    @Test
+    fun playerSummaryNullOnFailureInsteadOfThrowing() = runTest {
+        val client = clientWith(MockEngine { respond("nope", HttpStatusCode.Forbidden, jsonHeaders) })
+
+        assertEquals(null, client.getPlayerSummary("76561198000000001"))
+    }
+
+    @Test
     fun failureThrows() = runTest {
         val client = clientWith(MockEngine { respond("nope", HttpStatusCode.Forbidden, jsonHeaders) })
 
