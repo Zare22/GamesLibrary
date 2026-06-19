@@ -44,6 +44,7 @@ private val OrphanRed = Color(0xFFF4707A)
 fun SettingsScreen(
     onOpenGallery: () -> Unit,
     onOpenGame: (Long) -> Unit,
+    onOpenSteam: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = koinViewModel(),
 ) {
@@ -67,6 +68,15 @@ fun SettingsScreen(
                 onOpenGame = onOpenGame,
             )
         }
+
+        Spacer(Modifier.height(20.dp))
+        SectionLabel("ACCOUNTS")
+        SettingsRow(
+            icon = AppIcons.Steam,
+            title = "Steam",
+            subtitle = "Sign in and sync your owned games",
+            onClick = onOpenSteam,
+        )
 
         Spacer(Modifier.height(20.dp))
         SectionLabel("DEVELOPER")

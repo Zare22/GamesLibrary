@@ -11,6 +11,7 @@ sqlite = "2.6.2"
 androidx-lifecycle = "2.9.6"
 navigationCompose = "2.9.1"
 activityCompose = "1.10.0"
+securityCrypto = "1.1.0-alpha06"
 
 # Android SDK levels
 compileSdk = "36"
@@ -55,6 +56,9 @@ navigation-compose = { module = "org.jetbrains.androidx.navigation:navigation-co
 
 # Android target
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
+
+# Android secure storage (EncryptedSharedPreferences; backs the SecureStorage shim, ADR 0003/0016)
+androidx-security-crypto = { module = "androidx.security:security-crypto", version.ref = "securityCrypto" }
 
 # Coil (image loading, KMP)
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }

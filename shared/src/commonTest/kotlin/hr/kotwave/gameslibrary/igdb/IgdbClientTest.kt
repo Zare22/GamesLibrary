@@ -6,6 +6,7 @@ import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.content.TextContent
 import io.ktor.http.headersOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -149,6 +150,57 @@ class IgdbClientTest {
 
         assertEquals(2, authCalls)
         assertEquals(2, gameCalls)
+    }
+
+    @Test
+    fun matchBySteamAppidsMapsResultsAndQueriesByExternalGames() = runTest {
+        var body: String? = null
+        val games = """[{
+            "id":1942,"name":"The Witcher 3",
+            "external_games":[{"uid":"292030","category":1,"url":"https://store.steampowered.com/app/292030"}]
+        }]"""
+        val client = clientWith(
+            MockEngine { request ->
+                if (isTwitch(request.url.host)) {
+                    respond(tokenJson, HttpStatusCode.OK, jsonHeaders)
+                } else {
+                    body = (request.body as TextContent).text
+                    respond(games, HttpStatusCode.OK, jsonHeaders)
+                }
+            },
+        )
+
+        val result = client.matchBySteamAppids(listOf("292030")).single()
+
+        assertEquals(1942L, result.igdbId)
+        assertEquals("292030", result.externalGames.single { it.category == 1 }.uid)
+        val sent = body!!
+        assertTrue(sent.contains("external_games.category = 1"))
+        assertTrue(sent.contains("""external_games.uid = ("292030")"""))
+    }
+
+    @Test
+    fun matchBySteamAppidsChunksLargeRequests() = runTest {
+        var gameCalls = 0
+        val client = clientWith(
+            MockEngine { request ->
+                if (isTwitch(request.url.host)) respond(tokenJson, HttpStatusCode.OK, jsonHeaders)
+                else { gameCalls++; respond("[]", HttpStatusCode.OK, jsonHeaders) }
+            },
+        )
+
+        client.matchBySteamAppids((1..150).map { it.toString() })
+
+        assertEquals(2, gameCalls)
+    }
+
+    @Test
+    fun matchBySteamAppidsEmptySkipsTheNetwork() = runTest {
+        var calls = 0
+        val client = clientWith(MockEngine { calls++; respond("[]", HttpStatusCode.OK, jsonHeaders) })
+
+        assertTrue(client.matchBySteamAppids(emptyList()).isEmpty())
+        assertEquals(0, calls)
     }
 
     @Test

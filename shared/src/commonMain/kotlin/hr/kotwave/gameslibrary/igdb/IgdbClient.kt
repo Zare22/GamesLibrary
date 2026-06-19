@@ -34,6 +34,21 @@ class IgdbClient internal constructor(
         return IgdbJson.decodeFromString<List<GameDto>>(post("games", body)).firstOrNull()?.toIgdbGame()
     }
 
+    /**
+     * Resolves Steam [appids] to IGDB Games via their `external_games` entry (category 1 = Steam),
+     * folding the full metadata set into the same query. Chunked to stay within IGDB's limit and ease
+     * the rate limit; appids with no IGDB entry simply don't appear in the result.
+     */
+    suspend fun matchBySteamAppids(appids: List<String>): List<IgdbGame> {
+        if (appids.isEmpty()) return emptyList()
+        return appids.distinct().chunked(STEAM_MATCH_CHUNK).flatMap { chunk ->
+            val uids = chunk.joinToString(",") { "\"${escape(it)}\"" }
+            val body = "fields $FULL_FIELDS; " +
+                "where external_games.category = $STEAM_EXTERNAL_CATEGORY & external_games.uid = ($uids); limit 500;"
+            IgdbJson.decodeFromString<List<GameDto>>(post("games", body)).map { it.toIgdbGame() }
+        }
+    }
+
     /** POSTs an APICalypse query, refreshing the token once on a 401. */
     private suspend fun post(endpoint: String, body: String): String {
         suspend fun attempt(token: String): HttpResponse =
@@ -59,6 +74,12 @@ class IgdbClient internal constructor(
 }
 
 class IgdbException(message: String) : Exception(message)
+
+/** IGDB's (deprecated) integer external-game category for Steam (ADR 0014). */
+private const val STEAM_EXTERNAL_CATEGORY = 1
+
+/** Steam appids per `matchBySteamAppids` query — well under IGDB's `limit 500`, easy on the rate limit. */
+private const val STEAM_MATCH_CHUNK = 100
 
 private const val FULL_FIELDS =
     "name,slug,first_release_date,cover.image_id," +

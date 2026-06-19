@@ -29,6 +29,7 @@ import hr.kotwave.gameslibrary.add.AddGameScreen
 import hr.kotwave.gameslibrary.detail.DetailScreen
 import hr.kotwave.gameslibrary.library.LibraryScreen
 import hr.kotwave.gameslibrary.navigation.Route
+import hr.kotwave.gameslibrary.steam.SteamScreen
 import hr.kotwave.gameslibrary.ui.gallery.ComponentGalleryScreen
 import hr.kotwave.gameslibrary.ui.screens.PlaceholderScreen
 import hr.kotwave.gameslibrary.ui.screens.SettingsScreen
@@ -114,6 +115,7 @@ private fun AppNavHost(navController: NavHostController, modifier: Modifier = Mo
             SettingsScreen(
                 onOpenGallery = { navController.navigate(Route.Gallery) },
                 onOpenGame = { navController.navigate(Route.Detail(it)) },
+                onOpenSteam = { navController.navigate(Route.Steam) },
             )
         }
         composable<Route.Add> {
@@ -121,6 +123,9 @@ private fun AppNavHost(navController: NavHostController, modifier: Modifier = Mo
         }
         composable<Route.Gallery> {
             ComponentGalleryScreen(onBack = { navController.popBackStack() })
+        }
+        composable<Route.Steam> {
+            SteamScreen(onBack = { navController.popBackStack() })
         }
         composable<Route.Detail> {
             DetailScreen(onBack = { navController.popBackStack() })

@@ -4,6 +4,8 @@ import androidx.room.Room
 import hr.kotwave.gameslibrary.data.DATABASE_FILE_NAME
 import hr.kotwave.gameslibrary.data.GamesLibraryDatabase
 import hr.kotwave.gameslibrary.data.buildGamesLibraryDatabase
+import hr.kotwave.gameslibrary.secure.FileSecureStorage
+import hr.kotwave.gameslibrary.secure.SecureStorage
 import org.koin.core.module.Module
 import org.koin.dsl.module
 import java.io.File
@@ -14,6 +16,7 @@ actual val platformModule: Module = module {
         Room.databaseBuilder<GamesLibraryDatabase>(name = dbFile.absolutePath)
             .buildGamesLibraryDatabase()
     }
+    single<SecureStorage> { FileSecureStorage(appDataDirectory()) }
 }
 
 /** Per-OS application data directory; created if absent. */

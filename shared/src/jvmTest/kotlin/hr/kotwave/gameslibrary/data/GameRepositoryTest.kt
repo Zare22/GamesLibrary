@@ -380,6 +380,98 @@ class GameRepositoryTest {
     }
 
     @Test
+    fun steamSyncAddsMatchedAndUnmatchedGames() = runTest {
+        val summary = repository.syncSteamGames(
+            listOf(
+                SteamSyncEntry.Matched(sampleIgdb(igdbId = 1942L, name = "The Witcher 3")),
+                SteamSyncEntry.Unmatched(appid = "999", name = "Some Indie"),
+            ),
+        )
+
+        assertEquals(SteamSyncSummary(added = 2, updated = 0), summary)
+        val owned = repository.ownedGames.first()
+        assertEquals(2, owned.size)
+        owned.forEach { tile ->
+            assertEquals(listOf(Store.STEAM), tile.ownerships.map { it.store })
+            assertEquals(listOf(Source.STEAM_SYNC), tile.ownerships.map { it.source })
+        }
+        val unmatched = dao.getGameByExternalUid(1, "999")!!
+        assertNull(unmatched.igdbId)
+        assertEquals("Some Indie", unmatched.name)
+    }
+
+    @Test
+    fun steamResyncIsIdempotent() = runTest {
+        val entries = listOf(
+            SteamSyncEntry.Matched(sampleIgdb(igdbId = 1942L)),
+            SteamSyncEntry.Unmatched(appid = "999", name = "Some Indie"),
+        )
+        repository.syncSteamGames(entries)
+
+        val summary = repository.syncSteamGames(entries)
+
+        assertEquals(SteamSyncSummary(added = 0, updated = 2), summary)
+        assertEquals(2, repository.ownedGames.first().size)
+    }
+
+    @Test
+    fun steamUnmatchedDedupsByAppidNotName() = runTest {
+        repository.syncSteamGames(listOf(SteamSyncEntry.Unmatched(appid = "999", name = "Indie")))
+
+        val summary = repository.syncSteamGames(listOf(SteamSyncEntry.Unmatched(appid = "999", name = "Indie Renamed")))
+
+        assertEquals(SteamSyncSummary(added = 0, updated = 1), summary)
+        val game = dao.getGameByExternalUid(1, "999")!!
+        assertEquals("Indie", game.name) // name is never overwritten
+        assertEquals(1, repository.ownedGames.first().size)
+    }
+
+    @Test
+    fun steamSyncUpgradesManualOwnershipToSteamSync() = runTest {
+        val added = repository.addMatchedGame(sampleIgdb(igdbId = 5L), wishlist = false, stores = setOf(Store.STEAM))
+        assertEquals(Source.MANUAL, dao.ownershipsFor(added.gameId).single().source)
+
+        repository.syncSteamGames(listOf(SteamSyncEntry.Matched(sampleIgdb(igdbId = 5L))))
+
+        val ownership = dao.ownershipsFor(added.gameId).single()
+        assertEquals(Store.STEAM, ownership.store)
+        assertEquals(Source.STEAM_SYNC, ownership.source)
+    }
+
+    @Test
+    fun steamSyncPreservesLocalStateAndCachedMetadata() = runTest {
+        val added = repository.addMatchedGame(
+            sampleIgdb(igdbId = 7L, name = "Original Name"),
+            wishlist = false,
+            status = Status.PLAYING,
+            stores = setOf(Store.STEAM),
+        )
+        repository.setUserRating(added.gameId, 9.0)
+
+        repository.syncSteamGames(listOf(SteamSyncEntry.Matched(sampleIgdb(igdbId = 7L, name = "Changed Name"))))
+
+        val game = dao.getGame(added.gameId)!!
+        assertEquals("Original Name", game.name) // cached metadata is never overwritten by a sync
+        assertEquals(Status.PLAYING, game.status)
+        assertEquals(9.0, game.userRating)
+        assertEquals(1, dao.ownershipsFor(added.gameId).size)
+    }
+
+    @Test
+    fun steamSyncOnWishlistedGameClearsWishlistAndOwnsIt() = runTest {
+        val wished = repository.addMatchedGame(sampleIgdb(igdbId = 8L), wishlist = true)
+
+        repository.syncSteamGames(listOf(SteamSyncEntry.Matched(sampleIgdb(igdbId = 8L))))
+
+        val game = dao.getGame(wished.gameId)!!
+        assertEquals(false, game.wishlist)
+        assertEquals(Status.BACKLOG, game.status)
+        val ownership = dao.ownershipsFor(wished.gameId).single()
+        assertEquals(Store.STEAM, ownership.store)
+        assertEquals(Source.STEAM_SYNC, ownership.source)
+    }
+
+    @Test
     fun migratesV3DatabasePreservingGamesAndDefaultingNewColumns() = runTest {
         database.close()
         dbFile.delete()

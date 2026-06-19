@@ -10,5 +10,6 @@ sealed interface Route {
     @Serializable data object Settings : Route
     @Serializable data object Add : Route
     @Serializable data object Gallery : Route
+    @Serializable data object Steam : Route
     @Serializable data class Detail(val gameId: Long) : Route
 }

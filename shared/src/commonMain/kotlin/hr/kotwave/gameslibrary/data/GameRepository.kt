@@ -2,6 +2,9 @@ package hr.kotwave.gameslibrary.data
 
 import kotlinx.coroutines.flow.Flow
 
+/** IGDB's (deprecated) integer external-game category for Steam (ADR 0014); the Steam appid's `uid`. */
+private const val STEAM_EXTERNAL_CATEGORY = 1
+
 class GameRepository(private val gameDao: GameDao) {
 
     /** Owned Games (not Wishlisted) with their Ownerships, for the Library. */
@@ -120,6 +123,58 @@ class GameRepository(private val gameDao: GameDao) {
             game.withMetadataFrom(fetched).copy(orphaned = false),
             fetched.externalGames.map { it.toEntity() },
         )
+    }
+
+    /**
+     * Additively syncs the Steam library from already-resolved [entries] (the ViewModel does the
+     * Steam + IGDB networking). Adds Games it hasn't seen, ensures a Steam Ownership tagged
+     * `STEAM_SYNC` on ones it has, and never removes anything or overwrites cached metadata or local
+     * state (Status/userRating/Wishlist) — ADR 0005/0006. Matched entries dedup by `igdbId`;
+     * unmatched ones by their Steam appid in `external_game`.
+     */
+    suspend fun syncSteamGames(entries: List<SteamSyncEntry>): SteamSyncSummary {
+        var added = 0
+        var updated = 0
+        entries.forEach { entry ->
+            val existing = when (entry) {
+                is SteamSyncEntry.Matched -> gameDao.getGameByIgdbId(entry.igdb.igdbId)
+                is SteamSyncEntry.Unmatched -> gameDao.getGameByExternalUid(STEAM_EXTERNAL_CATEGORY, entry.appid)
+            }
+            if (existing != null) {
+                ensureSteamOwnership(existing)
+                updated++
+                return@forEach
+            }
+            when (entry) {
+                is SteamSyncEntry.Matched -> gameDao.insertMatchedGame(
+                    game = entry.igdb.toGame(wishlist = false, status = Status.BACKLOG),
+                    stores = setOf(Store.STEAM),
+                    externals = entry.igdb.externalGames.map { it.toEntity() },
+                    source = Source.STEAM_SYNC,
+                )
+                is SteamSyncEntry.Unmatched -> gameDao.insertMatchedGame(
+                    game = Game(name = entry.name, igdbId = null, wishlist = false, status = Status.BACKLOG),
+                    stores = setOf(Store.STEAM),
+                    externals = listOf(ExternalGame(gameId = 0, category = STEAM_EXTERNAL_CATEGORY, uid = entry.appid)),
+                    source = Source.STEAM_SYNC,
+                )
+            }
+            added++
+        }
+        return SteamSyncSummary(added = added, updated = updated)
+    }
+
+    /**
+     * Guarantees a Steam Ownership tagged `STEAM_SYNC` on an existing Game, clearing Wishlist if set.
+     * A pre-existing (Game, Steam) Ownership is left in place by the IGNORE insert, then re-tagged
+     * `STEAM_SYNC` — Steam is the authority on Steam ownership. Never touches Status/userRating.
+     */
+    private suspend fun ensureSteamOwnership(game: Game) {
+        if (game.wishlist) {
+            gameDao.updateGame(game.copy(wishlist = false, status = game.status ?: Status.BACKLOG))
+        }
+        gameDao.insertOwnership(Ownership(gameId = game.id, store = Store.STEAM, source = Source.STEAM_SYNC))
+        gameDao.setOwnershipSource(game.id, Store.STEAM, Source.STEAM_SYNC)
     }
 
     /**

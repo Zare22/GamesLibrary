@@ -68,7 +68,15 @@ object AppIcons {
     val Star: ImageVector = fillIcon("Star", STAR_PATH)
 
     val Minus: ImageVector = strokeIcon("Minus", "M5 12h14", strokeWidth = 2.4f)
+
+    val Steam: ImageVector = fillIcon("Steam", STEAM_PATH)
 }
+
+private const val STEAM_PATH =
+    "M12 2a10 10 0 0 0-10 10l5.5 2.3a2.8 2.8 0 0 1 1.6-.5l2.4-3.5v-.05a3.75 3.75 0 1 1 3.75 3.75h-.08" +
+        "l-3.45 2.46a2.8 2.8 0 0 1-5.55.62L2.3 15.4A10 10 0 1 0 12 2zM8.2 17.7l-1.27-.53a2.1 2.1 0 0 0 " +
+        "3.85-1.1 2.1 2.1 0 0 0-2.95-1.92l1.3.54a1.55 1.55 0 1 1-.93 2.95zM18 9.75a2.5 2.5 0 1 0-2.5 2.5 " +
+        "2.5 2.5 0 0 0 2.5-2.5zm-4.37 0a1.88 1.88 0 1 1 1.87 1.87 1.87 1.87 0 0 1-1.87-1.87z"
 
 private const val STAR_PATH =
     "M12 2l2.9 6.3 6.9.6-5.2 4.6 1.6 6.8L12 17.3 5.8 20.9l1.6-6.8L2.2 8.9l6.9-.6z"

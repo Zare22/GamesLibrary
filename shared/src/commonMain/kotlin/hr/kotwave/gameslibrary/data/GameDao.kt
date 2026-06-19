@@ -31,6 +31,13 @@ interface GameDao {
     @Query("SELECT * FROM game WHERE igdbId = :igdbId")
     suspend fun getGameByIgdbId(igdbId: Long): Game?
 
+    /** The Game holding this external reference, if any — the dedup key for an unmatched Steam sync. */
+    @Query(
+        "SELECT game.* FROM game JOIN external_game ON external_game.gameId = game.id " +
+            "WHERE external_game.category = :category AND external_game.uid = :uid LIMIT 1",
+    )
+    suspend fun getGameByExternalUid(category: Int, uid: String): Game?
+
     /** Case-insensitive title equality, for the soft "similar title exists" warning. */
     @Query("SELECT * FROM game WHERE name = :name COLLATE NOCASE")
     suspend fun gamesByTitle(name: String): List<Game>
@@ -54,6 +61,10 @@ interface GameDao {
     @Query("DELETE FROM ownership WHERE gameId = :gameId AND store = :store")
     suspend fun deleteOwnership(gameId: Long, store: Store)
 
+    /** Re-tags an existing Ownership's Source (Steam sync claims a Store it now vouches for). */
+    @Query("UPDATE ownership SET source = :source WHERE gameId = :gameId AND store = :store")
+    suspend fun setOwnershipSource(gameId: Long, store: Store, source: Source)
+
     @Insert
     suspend fun insertExternalGames(externals: List<ExternalGame>)
 
@@ -76,10 +87,15 @@ interface GameDao {
 
     /** Inserts a matched Game with its Ownerships and external references atomically. */
     @Transaction
-    suspend fun insertMatchedGame(game: Game, stores: Set<Store>, externals: List<ExternalGame>): Long {
+    suspend fun insertMatchedGame(
+        game: Game,
+        stores: Set<Store>,
+        externals: List<ExternalGame>,
+        source: Source = Source.MANUAL,
+    ): Long {
         val gameId = insertGame(game)
         stores.forEach { store ->
-            insertOwnership(Ownership(gameId = gameId, store = store, source = Source.MANUAL))
+            insertOwnership(Ownership(gameId = gameId, store = store, source = source))
         }
         if (externals.isNotEmpty()) {
             insertExternalGames(externals.map { it.copy(gameId = gameId) })

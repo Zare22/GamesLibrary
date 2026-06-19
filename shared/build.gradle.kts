@@ -39,6 +39,34 @@ val generateIgdbCredentials by tasks.registering {
     }
 }
 
+// Generates SteamCredentials.kt from local.properties (or the STEAM_API_KEY env var). Mirrors
+// generateIgdbCredentials: the output lives under build/ so the key is never tracked; empty when
+// absent, so builds still compile (sync then degrades to a visible "couldn't reach Steam" state).
+val generateSteamCredentials by tasks.registering {
+    val outputDir = layout.buildDirectory.dir("generated/steam/kotlin")
+    outputs.dir(outputDir)
+    val props = Properties()
+    val localProps = rootProject.file("local.properties")
+    if (localProps.exists()) localProps.inputStream().use { props.load(it) }
+    val apiKey = props.getProperty("steam.apiKey") ?: System.getenv("STEAM_API_KEY") ?: ""
+    inputs.property("apiKey", apiKey)
+    doLast {
+        fun esc(value: String) = value.replace("\\", "\\\\").replace("\"", "\\\"").replace("$", "\\$")
+        val pkgDir = outputDir.get().asFile.resolve("hr/kotwave/gameslibrary/steam")
+        pkgDir.mkdirs()
+        pkgDir.resolve("SteamCredentials.kt").writeText(
+            """
+            |package hr.kotwave.gameslibrary.steam
+            |
+            |internal object SteamCredentials {
+            |    const val API_KEY = "${esc(apiKey)}"
+            |}
+            |
+            """.trimMargin(),
+        )
+    }
+}
+
 kotlin {
     // The Room-generated database constructor is an expect/actual object (still Beta).
     compilerOptions {
@@ -55,6 +83,7 @@ kotlin {
     sourceSets {
         commonMain {
             kotlin.srcDir(generateIgdbCredentials)
+            kotlin.srcDir(generateSteamCredentials)
             dependencies {
                 api(project.dependencies.platform(libs.koin.bom))
                 api(libs.koin.core)
@@ -74,6 +103,7 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.koin.android)
             implementation(libs.ktor.client.okhttp)
+            implementation(libs.androidx.security.crypto)
         }
         val jvmMain by getting {
             dependencies {
