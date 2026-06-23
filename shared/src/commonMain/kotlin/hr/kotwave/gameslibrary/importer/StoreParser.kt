@@ -24,6 +24,8 @@ object GenericLineParser : StoreParser {
     }
 }
 
-/** The parser for a [store]. Every Store falls back to [GenericLineParser] until it gets its own. */
-@Suppress("UNUSED_PARAMETER")
-fun parserFor(store: Store): StoreParser = GenericLineParser
+/** The parser for a [store]. A Store falls back to [GenericLineParser] until it gets its own. */
+fun parserFor(store: Store): StoreParser = when (store) {
+    Store.PSN -> PsnParser
+    else -> GenericLineParser
+}
