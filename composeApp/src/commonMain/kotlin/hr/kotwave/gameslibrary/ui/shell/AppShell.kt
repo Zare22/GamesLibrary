@@ -28,6 +28,7 @@ import hr.kotwave.gameslibrary.add.AddGameModal
 import hr.kotwave.gameslibrary.add.AddGameScreen
 import hr.kotwave.gameslibrary.detail.DetailScreen
 import hr.kotwave.gameslibrary.importer.ImportScreen
+import hr.kotwave.gameslibrary.gog.GogScreen
 import hr.kotwave.gameslibrary.library.LibraryScreen
 import hr.kotwave.gameslibrary.navigation.Route
 import hr.kotwave.gameslibrary.steam.SteamScreen
@@ -118,6 +119,7 @@ private fun AppNavHost(navController: NavHostController, modifier: Modifier = Mo
                 onOpenGallery = { navController.navigate(Route.Gallery) },
                 onOpenGame = { navController.navigate(Route.Detail(it)) },
                 onOpenSteam = { navController.navigate(Route.Steam) },
+                onOpenGog = { navController.navigate(Route.Gog) },
                 onOpenImport = { navController.navigate(Route.LibraryImport) },
                 onOpenPasteImport = { navController.navigate(Route.Import) },
             )
@@ -130,6 +132,9 @@ private fun AppNavHost(navController: NavHostController, modifier: Modifier = Mo
         }
         composable<Route.Steam> {
             SteamScreen(onBack = { navController.popBackStack() })
+        }
+        composable<Route.Gog> {
+            GogScreen(onBack = { navController.popBackStack() })
         }
         composable<Route.LibraryImport> {
             LibraryImportScreen(onBack = { navController.popBackStack() })

@@ -204,6 +204,57 @@ class IgdbClientTest {
     }
 
     @Test
+    fun matchByGogIdsMapsResultsAndQueriesByExternalGames() = runTest {
+        var body: String? = null
+        val games = """[{
+            "id":1207658691,"name":"The Witcher 3",
+            "external_games":[{"uid":"1207658691","category":5,"url":"https://www.gog.com/game/the_witcher_3"}]
+        }]"""
+        val client = clientWith(
+            MockEngine { request ->
+                if (isTwitch(request.url.host)) {
+                    respond(tokenJson, HttpStatusCode.OK, jsonHeaders)
+                } else {
+                    body = (request.body as TextContent).text
+                    respond(games, HttpStatusCode.OK, jsonHeaders)
+                }
+            },
+        )
+
+        val result = client.matchByGogIds(listOf("1207658691")).single()
+
+        assertEquals(1207658691L, result.igdbId)
+        assertEquals("1207658691", result.externalGames.single { it.category == 5 }.uid)
+        val sent = body!!
+        assertTrue(sent.contains("external_games.category = 5"))
+        assertTrue(sent.contains("""external_games.uid = ("1207658691")"""))
+    }
+
+    @Test
+    fun matchByGogIdsChunksLargeRequests() = runTest {
+        var gameCalls = 0
+        val client = clientWith(
+            MockEngine { request ->
+                if (isTwitch(request.url.host)) respond(tokenJson, HttpStatusCode.OK, jsonHeaders)
+                else { gameCalls++; respond("[]", HttpStatusCode.OK, jsonHeaders) }
+            },
+        )
+
+        client.matchByGogIds((1..150).map { it.toString() })
+
+        assertEquals(2, gameCalls)
+    }
+
+    @Test
+    fun matchByGogIdsEmptySkipsTheNetwork() = runTest {
+        var calls = 0
+        val client = clientWith(MockEngine { calls++; respond("[]", HttpStatusCode.OK, jsonHeaders) })
+
+        assertTrue(client.matchByGogIds(emptyList()).isEmpty())
+        assertEquals(0, calls)
+    }
+
+    @Test
     fun sentRequestCarriesClientIdAndBearer() = runTest {
         var clientIdHeader: String? = null
         var authHeader: String? = null

@@ -1,6 +1,7 @@
 package hr.kotwave.gameslibrary.di
 
 import hr.kotwave.gameslibrary.detail.DetailViewModel
+import hr.kotwave.gameslibrary.gog.GogViewModel
 import hr.kotwave.gameslibrary.importer.ImportViewModel
 import hr.kotwave.gameslibrary.library.LibraryViewModel
 import hr.kotwave.gameslibrary.settings.SettingsViewModel
@@ -16,6 +17,7 @@ val appModule: Module = module {
     viewModelOf(::DetailViewModel)
     viewModelOf(::SettingsViewModel)
     viewModelOf(::SteamViewModel)
+    viewModelOf(::GogViewModel)
     viewModelOf(::ImportViewModel)
     viewModelOf(::WishlistViewModel)
     viewModelOf(::LibraryTransferViewModel)

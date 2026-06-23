@@ -51,7 +51,7 @@ private val OrphanRed = Color(0xFFF4707A)
 private val ExportGreen = Color(0xFF7DF0B6)
 
 /** Stores with no sync yet — shown as disabled "Coming soon" connections (06-settings.html). */
-private val COMING_SOON_STORES = listOf(Store.GOG, Store.PSN, Store.XBOX, Store.NINTENDO)
+private val COMING_SOON_STORES = listOf(Store.PSN, Store.XBOX, Store.NINTENDO)
 
 /** Settings: connections, library export/import, about, plus Orphaned maintenance and the dev gallery. */
 @Composable
@@ -59,6 +59,7 @@ fun SettingsScreen(
     onOpenGallery: () -> Unit,
     onOpenGame: (Long) -> Unit,
     onOpenSteam: () -> Unit,
+    onOpenGog: () -> Unit,
     onOpenImport: () -> Unit,
     onOpenPasteImport: () -> Unit,
     modifier: Modifier = Modifier,
@@ -111,6 +112,12 @@ fun SettingsScreen(
                 title = "Steam",
                 subtitle = "Sign in and sync your owned games",
                 onClick = onOpenSteam,
+            )
+            HairlineDivider()
+            StoreConnectionItem(
+                store = Store.GOG,
+                subtitle = "Sign in and sync your owned games",
+                onClick = onOpenGog,
             )
             COMING_SOON_STORES.forEach { store ->
                 HairlineDivider()
@@ -232,6 +239,20 @@ private fun StaticItem(icon: ImageVector, title: String, subtitle: String) {
     ) {
         ItemIcon(icon, AppTheme.tokens.colors.muted)
         ItemText(title, subtitle, Modifier.weight(1f))
+    }
+}
+
+/** A navigating connection row badged with the store's glyph (for stores without a brand icon). */
+@Composable
+private fun StoreConnectionItem(store: Store, subtitle: String, onClick: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(15.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(13.dp),
+    ) {
+        GlyphIcon(store)
+        ItemText(store.label, subtitle, Modifier.weight(1f))
+        Icon(AppIcons.ChevronRight, null, Modifier.size(17.dp), tint = AppTheme.tokens.colors.faint)
     }
 }
 

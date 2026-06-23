@@ -49,6 +49,21 @@ class IgdbClient internal constructor(
         }
     }
 
+    /**
+     * Resolves GOG product [ids] to IGDB Games via their `external_games` entry (category 5 = GOG),
+     * folding the full metadata set into the same query. Chunked like [matchBySteamAppids]; ids with no
+     * IGDB entry simply don't appear in the result.
+     */
+    suspend fun matchByGogIds(ids: List<String>): List<IgdbGame> {
+        if (ids.isEmpty()) return emptyList()
+        return ids.distinct().chunked(GOG_MATCH_CHUNK).flatMap { chunk ->
+            val uids = chunk.joinToString(",") { "\"${escape(it)}\"" }
+            val body = "fields $FULL_FIELDS; " +
+                "where external_games.category = $GOG_EXTERNAL_CATEGORY & external_games.uid = ($uids); limit 500;"
+            IgdbJson.decodeFromString<List<GameDto>>(post("games", body)).map { it.toIgdbGame() }
+        }
+    }
+
     /** POSTs an APICalypse query, refreshing the token once on a 401. */
     private suspend fun post(endpoint: String, body: String): String {
         suspend fun attempt(token: String): HttpResponse =
@@ -80,6 +95,12 @@ private const val STEAM_EXTERNAL_CATEGORY = 1
 
 /** Steam appids per `matchBySteamAppids` query — well under IGDB's `limit 500`, easy on the rate limit. */
 private const val STEAM_MATCH_CHUNK = 100
+
+/** IGDB's (deprecated) integer external-game category for GOG (ADR 0014; verified from the IGDB proto). */
+private const val GOG_EXTERNAL_CATEGORY = 5
+
+/** GOG product ids per `matchByGogIds` query — same budget as the Steam chunk. */
+private const val GOG_MATCH_CHUNK = 100
 
 private const val FULL_FIELDS =
     "name,slug,first_release_date,cover.image_id," +
