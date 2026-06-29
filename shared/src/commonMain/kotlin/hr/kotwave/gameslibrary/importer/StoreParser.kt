@@ -28,5 +28,6 @@ object GenericLineParser : StoreParser {
 fun parserFor(store: Store): StoreParser = when (store) {
     Store.PSN -> PsnParser
     Store.NINTENDO -> NintendoParser
+    Store.EPIC -> EpicParser
     else -> GenericLineParser
 }
