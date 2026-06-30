@@ -86,9 +86,26 @@ class ImportViewModel(
      */
     fun parse() {
         val selected = store ?: return
-        matchJob?.cancel()
         val lines = parserFor(selected).parse(pasteText)
+        runMatching(lines)
+    }
+
+    /**
+     * Catalog intake (the Battle.net picker): matches a fixed list of [titles] for [selected] through
+     * the same funnel as a paste, bypassing the paste parser. Each title is its own line.
+     */
+    fun startFromTitles(selected: Store, titles: List<String>) {
+        store = selected
+        runMatching(titles.map { ParsedLine(title = it, raw = it) })
+    }
+
+    /**
+     * Name-searches each [lines] title against IGDB and classifies it, advancing to Review. Throttled
+     * and cancelable; an IGDB failure returns to Intake flagged. A no-op on empty input.
+     */
+    private fun runMatching(lines: List<ParsedLine>) {
         if (lines.isEmpty()) return
+        matchJob?.cancel()
         failed = false
         matchProgress = 0
         matchTotal = lines.size

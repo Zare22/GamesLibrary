@@ -26,6 +26,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import hr.kotwave.gameslibrary.add.AddGameModal
 import hr.kotwave.gameslibrary.add.AddGameScreen
+import hr.kotwave.gameslibrary.battlenet.BattleNetScreen
 import hr.kotwave.gameslibrary.detail.DetailScreen
 import hr.kotwave.gameslibrary.importer.ImportScreen
 import hr.kotwave.gameslibrary.gog.GogScreen
@@ -120,6 +121,7 @@ private fun AppNavHost(navController: NavHostController, modifier: Modifier = Mo
                 onOpenGame = { navController.navigate(Route.Detail(it)) },
                 onOpenSteam = { navController.navigate(Route.Steam) },
                 onOpenGog = { navController.navigate(Route.Gog) },
+                onOpenBattleNet = { navController.navigate(Route.BattleNet) },
                 onOpenImport = { navController.navigate(Route.LibraryImport) },
                 onOpenPasteImport = { navController.navigate(Route.Import) },
             )
@@ -135,6 +137,9 @@ private fun AppNavHost(navController: NavHostController, modifier: Modifier = Mo
         }
         composable<Route.Gog> {
             GogScreen(onBack = { navController.popBackStack() })
+        }
+        composable<Route.BattleNet> {
+            BattleNetScreen(onBack = { navController.popBackStack() })
         }
         composable<Route.LibraryImport> {
             LibraryImportScreen(onBack = { navController.popBackStack() })

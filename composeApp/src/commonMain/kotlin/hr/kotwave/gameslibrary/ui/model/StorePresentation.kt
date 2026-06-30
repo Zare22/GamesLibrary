@@ -12,6 +12,7 @@ val Store.glyph: String
         Store.EPIC -> "E"
         Store.NINTENDO -> "N"
         Store.ITCH -> "i"
+        Store.BATTLE_NET -> "B"
     }
 
 /** Display name for a [Store]. */
@@ -24,4 +25,5 @@ val Store.label: String
         Store.EPIC -> "Epic"
         Store.NINTENDO -> "Nintendo"
         Store.ITCH -> "itch.io"
+        Store.BATTLE_NET -> "Battle.net"
     }

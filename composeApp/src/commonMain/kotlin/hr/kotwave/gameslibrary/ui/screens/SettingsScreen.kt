@@ -60,6 +60,7 @@ fun SettingsScreen(
     onOpenGame: (Long) -> Unit,
     onOpenSteam: () -> Unit,
     onOpenGog: () -> Unit,
+    onOpenBattleNet: () -> Unit,
     onOpenImport: () -> Unit,
     onOpenPasteImport: () -> Unit,
     modifier: Modifier = Modifier,
@@ -118,6 +119,12 @@ fun SettingsScreen(
                 store = Store.GOG,
                 subtitle = "Sign in and sync your owned games",
                 onClick = onOpenGog,
+            )
+            HairlineDivider()
+            StoreConnectionItem(
+                store = Store.BATTLE_NET,
+                subtitle = "Tick the Blizzard games you own",
+                onClick = onOpenBattleNet,
             )
             COMING_SOON_STORES.forEach { store ->
                 HairlineDivider()

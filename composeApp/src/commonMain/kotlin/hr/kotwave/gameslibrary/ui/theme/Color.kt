@@ -48,3 +48,4 @@ val StoreXboxText = Color(0xFF3FE04A)  // lifted glyph for legibility on dark
 val StoreEpic = Color(0xFFE8E8E8)
 val StoreNintendo = Color(0xFFE60012)
 val StoreItch = Color(0xFFFA5C5C)
+val StoreBattleNet = Color(0xFF00AEEF)

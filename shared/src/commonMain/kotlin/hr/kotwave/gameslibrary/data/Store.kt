@@ -9,4 +9,5 @@ enum class Store {
     EPIC,
     NINTENDO,
     ITCH,
+    BATTLE_NET,
 }

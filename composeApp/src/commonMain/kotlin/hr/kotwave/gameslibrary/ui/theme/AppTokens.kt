@@ -56,6 +56,7 @@ data class StorePalette(
     val epic: Color,
     val nintendo: Color,
     val itch: Color,
+    val battleNet: Color,
 ) {
     /** Border / glow accent for a store. */
     fun accent(store: Store): Color = when (store) {
@@ -66,6 +67,7 @@ data class StorePalette(
         Store.EPIC -> epic
         Store.NINTENDO -> nintendo
         Store.ITCH -> itch
+        Store.BATTLE_NET -> battleNet
     }
 
     /** Glyph text color — PSN/Xbox lifted for legibility on dark surfaces. */
@@ -152,6 +154,7 @@ fun gamesLibraryTokens(): AppTokens = AppTokens(
         epic = StoreEpic,
         nintendo = StoreNintendo,
         itch = StoreItch,
+        battleNet = StoreBattleNet,
     ),
     spacing = Spacing(),
     radii = Radii(),

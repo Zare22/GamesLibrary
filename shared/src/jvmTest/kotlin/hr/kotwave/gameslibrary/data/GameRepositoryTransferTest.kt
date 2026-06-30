@@ -141,7 +141,7 @@ class GameRepositoryTransferTest {
     @Test
     fun anOwnershipOnAnUnknownStoreIsDropped() = runTest {
         repository.importLibrary(
-            listOf(LibraryImportDecision(exported(igdbId = 300L, stores = listOf("BATTLE_NET", "STEAM")))),
+            listOf(LibraryImportDecision(exported(igdbId = 300L, stores = listOf("FUTURE_STORE", "STEAM")))),
         )
 
         val game = dao.getGameByIgdbId(300L)!!

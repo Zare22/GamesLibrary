@@ -13,5 +13,6 @@ sealed interface Route {
     @Serializable data object Gallery : Route
     @Serializable data object Steam : Route
     @Serializable data object Gog : Route
+    @Serializable data object BattleNet : Route
     @Serializable data class Detail(val gameId: Long) : Route
 }

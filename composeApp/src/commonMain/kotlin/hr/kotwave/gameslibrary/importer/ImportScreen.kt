@@ -203,7 +203,7 @@ private fun IntakeFooter(viewModel: ImportViewModel) {
 // ---- Matching (the importer-parsing state) ------------------------------------------------------
 
 @Composable
-private fun MatchingPhase(viewModel: ImportViewModel, modifier: Modifier) {
+internal fun MatchingPhase(viewModel: ImportViewModel, modifier: Modifier) {
     val tokens = AppTheme.tokens
     val total = viewModel.matchTotal
     val done = viewModel.matchProgress
@@ -239,7 +239,7 @@ private fun ProgressBar(fraction: Float) {
 // ---- Review -------------------------------------------------------------------------------------
 
 @Composable
-private fun ReviewPhase(viewModel: ImportViewModel, modifier: Modifier) {
+internal fun ReviewPhase(viewModel: ImportViewModel, modifier: Modifier) {
     val tokens = AppTheme.tokens
     Column(modifier.fillMaxSize().padding(horizontal = 20.dp)) {
         Spacer(Modifier.height(16.dp))
@@ -351,7 +351,7 @@ private fun UnmatchedHead(candidate: ImportCandidate) {
 // ---- Done ---------------------------------------------------------------------------------------
 
 @Composable
-private fun DonePhase(summary: ImportSummary, onDone: () -> Unit, modifier: Modifier) {
+internal fun DonePhase(summary: ImportSummary, onDone: () -> Unit, modifier: Modifier) {
     val tokens = AppTheme.tokens
     Column(
         modifier.fillMaxSize().padding(horizontal = 28.dp),
@@ -477,7 +477,8 @@ private fun StorePicker(selected: Store?, onSelect: (Store) -> Unit) {
         horizontalArrangement = Arrangement.spacedBy(9.dp),
         verticalArrangement = Arrangement.spacedBy(9.dp),
     ) {
-        Store.entries.forEach { store ->
+        // Paste stores only; Battle.net intakes via its own checklist picker.
+        Store.entries.filter { it != Store.BATTLE_NET }.forEach { store ->
             StoreChip(store = store, selected = store == selected) { onSelect(store) }
         }
     }

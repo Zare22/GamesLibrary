@@ -74,7 +74,7 @@ class LibraryTransferTest {
               "schemaVersion": 2,
               "exportedAt": "2030-01-01",
               "games": [
-                { "name": "Diablo IV", "ownerships": [ { "store": "BATTLE_NET", "source": "MANUAL" } ] }
+                { "name": "From The Future", "ownerships": [ { "store": "FUTURE_STORE", "source": "MANUAL" } ] }
               ]
             }
         """.trimIndent()
@@ -83,10 +83,10 @@ class LibraryTransferTest {
 
         assertEquals(2, decoded.schemaVersion)
         val game = decoded.games.single()
-        assertEquals("BATTLE_NET", game.ownerships.single().store)
+        assertEquals("FUTURE_STORE", game.ownerships.single().store)
         // The unknown Store is dropped when mapped to entities — never fatal.
         assertEquals(emptyList(), game.ownershipEntities(gameId = 1))
-        assertNull(storeOrNull("BATTLE_NET"))
+        assertNull(storeOrNull("FUTURE_STORE"))
         assertNull(statusOrNull("WHATEVER"))
         assertEquals(Source.MANUAL, sourceOrDefault("WHATEVER"))
     }
