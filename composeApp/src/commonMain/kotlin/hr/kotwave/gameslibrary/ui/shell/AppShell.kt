@@ -34,6 +34,7 @@ import hr.kotwave.gameslibrary.library.LibraryScreen
 import hr.kotwave.gameslibrary.navigation.Route
 import hr.kotwave.gameslibrary.steam.SteamScreen
 import hr.kotwave.gameslibrary.transfer.LibraryImportScreen
+import hr.kotwave.gameslibrary.ui.components.ContentColumn
 import hr.kotwave.gameslibrary.ui.gallery.ComponentGalleryScreen
 import hr.kotwave.gameslibrary.ui.screens.SettingsScreen
 import hr.kotwave.gameslibrary.wishlist.WishlistScreen
@@ -113,18 +114,20 @@ private fun AppNavHost(navController: NavHostController, modifier: Modifier = Mo
             WishlistScreen(onOpenGame = { navController.navigate(Route.Detail(it)) })
         }
         composable<Route.Import> {
-            ImportScreen()
+            ContentColumn { ImportScreen() }
         }
         composable<Route.Settings> {
-            SettingsScreen(
-                onOpenGallery = { navController.navigate(Route.Gallery) },
-                onOpenGame = { navController.navigate(Route.Detail(it)) },
-                onOpenSteam = { navController.navigate(Route.Steam) },
-                onOpenGog = { navController.navigate(Route.Gog) },
-                onOpenBattleNet = { navController.navigate(Route.BattleNet) },
-                onOpenImport = { navController.navigate(Route.LibraryImport) },
-                onOpenPasteImport = { navController.navigate(Route.Import) },
-            )
+            ContentColumn {
+                SettingsScreen(
+                    onOpenGallery = { navController.navigate(Route.Gallery) },
+                    onOpenGame = { navController.navigate(Route.Detail(it)) },
+                    onOpenSteam = { navController.navigate(Route.Steam) },
+                    onOpenGog = { navController.navigate(Route.Gog) },
+                    onOpenBattleNet = { navController.navigate(Route.BattleNet) },
+                    onOpenImport = { navController.navigate(Route.LibraryImport) },
+                    onOpenPasteImport = { navController.navigate(Route.Import) },
+                )
+            }
         }
         composable<Route.Add> {
             AddGameScreen(onClose = { navController.popBackStack() })
@@ -133,13 +136,13 @@ private fun AppNavHost(navController: NavHostController, modifier: Modifier = Mo
             ComponentGalleryScreen(onBack = { navController.popBackStack() })
         }
         composable<Route.Steam> {
-            SteamScreen(onBack = { navController.popBackStack() })
+            ContentColumn { SteamScreen(onBack = { navController.popBackStack() }) }
         }
         composable<Route.Gog> {
-            GogScreen(onBack = { navController.popBackStack() })
+            ContentColumn { GogScreen(onBack = { navController.popBackStack() }) }
         }
         composable<Route.BattleNet> {
-            BattleNetScreen(onBack = { navController.popBackStack() })
+            ContentColumn { BattleNetScreen(onBack = { navController.popBackStack() }) }
         }
         composable<Route.LibraryImport> {
             LibraryImportScreen(onBack = { navController.popBackStack() })

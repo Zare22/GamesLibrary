@@ -27,9 +27,14 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.style.TextOverflow
@@ -41,9 +46,11 @@ import hr.kotwave.gameslibrary.data.Store
 import hr.kotwave.gameslibrary.search.IgdbResultRow
 import hr.kotwave.gameslibrary.ui.components.CoverArt
 import hr.kotwave.gameslibrary.ui.components.GlowBox
+import hr.kotwave.gameslibrary.ui.components.actionWidth
 import hr.kotwave.gameslibrary.ui.components.PrimaryButton
 import hr.kotwave.gameslibrary.ui.icons.AppIcons
 import hr.kotwave.gameslibrary.ui.model.gameMeta
+import hr.kotwave.gameslibrary.ui.shell.LocalIsCompact
 import hr.kotwave.gameslibrary.ui.model.glyph
 import hr.kotwave.gameslibrary.ui.model.label
 import hr.kotwave.gameslibrary.ui.theme.AppTheme
@@ -51,6 +58,9 @@ import org.koin.compose.viewmodel.koinViewModel
 
 private val Amber = Color(0xFFFFD24A)
 private val ErrorRed = Color(0xFFF4707A)
+
+/** Ambiguous candidates show this many matches inline before a "Show all" expander. */
+private const val AMBIGUOUS_INLINE_CAP = 3
 
 /**
  * The paste Import tab: Intake (paste + Store) → Matching → Review → Done. Each Candidate passes
@@ -71,13 +81,14 @@ fun ImportScreen(modifier: Modifier = Modifier, viewModel: ImportViewModel = koi
 @Composable
 private fun IntakePhase(viewModel: ImportViewModel, modifier: Modifier) {
     val tokens = AppTheme.tokens
+    val compact = LocalIsCompact.current
     Column(modifier.fillMaxSize().padding(horizontal = 20.dp)) {
         Spacer(Modifier.height(18.dp))
         Text("Import games", style = AppTheme.type.display, color = tokens.colors.text)
         Spacer(Modifier.height(3.dp))
         Text("Paste your list — one game per line.", style = AppTheme.type.body, color = tokens.colors.faint)
 
-        Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+        Column((if (compact) Modifier.weight(1f) else Modifier.fillMaxWidth()).verticalScroll(rememberScrollState())) {
             Spacer(Modifier.height(16.dp))
             if (viewModel.failed) {
                 Notice("Couldn't reach IGDB — check your connection and try again.", ErrorRed)
@@ -187,7 +198,7 @@ private fun IntakeFooter(viewModel: ImportViewModel) {
             onClick = viewModel::parse,
             leadingIcon = AppIcons.Import,
             enabled = viewModel.canParse,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.actionWidth(),
         )
         Spacer(Modifier.height(9.dp))
         val store = viewModel.store
@@ -256,9 +267,15 @@ internal fun ReviewPhase(viewModel: ImportViewModel, modifier: Modifier) {
             Spacer(Modifier.height(6.dp))
         }
 
-        LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            items(viewModel.candidates) { candidate -> CandidateRow(candidate) }
-            item { Spacer(Modifier.height(4.dp)) }
+        Box(Modifier.weight(1f)) {
+            LazyColumn(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                items(viewModel.candidates) { candidate -> CandidateRow(candidate) }
+                item { Spacer(Modifier.height(4.dp)) }
+            }
+            Box(
+                Modifier.fillMaxWidth().height(12.dp).align(Alignment.TopCenter)
+                    .background(Brush.verticalGradient(0f to tokens.colors.bg, 1f to Color.Transparent)),
+            )
         }
 
         Column(Modifier.fillMaxWidth().padding(top = 10.dp, bottom = 18.dp)) {
@@ -267,7 +284,7 @@ internal fun ReviewPhase(viewModel: ImportViewModel, modifier: Modifier) {
                 onClick = viewModel::confirm,
                 leadingIcon = AppIcons.Check,
                 enabled = viewModel.checkedCount > 0 && !viewModel.importing,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.actionWidth(),
             )
         }
     }
@@ -313,14 +330,32 @@ private fun MatchedHead(candidate: ImportCandidate, result: IgdbSearchResult) {
 @Composable
 private fun AmbiguousHead(candidate: ImportCandidate, options: List<IgdbSearchResult>) {
     val tokens = AppTheme.tokens
+    var expanded by remember { mutableStateOf(false) }
+    val limit = if (expanded) options.size else maxOf(AMBIGUOUS_INLINE_CAP, candidate.pickedIndex + 1)
     MatchTag("Pick a match", Amber)
     Spacer(Modifier.height(7.dp))
     Text("“${candidate.rawTitle}”", style = AppTheme.type.bodyStrong, color = tokens.colors.text, maxLines = 1, overflow = TextOverflow.Ellipsis)
     Spacer(Modifier.height(2.dp))
     Text("${options.size} possible matches — pick the right one.", style = AppTheme.type.caption, color = tokens.colors.faint)
     Spacer(Modifier.height(6.dp))
-    options.forEachIndexed { index, option ->
+    options.take(limit).forEachIndexed { index, option ->
         IgdbResultRow(result = option, selected = candidate.pickedIndex == index, onClick = { candidate.pick(index) })
+    }
+    if (limit < options.size) {
+        ShowAllMatches(total = options.size) { expanded = true }
+    }
+}
+
+@Composable
+private fun ShowAllMatches(total: Int, onClick: () -> Unit) {
+    val tokens = AppTheme.tokens
+    Row(
+        Modifier.clip(RoundedCornerShape(10.dp)).clickable(onClick = onClick).padding(horizontal = 10.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Icon(AppIcons.ChevronRight, null, Modifier.size(14.dp), tint = tokens.colors.accent)
+        Text("Show all $total matches", style = AppTheme.type.bodyStrong.copy(fontSize = 13.sp), color = tokens.colors.accent)
     }
 }
 

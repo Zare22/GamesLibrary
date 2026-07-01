@@ -138,7 +138,7 @@ fun AddGameContent(
     Column(modifier) {
         IgdbSearchField(value = state.query, onValueChange = state::updateQuery)
 
-        if (state.query.isNotBlank()) {
+        if (state.query.isNotBlank() && !state.collapsed) {
             Spacer(Modifier.height(12.dp))
             IgdbSearchStatus(searching = state.searching, count = state.results.size, failed = state.searchFailed)
             Spacer(Modifier.height(6.dp))
@@ -153,7 +153,7 @@ fun AddGameContent(
                 Spacer(Modifier.height(8.dp))
                 ManualLink(text = "Add “${state.query.trim()}” manually", onClick = state::addManually)
             }
-        } else if (!state.configuring) {
+        } else if (state.query.isBlank() && !state.configuring) {
             SearchPrompt(onAddManually = state::addManually)
         }
 
@@ -162,7 +162,7 @@ fun AddGameContent(
             Text("Loading details…", style = AppTheme.type.caption, color = AppTheme.tokens.colors.faint)
         }
 
-        if (state.configuring) {
+        if (state.collapsed) {
             Spacer(Modifier.height(16.dp))
             SectionDivider("Adding to library")
             Spacer(Modifier.height(12.dp))
@@ -194,7 +194,7 @@ private fun AddingCard(state: AddGameState, onDismiss: () -> Unit) {
             .padding(16.dp),
     ) {
         if (game != null) {
-            MatchedHeader(game = game)
+            MatchedHeader(game = game, onChange = state::changeSelection)
         } else {
             TitleField(value = state.title, onValueChange = state::updateTitle)
             state.similarTitle?.let { existing ->
@@ -238,7 +238,7 @@ private fun AddingCard(state: AddGameState, onDismiss: () -> Unit) {
 }
 
 @Composable
-private fun MatchedHeader(game: IgdbGame) {
+private fun MatchedHeader(game: IgdbGame, onChange: () -> Unit) {
     val tokens = AppTheme.tokens
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(13.dp)) {
         CoverArt(
@@ -260,6 +260,12 @@ private fun MatchedHeader(game: IgdbGame) {
                 Text(it, style = AppTheme.type.caption, color = tokens.colors.muted)
             }
         }
+        Text(
+            "Change",
+            style = AppTheme.type.bodyStrong.copy(fontSize = 13.sp),
+            color = tokens.colors.accent,
+            modifier = Modifier.clip(RoundedCornerShape(9.dp)).clickable(onClick = onChange).padding(horizontal = 10.dp, vertical = 6.dp),
+        )
     }
 }
 

@@ -70,6 +70,13 @@ class AddGameState(
     /** True once a game is picked (matched) or manual entry is started. */
     val configuring: Boolean get() = selected != null || manualEntry
 
+    /** While configuring, true when the user re-opened the results list to change the pick. */
+    var browsing by mutableStateOf(false)
+        private set
+
+    /** Adding card shown (results collapsed): a pick is being configured and not re-browsing. */
+    val collapsed: Boolean get() = configuring && !browsing
+
     val canSave: Boolean get() = selected != null || (manualEntry && title.isNotBlank())
 
     var title by mutableStateOf("")
@@ -81,6 +88,7 @@ class AddGameState(
         selected = null
         manualEntry = false
         alreadyInLibrary = false
+        browsing = false
         search.updateQuery(value)
     }
 
@@ -88,6 +96,7 @@ class AddGameState(
         search.cancelPending()
         manualEntry = false
         alreadyInLibrary = false
+        browsing = false
         loadingSelection = true
         scope.launch {
             selected = try {
@@ -116,6 +125,12 @@ class AddGameState(
         selected = null
         manualEntry = false
         alreadyInLibrary = false
+        browsing = false
+    }
+
+    /** Re-open the results list from the adding card, keeping the current pick highlighted. */
+    fun changeSelection() {
+        browsing = true
     }
 
     fun updateTitle(value: String) {

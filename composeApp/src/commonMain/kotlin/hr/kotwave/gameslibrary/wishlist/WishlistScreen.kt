@@ -35,7 +35,7 @@ fun WishlistScreen(
     val tokens = AppTheme.tokens
 
     Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
-        Spacer(Modifier.height(if (compact) 20.dp else 0.dp))
+        Spacer(Modifier.height(20.dp))
         Text("Wishlist", style = AppTheme.type.display, color = tokens.colors.text)
         Spacer(Modifier.height(14.dp))
 
@@ -43,7 +43,7 @@ fun WishlistScreen(
             EmptyWishlist()
         } else {
             LazyVerticalGrid(
-                columns = GridCells.Fixed(if (compact) 3 else 6),
+                columns = if (compact) GridCells.Fixed(3) else GridCells.Adaptive(minSize = 150.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 contentPadding = PaddingValues(bottom = 24.dp),

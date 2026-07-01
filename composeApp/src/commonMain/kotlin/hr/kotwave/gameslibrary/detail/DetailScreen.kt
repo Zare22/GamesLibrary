@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -38,6 +39,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -52,11 +55,15 @@ import hr.kotwave.gameslibrary.data.Game
 import hr.kotwave.gameslibrary.data.GameWithOwnerships
 import hr.kotwave.gameslibrary.data.Status
 import hr.kotwave.gameslibrary.data.Store
+import hr.kotwave.gameslibrary.igdb.IgdbImage
 import hr.kotwave.gameslibrary.search.IgdbResultRow
 import hr.kotwave.gameslibrary.search.IgdbSearchField
 import hr.kotwave.gameslibrary.search.IgdbSearchStatus
 import hr.kotwave.gameslibrary.ui.components.CircularButton
+import hr.kotwave.gameslibrary.ui.components.ContentColumn
 import hr.kotwave.gameslibrary.ui.components.CoverArt
+import hr.kotwave.gameslibrary.ui.components.DetailMaxWidth
+import hr.kotwave.gameslibrary.ui.components.actionWidth
 import hr.kotwave.gameslibrary.ui.components.DestructiveButton
 import hr.kotwave.gameslibrary.ui.components.PrimaryButton
 import hr.kotwave.gameslibrary.ui.components.SecondaryButton
@@ -158,6 +165,7 @@ private fun PhoneHero(owned: GameWithOwnerships, actions: DetailActions) {
             coverImageId = owned.game.coverImageId,
             modifier = Modifier.matchParentSize(),
             shape = RoundedCornerShape(0.dp),
+            imageSize = IgdbImage.HERO,
         )
         Box(
             Modifier.matchParentSize().background(
@@ -196,48 +204,30 @@ private fun PhoneHero(owned: GameWithOwnerships, actions: DetailActions) {
 private fun DesktopDetail(owned: GameWithOwnerships, igdbUnreachable: Boolean, actions: DetailActions) {
     val tokens = AppTheme.tokens
     var confirmDelete by remember { mutableStateOf(false) }
-    Column(Modifier.fillMaxSize().padding(start = 30.dp, end = 30.dp, top = 18.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            CircularButton(AppIcons.ChevronLeft, onClick = actions.onBack, contentDescription = "Back")
-            Text("Library", style = AppTheme.type.bodyStrong, color = tokens.colors.muted)
-            Text("/", style = AppTheme.type.bodyStrong, color = tokens.colors.faint)
-            Text(owned.game.name, style = AppTheme.type.bodyStrong, color = tokens.colors.text, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        }
-        Spacer(Modifier.height(18.dp))
-        Row(Modifier.fillMaxSize()) {
-            Box(
-                Modifier.width(380.dp).fillMaxHeight().padding(bottom = 30.dp)
-                    .clip(RoundedCornerShape(20.dp)).border(1.dp, tokens.colors.border, RoundedCornerShape(20.dp)),
-            ) {
-                CoverArt(
-                    title = owned.game.name,
-                    coverImageId = owned.game.coverImageId,
-                    modifier = Modifier.matchParentSize(),
-                    shape = RoundedCornerShape(20.dp),
-                )
-                if (!owned.game.wishlist && owned.game.status != null) {
-                    Row(
-                        Modifier.align(Alignment.BottomStart).padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        StatusDot(status = owned.game.status!!)
-                        Text(owned.game.status!!.label, style = AppTheme.type.bodyStrong, color = tokens.colors.text)
-                    }
-                }
+    ContentColumn(maxWidth = DetailMaxWidth) {
+        Column(Modifier.fillMaxSize().padding(start = 30.dp, end = 30.dp, top = 18.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                CircularButton(AppIcons.ChevronLeft, onClick = actions.onBack, contentDescription = "Back")
+                Text("Library", style = AppTheme.type.bodyStrong, color = tokens.colors.muted)
+                Text("/", style = AppTheme.type.bodyStrong, color = tokens.colors.faint)
+                Text(owned.game.name, style = AppTheme.type.bodyStrong, color = tokens.colors.text, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
-            Spacer(Modifier.width(34.dp))
-            Column(
-                Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState()).padding(bottom = 30.dp),
-                verticalArrangement = Arrangement.spacedBy(22.dp),
-            ) {
-                Column {
-                    Text(owned.game.name, style = AppTheme.type.display.copy(fontSize = 34.sp), color = tokens.colors.text)
-                    Spacer(Modifier.height(11.dp))
-                    Subline(owned.game)
+            Spacer(Modifier.height(18.dp))
+            Row(Modifier.fillMaxSize()) {
+                DesktopPoster(owned)
+                Spacer(Modifier.width(34.dp))
+                Column(
+                    Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState()).padding(bottom = 30.dp),
+                    verticalArrangement = Arrangement.spacedBy(22.dp),
+                ) {
+                    Column {
+                        Text(owned.game.name, style = AppTheme.type.display.copy(fontSize = 34.sp), color = tokens.colors.text)
+                        Spacer(Modifier.height(11.dp))
+                        Subline(owned.game)
+                    }
+                    DetailBody(owned, igdbUnreachable, actions)
+                    DeleteAction(onClick = { confirmDelete = true })
                 }
-                DetailBody(owned, igdbUnreachable, actions)
-                DeleteAction(onClick = { confirmDelete = true })
             }
         }
     }
@@ -247,6 +237,47 @@ private fun DesktopDetail(owned: GameWithOwnerships, igdbUnreachable: Boolean, a
             onConfirm = { confirmDelete = false; actions.onDelete() },
             onDismiss = { confirmDelete = false },
         )
+    }
+}
+
+/** Desktop detail poster: a crisp contained cover over a pane-scoped blurred fill of the same art. */
+@Composable
+private fun DesktopPoster(owned: GameWithOwnerships) {
+    val tokens = AppTheme.tokens
+    val shape = RoundedCornerShape(20.dp)
+    Box(
+        Modifier.width(320.dp).fillMaxHeight().padding(bottom = 30.dp)
+            .clip(shape).border(1.dp, tokens.colors.border, shape),
+    ) {
+        CoverArt(
+            title = owned.game.name,
+            coverImageId = owned.game.coverImageId,
+            modifier = Modifier.matchParentSize().blur(34.dp),
+            shape = shape,
+        )
+        Box(Modifier.matchParentSize().background(Color(0x73060810)))
+        CoverArt(
+            title = owned.game.name,
+            coverImageId = owned.game.coverImageId,
+            modifier = Modifier.align(Alignment.TopCenter).padding(18.dp).fillMaxWidth().aspectRatio(3f / 4f),
+            shape = RoundedCornerShape(14.dp),
+            imageSize = IgdbImage.HERO,
+        )
+        if (!owned.game.wishlist && owned.game.status != null) {
+            Box(
+                Modifier.matchParentSize().background(
+                    Brush.verticalGradient(0.62f to Color.Transparent, 1f to Color(0xC7060810)),
+                ),
+            )
+            Row(
+                Modifier.align(Alignment.BottomStart).padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                StatusDot(status = owned.game.status!!)
+                Text(owned.game.status!!.label, style = AppTheme.type.bodyStrong, color = tokens.colors.text)
+            }
+        }
     }
 }
 
@@ -392,20 +423,29 @@ private fun RatingStepper(value: Double?, onChange: (Double?) -> Unit) {
             }
         }
         StepButton(AppIcons.Plus, "Raise") { editing = false; onChange(stepped(value, 0.5)) }
-        if (value != null) {
-            StepButton(AppIcons.Close, "Clear rating") { editing = false; onChange(null) }
-        }
+        StepButton(
+            AppIcons.Close,
+            "Clear rating",
+            modifier = Modifier.alpha(if (value != null) 1f else 0f),
+            enabled = value != null,
+        ) { editing = false; onChange(null) }
     }
 }
 
 @Composable
-private fun StepButton(icon: androidx.compose.ui.graphics.vector.ImageVector, description: String, onClick: () -> Unit) {
+private fun StepButton(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    description: String,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    onClick: () -> Unit,
+) {
     val tokens = AppTheme.tokens
     Box(
-        Modifier.size(30.dp).clip(RoundedCornerShape(9.dp))
+        modifier.size(30.dp).clip(RoundedCornerShape(9.dp))
             .background(tokens.colors.surfaceRaised)
             .border(1.dp, tokens.colors.borderStrong, RoundedCornerShape(9.dp))
-            .clickable(onClick = onClick),
+            .clickable(enabled = enabled, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Icon(icon, description, Modifier.size(14.dp), tint = tokens.colors.text)
@@ -602,7 +642,7 @@ private fun OrphanedBanner(onRematch: () -> Unit) {
                 )
             }
         }
-        SecondaryButton(text = "Re-match", onClick = onRematch, leadingIcon = AppIcons.Search, modifier = Modifier.fillMaxWidth())
+        SecondaryButton(text = "Re-match", onClick = onRematch, leadingIcon = AppIcons.Search, modifier = Modifier.actionWidth())
     }
 }
 

@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.sp
 import hr.kotwave.gameslibrary.data.Store
 import hr.kotwave.gameslibrary.ui.components.GlassSurface
 import hr.kotwave.gameslibrary.ui.components.PrimaryButton
+import hr.kotwave.gameslibrary.ui.components.actionWidth
 import hr.kotwave.gameslibrary.ui.icons.AppIcons
 import hr.kotwave.gameslibrary.ui.model.glyph
 import hr.kotwave.gameslibrary.ui.theme.AppTheme
@@ -154,7 +155,7 @@ private fun ConnectSection(viewModel: GogViewModel, gog: Color) {
                     PrimaryButton(
                         text = "Connect GOG",
                         onClick = viewModel::connect,
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.actionWidth(),
                     )
                     if (state is GogConnectState.Failed) {
                         Spacer(Modifier.height(10.dp))

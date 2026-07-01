@@ -41,6 +41,7 @@ fun GameTile(
             .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier),
     ) {
         CoverArt(title = title, coverImageId = coverImageId, modifier = Modifier.matchParentSize(), shape = shape)
+        Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0f to TopScrim, 0.28f to Color.Transparent)))
         Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0.38f to Color.Transparent, 1f to CoverScrim)))
 
         if (stores.isNotEmpty()) {
@@ -61,3 +62,4 @@ fun GameTile(
 }
 
 private val CoverScrim = Color(0xC7000000) // black .78
+private val TopScrim = Color(0x70000000) // black .44 — backs the top-corner badges

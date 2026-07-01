@@ -35,6 +35,7 @@ import hr.kotwave.gameslibrary.importer.ImportViewModel
 import hr.kotwave.gameslibrary.importer.MatchingPhase
 import hr.kotwave.gameslibrary.importer.ReviewPhase
 import hr.kotwave.gameslibrary.ui.components.PrimaryButton
+import hr.kotwave.gameslibrary.ui.components.actionWidth
 import hr.kotwave.gameslibrary.ui.icons.AppIcons
 import hr.kotwave.gameslibrary.ui.theme.AppTheme
 import org.koin.compose.viewmodel.koinViewModel
@@ -100,7 +101,7 @@ private fun CatalogPhase(viewModel: ImportViewModel, onBack: () -> Unit, modifie
                 onClick = { viewModel.startFromTitles(Store.BATTLE_NET, BattleNetCatalog.titles.filter { checked[it] == true }) },
                 leadingIcon = AppIcons.Check,
                 enabled = selectedCount > 0,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.actionWidth(),
             )
         }
     }

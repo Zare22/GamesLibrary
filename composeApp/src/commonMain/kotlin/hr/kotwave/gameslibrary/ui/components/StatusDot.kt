@@ -27,9 +27,9 @@ fun StatusDot(
     val tokens = AppTheme.tokens
     val color = tokens.status.color(status)
     val glow = if (tokens.status.glows(status)) color else null
-    GlowBox(glow = glow, shape = CircleShape, glowRadius = 5.dp, glowAlpha = 0.85f) {
+    GlowBox(glow = glow, shape = CircleShape, modifier = modifier, glowRadius = 5.dp, glowAlpha = 0.85f) {
         Box(
-            modifier
+            Modifier
                 .size(size)
                 .clip(CircleShape)
                 .background(color)

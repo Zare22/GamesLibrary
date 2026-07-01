@@ -22,11 +22,12 @@ fun CoverArt(
     coverImageId: String?,
     modifier: Modifier = Modifier,
     shape: Shape = RoundedCornerShape(10.dp),
+    imageSize: String = IgdbImage.GRID,
 ) {
     Box(modifier.clip(shape).background(Brush.linearGradient(coverGradient(title)))) {
         if (coverImageId != null) {
             AsyncImage(
-                model = IgdbImage.coverUrl(coverImageId),
+                model = IgdbImage.coverUrl(coverImageId, imageSize),
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize(),

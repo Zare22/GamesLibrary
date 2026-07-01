@@ -56,7 +56,11 @@ fun LibraryScreen(
             }
             Spacer(Modifier.height(12.dp))
         } else {
-            Text("Library", style = AppTheme.type.display, color = tokens.colors.text)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Library", style = AppTheme.type.display, color = tokens.colors.text)
+                Spacer(Modifier.weight(1f))
+                AppIconButton(AppIcons.Sliders, onClick = {}, contentDescription = "Sort & filter")
+            }
             Spacer(Modifier.height(14.dp))
         }
         SearchField()
@@ -66,7 +70,7 @@ fun LibraryScreen(
             EmptyLibrary()
         } else {
             LazyVerticalGrid(
-                columns = GridCells.Fixed(if (compact) 3 else 6),
+                columns = if (compact) GridCells.Fixed(3) else GridCells.Adaptive(minSize = 150.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 24.dp),

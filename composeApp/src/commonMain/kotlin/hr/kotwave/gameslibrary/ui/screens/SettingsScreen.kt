@@ -40,6 +40,7 @@ import hr.kotwave.gameslibrary.transfer.LIBRARY_EXPORT_FILENAME
 import hr.kotwave.gameslibrary.transfer.LibraryTransferViewModel
 import hr.kotwave.gameslibrary.transfer.rememberLibraryFileIo
 import hr.kotwave.gameslibrary.ui.components.SecondaryButton
+import hr.kotwave.gameslibrary.ui.components.actionWidth
 import hr.kotwave.gameslibrary.ui.icons.AppIcons
 import hr.kotwave.gameslibrary.ui.model.glyph
 import hr.kotwave.gameslibrary.ui.model.label
@@ -382,7 +383,7 @@ private fun OrphanedSection(
             onClick = onRetryAll,
             leadingIcon = AppIcons.Sync,
             enabled = !retrying,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.actionWidth(),
         )
     }
 }

@@ -24,11 +24,12 @@ import hr.kotwave.gameslibrary.ui.theme.AppTheme
 fun GlowBox(
     glow: Color?,
     shape: Shape,
+    modifier: Modifier = Modifier,
     glowRadius: Dp = 16.dp,
     glowAlpha: Float = 0.55f,
     content: @Composable BoxScope.() -> Unit,
 ) {
-    Box {
+    Box(modifier) {
         if (glow != null) {
             Box(
                 Modifier

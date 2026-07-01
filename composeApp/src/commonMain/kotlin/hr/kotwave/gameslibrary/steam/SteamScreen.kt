@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import hr.kotwave.gameslibrary.ui.components.GlassSurface
 import hr.kotwave.gameslibrary.ui.components.PrimaryButton
+import hr.kotwave.gameslibrary.ui.components.actionWidth
 import hr.kotwave.gameslibrary.ui.icons.AppIcons
 import hr.kotwave.gameslibrary.ui.theme.AppTheme
 import org.koin.compose.viewmodel.koinViewModel
@@ -152,7 +153,7 @@ private fun ConnectSection(viewModel: SteamViewModel, steam: Color) {
                         text = "Sign in through Steam",
                         onClick = viewModel::connect,
                         leadingIcon = AppIcons.Steam,
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.actionWidth(),
                     )
                     if (state is SteamConnectState.Failed) {
                         Spacer(Modifier.height(10.dp))
@@ -341,10 +342,10 @@ private fun PrivacyHelper(highlighted: Boolean) {
         }
         Spacer(Modifier.height(2.dp))
         Row(
-            Modifier.fillMaxWidth().clip(RoundedCornerShape(13.dp))
+            Modifier.actionWidth().clip(RoundedCornerShape(13.dp))
                 .background(tokens.colors.surface).border(1.dp, tokens.colors.border, RoundedCornerShape(13.dp))
                 .clickable { uriHandler.openUri(STEAM_PRIVACY_URL) }
-                .padding(vertical = 13.dp),
+                .padding(horizontal = 18.dp, vertical = 13.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
         ) {

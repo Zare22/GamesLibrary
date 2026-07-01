@@ -33,9 +33,9 @@ fun StoreBadge(
     val tokens = AppTheme.tokens
     val accent = tokens.store.accent(store)
     val glow = if (tokens.store.glows(store)) accent else null
-    GlowBox(glow = glow, shape = BadgeShape, glowRadius = 8.dp, glowAlpha = 0.7f) {
+    GlowBox(glow = glow, shape = BadgeShape, modifier = modifier, glowRadius = 8.dp, glowAlpha = 0.7f) {
         Box(
-            modifier
+            Modifier
                 .size(size)
                 .clip(BadgeShape)
                 .background(BadgeFill)
