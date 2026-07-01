@@ -6,6 +6,8 @@ import androidx.sqlite.execSQL
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import java.io.File
+import kotlin.time.Clock
+import kotlin.time.Instant
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -489,6 +491,35 @@ class GameRepositoryTest {
         assertEquals(listOf(Store.STEAM), tile.ownerships.map { it.store })
     }
 
+    @Test
+    fun insertStampsAddedAtFromTheClock() = runTest {
+        val stamped = GameRepository(dao, clock = fixedClock(1_700_000_000_000L))
+        val owned = stamped.addOwnedGame(name = "Celeste")
+        val matched = stamped.addMatchedGame(sampleIgdb(igdbId = 42L), wishlist = false, stores = setOf(Store.STEAM))
+
+        assertEquals(1_700_000_000_000L, dao.getGame(owned)!!.addedAt)
+        assertEquals(1_700_000_000_000L, dao.getGame(matched.gameId)!!.addedAt)
+    }
+
+    @Test
+    fun migratesV4DatabaseDefaultingAddedAtNull() = runTest {
+        database.close()
+        dbFile.delete()
+        seedVersion4Database(dbFile)
+
+        database = Room.databaseBuilder<GamesLibraryDatabase>(name = dbFile.absolutePath)
+            .buildGamesLibraryDatabase()
+        repository = GameRepository(database.gameDao())
+
+        val tile = repository.ownedGames.first().single()
+        assertEquals("Existing Game", tile.game.name)
+        assertNull(tile.game.addedAt)
+    }
+
+    private fun fixedClock(millis: Long): Clock = object : Clock {
+        override fun now(): Instant = Instant.fromEpochMilliseconds(millis)
+    }
+
     private fun sampleIgdb(igdbId: Long, name: String = "Sample Game"): IgdbGame = IgdbGame(
         igdbId = igdbId,
         name = name,
@@ -582,6 +613,47 @@ class GameRepositoryTest {
             )
             connection.execSQL("INSERT INTO `ownership` (`gameId`, `store`, `source`) VALUES (1, 'STEAM', 'MANUAL')")
             connection.execSQL("PRAGMA user_version = 3")
+        } finally {
+            connection.close()
+        }
+    }
+
+    /** Writes a v4 schema database (Game with userRating + orphaned, before addedAt; user_version = 4). */
+    private fun seedVersion4Database(file: File) {
+        val connection = BundledSQLiteDriver().open(file.absolutePath)
+        try {
+            connection.execSQL(
+                "CREATE TABLE IF NOT EXISTS `game` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "`name` TEXT NOT NULL, `igdbId` INTEGER, `wishlist` INTEGER NOT NULL, `status` TEXT, " +
+                    "`slug` TEXT, `firstReleaseDate` INTEGER, `coverImageId` TEXT, `developer` TEXT, " +
+                    "`totalRating` REAL, `totalRatingCount` INTEGER, `platforms` TEXT NOT NULL, " +
+                    "`alternativeNames` TEXT NOT NULL, `userRating` REAL, `orphaned` INTEGER NOT NULL DEFAULT 0)",
+            )
+            connection.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_game_igdbId` ON `game` (`igdbId`)")
+            connection.execSQL(
+                "CREATE TABLE IF NOT EXISTS `ownership` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "`gameId` INTEGER NOT NULL, `store` TEXT NOT NULL, `source` TEXT NOT NULL, " +
+                    "FOREIGN KEY(`gameId`) REFERENCES `game`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE)",
+            )
+            connection.execSQL(
+                "CREATE UNIQUE INDEX IF NOT EXISTS `index_ownership_gameId_store` ON `ownership` (`gameId`, `store`)",
+            )
+            connection.execSQL("CREATE INDEX IF NOT EXISTS `index_ownership_gameId` ON `ownership` (`gameId`)")
+            connection.execSQL(
+                "CREATE TABLE IF NOT EXISTS `external_game` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "`gameId` INTEGER NOT NULL, `category` INTEGER NOT NULL, `uid` TEXT NOT NULL, `url` TEXT, " +
+                    "FOREIGN KEY(`gameId`) REFERENCES `game`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE)",
+            )
+            connection.execSQL("CREATE INDEX IF NOT EXISTS `index_external_game_gameId` ON `external_game` (`gameId`)")
+            connection.execSQL(
+                "CREATE INDEX IF NOT EXISTS `index_external_game_category_uid` ON `external_game` (`category`, `uid`)",
+            )
+            connection.execSQL(
+                "INSERT INTO `game` (`name`, `igdbId`, `wishlist`, `status`, `platforms`, `alternativeNames`, `orphaned`) " +
+                    "VALUES ('Existing Game', 42, 0, 'PLAYING', '[]', '[]', 0)",
+            )
+            connection.execSQL("INSERT INTO `ownership` (`gameId`, `store`, `source`) VALUES (1, 'STEAM', 'MANUAL')")
+            connection.execSQL("PRAGMA user_version = 4")
         } finally {
             connection.close()
         }

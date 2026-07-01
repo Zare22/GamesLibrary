@@ -1,8 +1,10 @@
 package hr.kotwave.gameslibrary.library
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -10,11 +12,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -22,25 +25,30 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import hr.kotwave.gameslibrary.ui.components.AppIconButton
 import hr.kotwave.gameslibrary.ui.components.BrandWordmark
 import hr.kotwave.gameslibrary.ui.components.GameTile
 import hr.kotwave.gameslibrary.ui.components.GlassSurface
+import hr.kotwave.gameslibrary.ui.components.SecondaryButton
 import hr.kotwave.gameslibrary.ui.icons.AppIcons
 import hr.kotwave.gameslibrary.ui.shell.LocalIsCompact
 import hr.kotwave.gameslibrary.ui.theme.AppTheme
 import org.koin.compose.viewmodel.koinViewModel
 
-/** Library home: header chrome over the owned-games grid. */
+/** Library home: header chrome + search/filter controls over the owned-games grid. */
 @Composable
 fun LibraryScreen(
     onAdd: () -> Unit,
     onOpenGame: (Long) -> Unit,
     viewModel: LibraryViewModel = koinViewModel(),
 ) {
-    val games by viewModel.ownedGames.collectAsState()
+    val games by viewModel.games.collectAsState()
+    val filter by viewModel.filter.collectAsState()
+    val libraryEmpty by viewModel.libraryEmpty.collectAsState()
     val compact = LocalIsCompact.current
     val tokens = AppTheme.tokens
 
@@ -50,8 +58,14 @@ fun LibraryScreen(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 BrandWordmark()
                 Spacer(Modifier.weight(1f))
-                AppIconButton(AppIcons.Sliders, onClick = {}, contentDescription = "Sort & filter")
-                Spacer(Modifier.width(10.dp))
+                LibraryFilterButton(
+                    filter,
+                    onToggleStore = viewModel::toggleStore,
+                    onToggleStatus = viewModel::toggleStatus,
+                    onSetSort = viewModel::setSort,
+                    onReset = viewModel::resetFilters,
+                )
+                Spacer(Modifier.size(10.dp))
                 AppIconButton(AppIcons.Plus, onClick = onAdd, contentDescription = "Add game", accent = true)
             }
             Spacer(Modifier.height(12.dp))
@@ -59,21 +73,27 @@ fun LibraryScreen(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Library", style = AppTheme.type.display, color = tokens.colors.text)
                 Spacer(Modifier.weight(1f))
-                AppIconButton(AppIcons.Sliders, onClick = {}, contentDescription = "Sort & filter")
+                LibraryFilterButton(
+                    filter,
+                    onToggleStore = viewModel::toggleStore,
+                    onToggleStatus = viewModel::toggleStatus,
+                    onSetSort = viewModel::setSort,
+                    onReset = viewModel::resetFilters,
+                )
             }
             Spacer(Modifier.height(14.dp))
         }
-        SearchField()
+        SearchField(query = filter.query, onQueryChange = viewModel::setQuery)
         Spacer(Modifier.height(16.dp))
 
-        if (games.isEmpty()) {
-            EmptyLibrary()
-        } else {
-            LazyVerticalGrid(
+        when {
+            libraryEmpty -> EmptyLibrary()
+            games.isEmpty() -> NoMatches(onClear = viewModel::clearAll)
+            else -> LazyVerticalGrid(
                 columns = if (compact) GridCells.Fixed(3) else GridCells.Adaptive(minSize = 150.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 24.dp),
+                contentPadding = PaddingValues(bottom = 24.dp),
                 modifier = Modifier.fillMaxSize(),
             ) {
                 items(games, key = { it.game.id }) { owned ->
@@ -107,9 +127,28 @@ private fun EmptyLibrary() {
     }
 }
 
-/** Non-interactive search field. */
 @Composable
-private fun SearchField() {
+private fun NoMatches(onClear: () -> Unit) {
+    val tokens = AppTheme.tokens
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text("No matches", style = AppTheme.type.display, color = tokens.colors.text)
+            Spacer(Modifier.height(6.dp))
+            Text(
+                "No games match your search and filters.",
+                style = AppTheme.type.body,
+                color = tokens.colors.faint,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(Modifier.height(16.dp))
+            SecondaryButton("Clear search & filters", onClick = onClear)
+        }
+    }
+}
+
+/** Live title search: substring filter as you type, with a clear affordance. */
+@Composable
+private fun SearchField(query: String, onQueryChange: (String) -> Unit) {
     val tokens = AppTheme.tokens
     val compact = LocalIsCompact.current
     GlassSurface(
@@ -122,8 +161,27 @@ private fun SearchField() {
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Icon(AppIcons.Search, null, Modifier.size(17.dp), tint = tokens.colors.faint)
-            Text("Search games", style = AppTheme.type.body, color = tokens.colors.faint, modifier = Modifier.weight(1f))
-            if (!compact) {
+            Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
+                if (query.isEmpty()) {
+                    Text("Search games", style = AppTheme.type.body, color = tokens.colors.faint)
+                }
+                BasicTextField(
+                    value = query,
+                    onValueChange = onQueryChange,
+                    singleLine = true,
+                    textStyle = AppTheme.type.body.copy(color = tokens.colors.text),
+                    cursorBrush = SolidColor(tokens.colors.accent),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+            if (query.isNotEmpty()) {
+                Icon(
+                    AppIcons.Close,
+                    "Clear search",
+                    Modifier.size(17.dp).clip(CircleShape).clickable { onQueryChange("") },
+                    tint = tokens.colors.faint,
+                )
+            } else if (!compact) {
                 GlassSurface(shape = RoundedCornerShape(6.dp)) {
                     Text(
                         "/",

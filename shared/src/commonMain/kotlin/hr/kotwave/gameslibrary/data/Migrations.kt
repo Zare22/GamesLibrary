@@ -70,3 +70,13 @@ val MIGRATION_3_4 = object : Migration(3, 4) {
         connection.execSQL("ALTER TABLE `game` ADD COLUMN `orphaned` INTEGER NOT NULL DEFAULT 0")
     }
 }
+
+/**
+ * v4 -> v5: adds `addedAt` (nullable epoch-millis insertion stamp) for the Library "recently added"
+ * sort. Pre-v5 rows keep null and sort as oldest.
+ */
+val MIGRATION_4_5 = object : Migration(4, 5) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL("ALTER TABLE `game` ADD COLUMN `addedAt` INTEGER")
+    }
+}

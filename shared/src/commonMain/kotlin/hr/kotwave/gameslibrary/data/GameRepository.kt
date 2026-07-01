@@ -10,6 +10,7 @@ import hr.kotwave.gameslibrary.transfer.externalEntities
 import hr.kotwave.gameslibrary.transfer.ownershipEntities
 import hr.kotwave.gameslibrary.transfer.toGame
 import kotlinx.coroutines.flow.Flow
+import kotlin.time.Clock
 
 /** IGDB's (deprecated) integer external-game category for Steam (ADR 0014); the Steam appid's `uid`. */
 private const val STEAM_EXTERNAL_CATEGORY = 1
@@ -17,7 +18,10 @@ private const val STEAM_EXTERNAL_CATEGORY = 1
 /** IGDB's (deprecated) integer external-game category for GOG (ADR 0014); the GOG product id's `uid`. */
 private const val GOG_EXTERNAL_CATEGORY = 5
 
-class GameRepository(private val gameDao: GameDao) {
+class GameRepository(
+    private val gameDao: GameDao,
+    private val clock: Clock = Clock.System,
+) {
 
     /** Owned Games (not Wishlisted) with their Ownerships, for the Library. */
     val ownedGames: Flow<List<GameWithOwnerships>> = gameDao.observeOwnedGames()
@@ -31,6 +35,19 @@ class GameRepository(private val gameDao: GameDao) {
     /** A single Game with its Ownerships, for the detail screen; emits null once it is deleted. */
     fun observeGame(gameId: Long): Flow<GameWithOwnerships?> = gameDao.observeGame(gameId)
 
+    /** Stamps `addedAt` at insertion time (only if unset), so the Library "recently added" sort has an order. */
+    private fun Game.stamped(): Game =
+        if (addedAt == null) copy(addedAt = clock.now().toEpochMilliseconds()) else this
+
+    private suspend fun insertStampedGame(game: Game): Long = gameDao.insertGame(game.stamped())
+
+    private suspend fun insertStampedMatchedGame(
+        game: Game,
+        stores: Set<Store>,
+        externals: List<ExternalGame>,
+        source: Source = Source.MANUAL,
+    ): Long = gameDao.insertMatchedGame(game.stamped(), stores, externals, source)
+
     /**
      * Adds an owned Game: not Wishlisted, with a Status and zero or more Ownerships
      * (zero Stores = have-but-untracked). Returns the new Game id.
@@ -41,7 +58,7 @@ class GameRepository(private val gameDao: GameDao) {
         stores: Set<Store> = emptySet(),
         igdbId: Long? = null,
     ): Long {
-        val gameId = gameDao.insertGame(
+        val gameId = insertStampedGame(
             Game(name = name, igdbId = igdbId, wishlist = false, status = status),
         )
         stores.forEach { store ->
@@ -52,7 +69,7 @@ class GameRepository(private val gameDao: GameDao) {
 
     /** Adds a Wishlisted Game: no Status, no Ownership. Returns the new Game id. */
     suspend fun addWishlistGame(name: String, igdbId: Long? = null): Long =
-        gameDao.insertGame(Game(name = name, igdbId = igdbId, wishlist = true, status = null))
+        insertStampedGame(Game(name = name, igdbId = igdbId, wishlist = true, status = null))
 
     /**
      * Records an Ownership on a Store. If the Game was Wishlisted, that clears Wishlist and
@@ -93,7 +110,7 @@ class GameRepository(private val gameDao: GameDao) {
             }
             return MatchedAddResult(existing.id, alreadyExisted = true)
         }
-        val gameId = gameDao.insertMatchedGame(
+        val gameId = insertStampedMatchedGame(
             game = igdb.toGame(wishlist = wishlist, status = if (wishlist) null else status),
             stores = if (wishlist) emptySet() else stores,
             externals = igdb.externalGames.map { it.toEntity() },
@@ -161,13 +178,13 @@ class GameRepository(private val gameDao: GameDao) {
                 return@forEach
             }
             when (entry) {
-                is SteamSyncEntry.Matched -> gameDao.insertMatchedGame(
+                is SteamSyncEntry.Matched -> insertStampedMatchedGame(
                     game = entry.igdb.toGame(wishlist = false, status = Status.BACKLOG),
                     stores = setOf(Store.STEAM),
                     externals = entry.igdb.externalGames.map { it.toEntity() },
                     source = Source.STEAM_SYNC,
                 )
-                is SteamSyncEntry.Unmatched -> gameDao.insertMatchedGame(
+                is SteamSyncEntry.Unmatched -> insertStampedMatchedGame(
                     game = Game(name = entry.name, igdbId = null, wishlist = false, status = Status.BACKLOG),
                     stores = setOf(Store.STEAM),
                     externals = listOf(ExternalGame(gameId = 0, category = STEAM_EXTERNAL_CATEGORY, uid = entry.appid)),
@@ -213,13 +230,13 @@ class GameRepository(private val gameDao: GameDao) {
                 return@forEach
             }
             when (entry) {
-                is GogSyncEntry.Matched -> gameDao.insertMatchedGame(
+                is GogSyncEntry.Matched -> insertStampedMatchedGame(
                     game = entry.igdb.toGame(wishlist = false, status = Status.BACKLOG),
                     stores = setOf(Store.GOG),
                     externals = entry.igdb.externalGames.map { it.toEntity() },
                     source = Source.GOG_SYNC,
                 )
-                is GogSyncEntry.Unmatched -> gameDao.insertMatchedGame(
+                is GogSyncEntry.Unmatched -> insertStampedMatchedGame(
                     game = Game(name = entry.name, igdbId = null, wishlist = false, status = Status.BACKLOG),
                     stores = setOf(Store.GOG),
                     externals = listOf(ExternalGame(gameId = 0, category = GOG_EXTERNAL_CATEGORY, uid = entry.gogId)),
@@ -265,7 +282,7 @@ class GameRepository(private val gameDao: GameDao) {
                         gameDao.insertOwnership(Ownership(gameId = existing.id, store = entry.store, source = Source.PASTE_IMPORT))
                         attached++
                     } else {
-                        gameDao.insertMatchedGame(
+                        insertStampedMatchedGame(
                             game = entry.igdb.toGame(wishlist = false, status = Status.BACKLOG),
                             stores = setOf(entry.store),
                             externals = entry.igdb.externalGames.map { it.toEntity() },
@@ -275,7 +292,7 @@ class GameRepository(private val gameDao: GameDao) {
                     }
                 }
                 is ImportEntry.Unmatched -> {
-                    val gameId = gameDao.insertGame(
+                    val gameId = insertStampedGame(
                         Game(name = entry.name, igdbId = null, wishlist = false, status = Status.BACKLOG),
                     )
                     gameDao.insertOwnership(Ownership(gameId = gameId, store = entry.store, source = Source.PASTE_IMPORT))
@@ -338,7 +355,7 @@ class GameRepository(private val gameDao: GameDao) {
 
     /** Inserts an imported Game new, with its full cached metadata, Ownerships, and external references. */
     private suspend fun insertImported(imported: ExportedGame) {
-        val gameId = gameDao.insertGame(imported.toGame())
+        val gameId = insertStampedGame(imported.toGame())
         imported.ownershipEntities(gameId).forEach { gameDao.insertOwnership(it) }
         imported.externalEntities(gameId).takeIf { it.isNotEmpty() }?.let { gameDao.insertExternalGames(it) }
     }

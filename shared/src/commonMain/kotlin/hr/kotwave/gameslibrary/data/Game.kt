@@ -24,4 +24,5 @@ data class Game(
     val platforms: List<Platform> = emptyList(),
     val alternativeNames: List<String> = emptyList(),
     val orphaned: Boolean = false,
+    val addedAt: Long? = null,
 )
