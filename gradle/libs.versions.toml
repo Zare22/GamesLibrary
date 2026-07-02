@@ -59,13 +59,13 @@ navigation-compose = { module = "org.jetbrains.androidx.navigation:navigation-co
 # Android target
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
 
-# Android Custom Tabs (Steam OpenID sign-in browser leg, ADR 0003)
+# Android Custom Tabs (Steam OpenID sign-in browser leg)
 androidx-browser = { module = "androidx.browser:browser", version.ref = "browser" }
 
-# Android secure storage (EncryptedSharedPreferences; backs the SecureStorage shim, ADR 0003/0016)
+# Android secure storage (EncryptedSharedPreferences; backs the SecureStorage shim)
 androidx-security-crypto = { module = "androidx.security:security-crypto", version.ref = "securityCrypto" }
 
-# Desktop secure storage (OS keychain — Windows Credential Manager / macOS Keychain; backs the SecureStorage actual, ADR 0024)
+# Desktop secure storage (OS keychain — Windows Credential Manager / macOS Keychain; backs the SecureStorage actual)
 java-keyring = { module = "com.github.javakeyring:java-keyring", version.ref = "javaKeyring" }
 
 # Coil (image loading, KMP)

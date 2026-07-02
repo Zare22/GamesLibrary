@@ -7,10 +7,9 @@ import kotlinx.serialization.Serializable
 const val LIBRARY_EXPORT_VERSION = 1
 
 /**
- * A versioned, lossless snapshot of the whole library, decoupled from the Room schema so the file
- * format and the database evolve independently (ADR 0007). Enum-valued fields (status/store/source)
- * are plain strings, so a newer export naming a Store/Status this build doesn't know loads instead
- * of failing — unknown values are dropped row-by-row on import, never fatal.
+ * A versioned, lossless snapshot of the whole library, decoupled from the Room schema. Enum-valued
+ * fields (status/store/source) are plain strings, so a newer export naming a Store/Status this build
+ * doesn't know loads instead of failing — unknown values are dropped row-by-row on import, never fatal.
  */
 @Serializable
 data class LibraryExport(

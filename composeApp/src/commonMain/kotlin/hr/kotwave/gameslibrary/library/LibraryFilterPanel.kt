@@ -53,7 +53,7 @@ private val LibrarySort.label: String
 
 /**
  * The Sliders button with an active-facet count badge, opening the sort/filter panel — a bottom sheet
- * on compact layouts, a popover anchored to the button on expanded ones (ADR 0022 form-factor branch).
+ * on compact layouts, a popover anchored to the button on expanded ones.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

@@ -7,8 +7,8 @@ const val LIBRARY_EXPORT_FILENAME = "GamesLibrary.json"
 
 /**
  * Active, user-triggered file access for library export/import — unlike the passive paste-import
- * file-drop. Bound per platform (Android = Storage Access Framework; Desktop = an AWT file dialog),
- * keeping platform UI out of `:shared` (ADR 0001). The callbacks fire on the main thread.
+ * file-drop. Bound per platform (Android = Storage Access Framework; Desktop = an AWT file dialog).
+ * The callbacks fire on the main thread.
  */
 interface LibraryFileIo {
 

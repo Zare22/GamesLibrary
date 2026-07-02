@@ -21,7 +21,7 @@ import java.net.URI
 
 /**
  * Desktop GOG sign-in: the system browser opens GOG's login; after signing in the user copies the
- * resulting `on_login_success?...` address and pastes it here (no native Chromium — ADR 0020).
+ * resulting `on_login_success?...` address and pastes it here.
  */
 @Composable
 actual fun GogConnectCapture(authUrl: String, onRedirect: (String) -> Unit) {

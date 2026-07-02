@@ -37,7 +37,7 @@ class LibraryImportCandidate(val row: LibraryImportRow) {
 /**
  * Drives library export and import. Export builds the JSON (the screen hands it to [LibraryFileIo]);
  * import decodes + classifies a picked file against the current library, lets the user review per
- * row, then applies it additively via [GameRepository.importLibrary] (ADR 0006). Mirrors the paste
+ * row, then applies it additively via [GameRepository.importLibrary]. Mirrors the paste
  * [hr.kotwave.gameslibrary.importer.ImportViewModel] phase machine.
  */
 class LibraryTransferViewModel(private val repository: GameRepository) : ViewModel() {

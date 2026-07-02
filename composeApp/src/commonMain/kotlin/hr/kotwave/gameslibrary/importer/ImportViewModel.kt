@@ -16,7 +16,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
 
-/** Spacing between IGDB calls so a long paste stays under IGDB's request-rate ceiling (ADR 0005). */
+/** Spacing between IGDB calls so a long paste stays under IGDB's request-rate ceiling. */
 private val IGDB_THROTTLE = 280.milliseconds
 
 /** Which leg of the paste Import funnel is on screen. */
@@ -30,7 +30,7 @@ sealed interface ImportPhase {
 /**
  * Drives the paste Import funnel: Intake (paste + Store) → Matching (name-search each line against
  * IGDB, classify) → Review (every Candidate, confident ones pre-checked) → Confirm. The VM does the
- * IGDB networking; the additive merge lives in [GameRepository.confirmImport] (`:shared`, ADR 0006).
+ * IGDB networking; the additive merge lives in [GameRepository.confirmImport] (`:shared`).
  */
 class ImportViewModel(
     private val repository: GameRepository,

@@ -15,7 +15,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import kotlin.time.Clock
 
-/** IGDB's external-game category for GOG (ADR 0014); the GOG product id is its `uid`. */
+/** IGDB's external-game category for GOG; the GOG product id is its `uid`. */
 private const val GOG_EXTERNAL_CATEGORY = 5
 
 /** Where the connect flow stands: idle, showing the login capture, exchanging the code, or failed. */
@@ -31,7 +31,7 @@ enum class GogConnectFailure { Auth, Network }
 /**
  * GOG screen state: "Connect GOG" opens the OAuth2 login ([GogConnectCapture] + [GogAuth]), persists the
  * resulting token through [SecureStorage], then the additive sync does the GOG + IGDB networking and
- * hands resolved entries to [GameRepository.syncGogGames] — the merge lives in `:shared` (ADR 0016).
+ * hands resolved entries to [GameRepository.syncGogGames] — the merge lives in `:shared`.
  */
 class GogViewModel(
     private val repository: GameRepository,

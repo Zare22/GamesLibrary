@@ -7,7 +7,7 @@ import kotlin.time.Duration.Companion.minutes
  * The platform browser leg of Steam OpenID sign-in: opens a browser to the URL built from a loopback
  * `return_to`, captures the redirect, and returns its `openid.*` callback params (null if the user
  * cancels or it times out). Verifying those params is `:shared` ([SteamOpenId]). Android = a Custom
- * Tab; Desktop = the system browser. ADR 0001 keeps this platform UI out of `:shared`.
+ * Tab; Desktop = the system browser.
  */
 interface SteamAuthFlow {
     suspend fun authenticate(buildAuthUrl: (returnTo: String) -> String): Map<String, String>?

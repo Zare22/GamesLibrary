@@ -25,7 +25,7 @@ import kotlinx.coroutines.launch
 /**
  * Game detail: observes one Game with its Ownerships and applies edits, manual metadata refresh, and
  * Orphaned Re-match. A real androidx ViewModel — detail is a NavHost destination with its own
- * ViewModelStoreOwner (ADR 0002), unlike the Add modal (ADR 0013).
+ * ViewModelStoreOwner.
  */
 class DetailViewModel(
     private val repository: GameRepository,

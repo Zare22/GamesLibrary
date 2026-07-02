@@ -2,5 +2,5 @@ package hr.kotwave.gameslibrary.di
 
 import org.koin.core.module.Module
 
-/** composeApp platform bindings — the Steam OpenID browser leg (ADR 0001 keeps it out of `:shared`). */
+/** composeApp platform bindings, e.g. the Steam OpenID browser leg. */
 expect val platformAppModule: Module

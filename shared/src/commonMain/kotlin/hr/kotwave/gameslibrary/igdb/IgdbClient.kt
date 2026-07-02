@@ -90,13 +90,13 @@ class IgdbClient internal constructor(
 
 class IgdbException(message: String) : Exception(message)
 
-/** IGDB's external_game_source id for Steam (ADR 0014; replaced the removed integer category, same value 1). */
+/** IGDB's external_game_source id for Steam (1). */
 private const val STEAM_EXTERNAL_CATEGORY = 1
 
 /** Steam appids per `matchBySteamAppids` query — well under IGDB's `limit 500`, easy on the rate limit. */
 private const val STEAM_MATCH_CHUNK = 100
 
-/** IGDB's external_game_source id for GOG (ADR 0014; replaced the removed integer category, same value 5). */
+/** IGDB's external_game_source id for GOG (5). */
 private const val GOG_EXTERNAL_CATEGORY = 5
 
 /** GOG product ids per `matchByGogIds` query — same budget as the Steam chunk. */

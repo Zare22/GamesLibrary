@@ -12,10 +12,10 @@ import hr.kotwave.gameslibrary.transfer.toGame
 import kotlinx.coroutines.flow.Flow
 import kotlin.time.Clock
 
-/** IGDB's (deprecated) integer external-game category for Steam (ADR 0014); the Steam appid's `uid`. */
+/** IGDB's integer external-game category for Steam; the Steam appid is its `uid`. */
 private const val STEAM_EXTERNAL_CATEGORY = 1
 
-/** IGDB's (deprecated) integer external-game category for GOG (ADR 0014); the GOG product id's `uid`. */
+/** IGDB's integer external-game category for GOG; the GOG product id is its `uid`. */
 private const val GOG_EXTERNAL_CATEGORY = 5
 
 class GameRepository(
@@ -161,7 +161,7 @@ class GameRepository(
      * Additively syncs the Steam library from already-resolved [entries] (the ViewModel does the
      * Steam + IGDB networking). Adds Games it hasn't seen, ensures a Steam Ownership tagged
      * `STEAM_SYNC` on ones it has, and never removes anything or overwrites cached metadata or local
-     * state (Status/userRating/Wishlist) — ADR 0005/0006. Matched entries dedup by `igdbId`;
+     * state (Status/userRating/Wishlist). Matched entries dedup by `igdbId`;
      * unmatched ones by their Steam appid in `external_game`.
      */
     suspend fun syncSteamGames(entries: List<SteamSyncEntry>): SteamSyncSummary {
@@ -213,7 +213,7 @@ class GameRepository(
      * Additively syncs the GOG library from already-resolved [entries] (the ViewModel does the GOG +
      * IGDB networking). Adds Games it hasn't seen, ensures a GOG Ownership tagged `GOG_SYNC` on ones it
      * has, and never removes anything or overwrites cached metadata or local state (Status/userRating/
-     * Wishlist) — ADR 0005/0006. Matched entries dedup by `igdbId`; unmatched ones by their GOG id in
+     * Wishlist). Matched entries dedup by `igdbId`; unmatched ones by their GOG id in
      * `external_game`.
      */
     suspend fun syncGogGames(entries: List<GogSyncEntry>): GogSyncSummary {
@@ -266,7 +266,7 @@ class GameRepository(
      * Additive only, tagged `PASTE_IMPORT`: a [ImportEntry.Matched] dedups by `igdbId` — attaching an
      * Ownership on its Store to the existing Game (clearing Wishlist) or adding the Game new; an
      * [ImportEntry.Unmatched] adds an `igdb_id`-null Game with that Ownership. Never removes anything or
-     * overwrites cached metadata or local state — ADR 0006.
+     * overwrites cached metadata or local state.
      */
     suspend fun confirmImport(entries: List<ImportEntry>): ImportSummary {
         var added = 0
@@ -303,7 +303,7 @@ class GameRepository(
         return ImportSummary(added = added, attached = attached)
     }
 
-    /** Serializes the whole library (Games, Ownerships, external refs) to the export file format (ADR 0007). */
+    /** Serializes the whole library (Games, Ownerships, external refs) to the export file format. */
     suspend fun exportLibrary(): String =
         LibraryTransfer.encode(gameDao.allGamesWithOwnerships(), gameDao.allExternalGames().groupBy { it.gameId })
 
@@ -318,7 +318,7 @@ class GameRepository(
     }
 
     /**
-     * Applies a library import from already-reviewed [decisions]. Additive only (ADR 0006): an `igdbId`
+     * Applies a library import from already-reviewed [decisions]. Additive only: an `igdbId`
      * row dedups by id; an `igdb`-null row merges onto a same-titled Game when [LibraryImportDecision.mergeByTitle]
      * is set, else adds new. Merging unions Ownerships (clearing Wishlist if it brings one) and never
      * overwrites an existing Game's cached metadata or local state. New Games carry their full imported metadata.
@@ -344,7 +344,7 @@ class GameRepository(
         return ImportSummary(added = added, attached = attached)
     }
 
-    /** Unions an imported game's Ownerships onto an existing Game, clearing Wishlist if it brings one (ADR 0004). */
+    /** Unions an imported game's Ownerships onto an existing Game, clearing Wishlist if it brings one. */
     private suspend fun mergeImportedInto(existing: Game, imported: ExportedGame) {
         val ownerships = imported.ownershipEntities(existing.id)
         if (ownerships.isNotEmpty() && existing.wishlist) {

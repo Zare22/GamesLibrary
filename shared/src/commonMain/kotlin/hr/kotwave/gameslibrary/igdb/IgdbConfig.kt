@@ -1,6 +1,6 @@
 package hr.kotwave.gameslibrary.igdb
 
-/** IGDB/Twitch endpoints and credentials. `baseUrl` is swappable for the post-v1 proxy (ADR 0003). */
+/** IGDB/Twitch endpoints and credentials; `baseUrl` can point at a proxy. */
 internal data class IgdbConfig(
     val clientId: String,
     val clientSecret: String,

@@ -67,7 +67,7 @@ private const val AMBIGUOUS_INLINE_CAP = 3
 
 /**
  * The paste Import tab: Intake (paste + Store) → Matching → Review → Done. Each Candidate passes
- * through Review before anything enters the library; Confirm is additive (ADR 0006).
+ * through Review before anything enters the library; Confirm is additive.
  */
 @Composable
 fun ImportScreen(modifier: Modifier = Modifier, viewModel: ImportViewModel = koinViewModel()) {

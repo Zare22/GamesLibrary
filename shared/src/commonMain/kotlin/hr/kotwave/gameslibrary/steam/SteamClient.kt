@@ -6,7 +6,7 @@ import io.ktor.client.request.parameter
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.isSuccess
 
-/** The Steam Web API: pulls the games a public profile owns. Authorized by the developer key (ADR 0003). */
+/** The Steam Web API: pulls the games a public profile owns. Authorized by the developer key. */
 class SteamClient internal constructor(
     private val httpClient: HttpClient,
     private val config: SteamConfig,

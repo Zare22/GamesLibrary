@@ -15,7 +15,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
-/** IGDB's external-game category for Steam (ADR 0014); the Steam appid is its `uid`. */
+/** IGDB's external-game category for Steam; the Steam appid is its `uid`. */
 private const val STEAM_EXTERNAL_CATEGORY = 1
 
 /** Where the connect flow stands: idle, waiting on the browser, or failed (the browser leg never started over). */
@@ -30,7 +30,7 @@ enum class SteamConnectFailure { Verification, Network }
 /**
  * Steam screen state: "Sign in through Steam" (OpenID, [SteamAuthFlow] + [SteamOpenId]) persists a
  * verified SteamID64 through [SecureStorage], then the additive sync does the Steam + IGDB networking
- * and hands resolved entries to [GameRepository.syncSteamGames] — the merge lives in `:shared` (ADR 0015).
+ * and hands resolved entries to [GameRepository.syncSteamGames] — the merge lives in `:shared`.
  */
 class SteamViewModel(
     private val repository: GameRepository,

@@ -10,7 +10,7 @@ import io.ktor.http.parameters
 /**
  * "Sign in through Steam" via OpenID 2.0. [authUrl] is the browser destination; [verify] confirms the
  * redirect's assertion back with Steam (signature check) so a forged callback can't claim another id.
- * Pure logic over the Steam [HttpClient] — the browser/redirect leg lives in `:composeApp` (ADR 0001/0003).
+ * Pure logic over the Steam [HttpClient] — the browser/redirect leg lives in `:composeApp`.
  */
 class SteamOpenId internal constructor(
     private val httpClient: HttpClient,

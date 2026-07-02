@@ -43,7 +43,7 @@ private val Ok = Color(0xFF46D39A)
 
 /**
  * Library import: picks a GamesLibrary export file, classifies each game against the current library,
- * and reviews per row before applying it additively (ADR 0006). `igdbId` rows dedup by id; `igdb`-null
+ * and reviews per row before applying it additively. `igdbId` rows dedup by id; `igdb`-null
  * rows that collide with an existing title offer merge-or-add.
  */
 @Composable
