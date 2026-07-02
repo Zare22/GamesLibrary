@@ -52,6 +52,30 @@ class KeyringSecureStorageTest {
     }
 
     @Test
+    fun largeValueChunksAndRoundTrips() = runTest {
+        val backend = FakeKeyringBackend()
+        val storage = storage(backend)
+        val big = "y".repeat(3000)
+
+        storage.put(GOG_TOKEN_KEY, big)
+
+        assertEquals(big, storage.get(GOG_TOKEN_KEY))
+        assertTrue(backend.accounts.count { it.startsWith("$GOG_TOKEN_KEY#") } > 1, "expected multiple chunk entries")
+    }
+
+    @Test
+    fun overwritingLongValueWithShortClearsStaleChunks() = runTest {
+        val backend = FakeKeyringBackend()
+        val storage = storage(backend)
+        storage.put(GOG_TOKEN_KEY, "z".repeat(3000))
+
+        storage.put(GOG_TOKEN_KEY, "small")
+
+        assertEquals("small", storage.get(GOG_TOKEN_KEY))
+        assertEquals(1, backend.accounts.count { it.startsWith("$GOG_TOKEN_KEY#") }, "stale chunks left behind")
+    }
+
+    @Test
     fun delegatesToFileWhenNoBackend() = runTest {
         val storage = storage(null)
         storage.put(STEAM_ID_KEY, "via-file")
@@ -81,6 +105,7 @@ class KeyringSecureStorageTest {
 
 private class FakeKeyringBackend : KeyringBackend {
     private val store = mutableMapOf<Pair<String, String>, String>()
+    val accounts: Set<String> get() = store.keys.map { it.second }.toSet()
     override fun get(service: String, account: String): String? = store[service to account]
     override fun set(service: String, account: String, value: String) {
         store[service to account] = value
