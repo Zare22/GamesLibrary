@@ -8,6 +8,7 @@ import io.ktor.http.headersOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Clock
@@ -31,7 +32,7 @@ class GogAuthTest {
         assertTrue(url.startsWith("https://auth.gog.com/auth"))
         assertTrue(url.contains("client_id=46899977096215655"))
         assertTrue(url.contains("response_type=code"))
-        assertTrue(url.contains("layout=client2"))
+        assertFalse(url.contains("layout=client2"))
         assertTrue(url.contains("redirect_uri="))
     }
 

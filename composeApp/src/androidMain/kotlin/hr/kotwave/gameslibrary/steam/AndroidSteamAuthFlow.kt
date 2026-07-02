@@ -27,7 +27,7 @@ class AndroidSteamAuthFlow(private val context: Context) : SteamAuthFlow {
         withTimeoutOrNull(AUTH_TIMEOUT) {
             withContext(Dispatchers.IO) {
                 ServerSocket().use { server ->
-                    server.bind(InetSocketAddress(InetAddress.getLoopbackAddress(), 0))
+                    server.bind(InetSocketAddress(InetAddress.getByName("127.0.0.1"), 0))
                     val returnTo = "http://127.0.0.1:${server.localPort}/callback"
                     launchCustomTab(buildAuthUrl(returnTo))
                     // Cancel/timeout closes the socket so the blocking accept() throws instead of hanging.

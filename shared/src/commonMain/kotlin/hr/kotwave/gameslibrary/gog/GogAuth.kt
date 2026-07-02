@@ -18,13 +18,16 @@ class GogAuth internal constructor(
     private val config: GogConfig,
     private val clock: Clock = Clock.System,
 ) {
-    /** The GOG login URL to open in a browser; GOG redirects to [GogConfig.redirectUri] with `?code=`. */
+    /**
+     * The GOG login URL to open in a browser; GOG redirects to [GogConfig.redirectUri] with `?code=`.
+     * No `layout=client2` — that Galaxy-client skin needs the native client's JS bridge to reveal its
+     * login form and stays blank in a bare Android WebView; the default web login renders anywhere.
+     */
     fun authUrl(): String =
         URLBuilder(config.authUrl).apply {
             parameters.append("client_id", config.clientId)
             parameters.append("redirect_uri", config.redirectUri)
             parameters.append("response_type", "code")
-            parameters.append("layout", "client2")
         }.buildString()
 
     /** Exchanges the authorization [code] for a [GogToken] (access + refresh + absolute expiry). */

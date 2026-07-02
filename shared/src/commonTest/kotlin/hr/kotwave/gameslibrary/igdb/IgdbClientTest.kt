@@ -71,7 +71,7 @@ class IgdbClientTest {
                 {"name":"PC (Microsoft Windows)","abbreviation":"PC"},
                 {"name":"PlayStation 4","abbreviation":"PS4"}
             ],
-            "external_games":[{"uid":"292030","category":1,"url":"https://store.steampowered.com/app/292030"}],
+            "external_games":[{"uid":"292030","external_game_source":1,"url":"https://store.steampowered.com/app/292030"}],
             "alternative_names":[{"name":"Wiedzmin 3"}]
         }]"""
         val client = clientWith(
@@ -157,7 +157,7 @@ class IgdbClientTest {
         var body: String? = null
         val games = """[{
             "id":1942,"name":"The Witcher 3",
-            "external_games":[{"uid":"292030","category":1,"url":"https://store.steampowered.com/app/292030"}]
+            "external_games":[{"uid":"292030","external_game_source":1,"url":"https://store.steampowered.com/app/292030"}]
         }]"""
         val client = clientWith(
             MockEngine { request ->
@@ -175,7 +175,7 @@ class IgdbClientTest {
         assertEquals(1942L, result.igdbId)
         assertEquals("292030", result.externalGames.single { it.category == 1 }.uid)
         val sent = body!!
-        assertTrue(sent.contains("external_games.category = 1"))
+        assertTrue(sent.contains("external_games.external_game_source = 1"))
         assertTrue(sent.contains("""external_games.uid = ("292030")"""))
     }
 
@@ -208,7 +208,7 @@ class IgdbClientTest {
         var body: String? = null
         val games = """[{
             "id":1207658691,"name":"The Witcher 3",
-            "external_games":[{"uid":"1207658691","category":5,"url":"https://www.gog.com/game/the_witcher_3"}]
+            "external_games":[{"uid":"1207658691","external_game_source":5,"url":"https://www.gog.com/game/the_witcher_3"}]
         }]"""
         val client = clientWith(
             MockEngine { request ->
@@ -226,7 +226,7 @@ class IgdbClientTest {
         assertEquals(1207658691L, result.igdbId)
         assertEquals("1207658691", result.externalGames.single { it.category == 5 }.uid)
         val sent = body!!
-        assertTrue(sent.contains("external_games.category = 5"))
+        assertTrue(sent.contains("external_games.external_game_source = 5"))
         assertTrue(sent.contains("""external_games.uid = ("1207658691")"""))
     }
 

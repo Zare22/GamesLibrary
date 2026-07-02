@@ -26,7 +26,7 @@ internal data class GameDto(
 @Serializable internal data class InvolvedCompanyDto(val company: CompanyDto? = null, val developer: Boolean = false)
 @Serializable internal data class CompanyDto(val name: String? = null)
 @Serializable internal data class PlatformDto(val name: String? = null, val abbreviation: String? = null)
-@Serializable internal data class ExternalGameDto(val uid: String? = null, val category: Int? = null, val url: String? = null)
+@Serializable internal data class ExternalGameDto(val uid: String? = null, val externalGameSource: Int? = null, val url: String? = null)
 @Serializable internal data class AlternativeNameDto(val name: String? = null)
 
 internal fun GameDto.toSearchResult(): IgdbSearchResult = IgdbSearchResult(
@@ -49,6 +49,6 @@ internal fun GameDto.toIgdbGame(): IgdbGame = IgdbGame(
     platforms = platforms.orEmpty().mapNotNull { dto -> dto.name?.let { Platform(it, dto.abbreviation) } },
     alternativeNames = alternativeNames.orEmpty().mapNotNull { it.name },
     externalGames = externalGames.orEmpty().mapNotNull { dto ->
-        if (dto.uid != null && dto.category != null) ExternalRef(dto.category, dto.uid, dto.url) else null
+        if (dto.uid != null && dto.externalGameSource != null) ExternalRef(dto.externalGameSource, dto.uid, dto.url) else null
     },
 )

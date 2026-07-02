@@ -220,7 +220,7 @@ private fun ConnectedCard(viewModel: SteamViewModel, steam: Color) {
                         overflow = TextOverflow.Ellipsis,
                     )
                     Text(
-                        if (viewModel.persona != null) viewModel.steamId.orEmpty() else "Signed in through Steam",
+                        "Signed in through Steam",
                         style = AppTheme.type.caption,
                         color = tokens.colors.faint,
                         maxLines = 1,
@@ -259,7 +259,7 @@ private fun ConnectedCard(viewModel: SteamViewModel, steam: Color) {
             if (viewModel.syncFailed) {
                 Spacer(Modifier.height(12.dp))
                 Text(
-                    "Couldn't reach Steam or IGDB — check your connection and the API key.",
+                    "Can't sync from Steam — check your connection and try again.",
                     style = AppTheme.type.caption,
                     color = SteamError,
                 )

@@ -44,7 +44,7 @@ class IgdbClient internal constructor(
         return appids.distinct().chunked(STEAM_MATCH_CHUNK).flatMap { chunk ->
             val uids = chunk.joinToString(",") { "\"${escape(it)}\"" }
             val body = "fields $FULL_FIELDS; " +
-                "where external_games.category = $STEAM_EXTERNAL_CATEGORY & external_games.uid = ($uids); limit 500;"
+                "where external_games.external_game_source = $STEAM_EXTERNAL_CATEGORY & external_games.uid = ($uids); limit 500;"
             IgdbJson.decodeFromString<List<GameDto>>(post("games", body)).map { it.toIgdbGame() }
         }
     }
@@ -59,7 +59,7 @@ class IgdbClient internal constructor(
         return ids.distinct().chunked(GOG_MATCH_CHUNK).flatMap { chunk ->
             val uids = chunk.joinToString(",") { "\"${escape(it)}\"" }
             val body = "fields $FULL_FIELDS; " +
-                "where external_games.category = $GOG_EXTERNAL_CATEGORY & external_games.uid = ($uids); limit 500;"
+                "where external_games.external_game_source = $GOG_EXTERNAL_CATEGORY & external_games.uid = ($uids); limit 500;"
             IgdbJson.decodeFromString<List<GameDto>>(post("games", body)).map { it.toIgdbGame() }
         }
     }
@@ -90,13 +90,13 @@ class IgdbClient internal constructor(
 
 class IgdbException(message: String) : Exception(message)
 
-/** IGDB's (deprecated) integer external-game category for Steam (ADR 0014). */
+/** IGDB's external_game_source id for Steam (ADR 0014; replaced the removed integer category, same value 1). */
 private const val STEAM_EXTERNAL_CATEGORY = 1
 
 /** Steam appids per `matchBySteamAppids` query — well under IGDB's `limit 500`, easy on the rate limit. */
 private const val STEAM_MATCH_CHUNK = 100
 
-/** IGDB's (deprecated) integer external-game category for GOG (ADR 0014; verified from the IGDB proto). */
+/** IGDB's external_game_source id for GOG (ADR 0014; replaced the removed integer category, same value 5). */
 private const val GOG_EXTERNAL_CATEGORY = 5
 
 /** GOG product ids per `matchByGogIds` query — same budget as the Steam chunk. */
@@ -106,4 +106,4 @@ private const val FULL_FIELDS =
     "name,slug,first_release_date,cover.image_id," +
         "involved_companies.company.name,involved_companies.developer," +
         "platforms.name,platforms.abbreviation,total_rating,total_rating_count," +
-        "external_games.uid,external_games.category,external_games.url,alternative_names.name"
+        "external_games.uid,external_games.external_game_source,external_games.url,alternative_names.name"
