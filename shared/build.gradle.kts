@@ -108,6 +108,7 @@ kotlin {
         val jvmMain by getting {
             dependencies {
                 implementation(libs.ktor.client.okhttp)
+                implementation(libs.java.keyring)
             }
         }
         val jvmTest by getting {
@@ -130,6 +131,11 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+}
+
+// Drop java-keyring's Linux D-Bus backend (its dbus-java/slf4j subtree); Windows+macOS only, file fallback on Linux.
+configurations.named("jvmMainImplementation") {
+    exclude(group = "de.swiesend", module = "secret-service")
 }
 
 room {

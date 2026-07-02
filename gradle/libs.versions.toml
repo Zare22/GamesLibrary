@@ -26,6 +26,7 @@ koin-bom = "4.1.1"
 ktor = "3.5.0"
 coil = "3.5.0"
 kotlinxDatetime = "0.7.1"
+javaKeyring = "1.0.4"
 
 [libraries]
 # Room + SQLite (KMP, bundled driver)
@@ -63,6 +64,9 @@ androidx-browser = { module = "androidx.browser:browser", version.ref = "browser
 
 # Android secure storage (EncryptedSharedPreferences; backs the SecureStorage shim, ADR 0003/0016)
 androidx-security-crypto = { module = "androidx.security:security-crypto", version.ref = "securityCrypto" }
+
+# Desktop secure storage (OS keychain — Windows Credential Manager / macOS Keychain; backs the SecureStorage actual, ADR 0024)
+java-keyring = { module = "com.github.javakeyring:java-keyring", version.ref = "javaKeyring" }
 
 # Coil (image loading, KMP)
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }

@@ -12,7 +12,7 @@ import java.util.Properties
  */
 internal class FileSecureStorage(directory: File) : SecureStorage {
 
-    private val file = File(directory, "secure_store.properties")
+    private val file = File(directory, FILE_NAME)
 
     private fun load(): Properties = Properties().apply {
         if (file.exists()) file.inputStream().use { load(it) }
@@ -30,5 +30,9 @@ internal class FileSecureStorage(directory: File) : SecureStorage {
 
     override suspend fun remove(key: String) = withContext(Dispatchers.IO) {
         save(load().apply { remove(key) })
+    }
+
+    companion object {
+        const val FILE_NAME = "secure_store.properties"
     }
 }

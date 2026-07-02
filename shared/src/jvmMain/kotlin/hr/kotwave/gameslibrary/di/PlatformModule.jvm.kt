@@ -5,7 +5,9 @@ import hr.kotwave.gameslibrary.data.DATABASE_FILE_NAME
 import hr.kotwave.gameslibrary.data.GamesLibraryDatabase
 import hr.kotwave.gameslibrary.data.buildGamesLibraryDatabase
 import hr.kotwave.gameslibrary.secure.FileSecureStorage
+import hr.kotwave.gameslibrary.secure.KeyringSecureStorage
 import hr.kotwave.gameslibrary.secure.SecureStorage
+import hr.kotwave.gameslibrary.secure.createKeyringBackend
 import org.koin.core.module.Module
 import org.koin.dsl.module
 import java.io.File
@@ -16,7 +18,15 @@ actual val platformModule: Module = module {
         Room.databaseBuilder<GamesLibraryDatabase>(name = dbFile.absolutePath)
             .buildGamesLibraryDatabase()
     }
-    single<SecureStorage> { FileSecureStorage(appDataDirectory()) }
+    single<SecureStorage> {
+        val dir = appDataDirectory()
+        KeyringSecureStorage(
+            service = "GamesLibrary",
+            backend = createKeyringBackend(),
+            fallback = FileSecureStorage(dir),
+            legacyFile = File(dir, FileSecureStorage.FILE_NAME),
+        )
+    }
 }
 
 /** Per-OS application data directory; created if absent. */
