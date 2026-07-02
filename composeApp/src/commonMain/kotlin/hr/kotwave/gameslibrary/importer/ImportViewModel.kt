@@ -76,6 +76,18 @@ class ImportViewModel(
         pasteText = value
     }
 
+    /**
+     * Loads text shared into the app from an external entry point (the Android share-sheet),
+     * replacing the paste and returning to Intake so the user picks a Store and Parses.
+     */
+    fun receiveSharedText(text: String) {
+        matchJob?.cancel()
+        candidates = emptyList()
+        failed = false
+        pasteText = text
+        phase = ImportPhase.Intake
+    }
+
     fun selectStore(value: Store) {
         store = value
     }

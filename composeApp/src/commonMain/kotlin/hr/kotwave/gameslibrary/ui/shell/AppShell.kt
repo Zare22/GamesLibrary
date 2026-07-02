@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -29,6 +31,7 @@ import hr.kotwave.gameslibrary.add.AddGameScreen
 import hr.kotwave.gameslibrary.battlenet.BattleNetScreen
 import hr.kotwave.gameslibrary.detail.DetailScreen
 import hr.kotwave.gameslibrary.importer.ImportScreen
+import hr.kotwave.gameslibrary.importer.SharedTextInbox
 import hr.kotwave.gameslibrary.gog.GogScreen
 import hr.kotwave.gameslibrary.library.LibraryScreen
 import hr.kotwave.gameslibrary.navigation.Route
@@ -38,6 +41,7 @@ import hr.kotwave.gameslibrary.ui.components.ContentColumn
 import hr.kotwave.gameslibrary.ui.gallery.ComponentGalleryScreen
 import hr.kotwave.gameslibrary.ui.screens.SettingsScreen
 import hr.kotwave.gameslibrary.wishlist.WishlistScreen
+import org.koin.compose.koinInject
 
 /** True on phone-width layouts (bottom nav); false on wide layouts (left rail). */
 val LocalIsCompact = staticCompositionLocalOf { true }
@@ -54,6 +58,11 @@ internal fun navChromeFor(width: Dp): NavChrome =
 @Composable
 fun AppShell() {
     val navController = rememberNavController()
+    // A share-sheet intake (Android) lands text in the inbox; jump to the Import tab to consume it.
+    val sharedText by koinInject<SharedTextInbox>().pending.collectAsState()
+    LaunchedEffect(sharedText) {
+        if (sharedText != null) navController.navigateTop(TopDestination.IMPORT)
+    }
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val chrome = navChromeFor(maxWidth)
         CompositionLocalProvider(LocalIsCompact provides (chrome == NavChrome.BottomNav)) {

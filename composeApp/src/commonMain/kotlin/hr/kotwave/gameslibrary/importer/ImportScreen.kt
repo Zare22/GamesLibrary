@@ -27,6 +27,8 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -54,6 +56,7 @@ import hr.kotwave.gameslibrary.ui.shell.LocalIsCompact
 import hr.kotwave.gameslibrary.ui.model.glyph
 import hr.kotwave.gameslibrary.ui.model.label
 import hr.kotwave.gameslibrary.ui.theme.AppTheme
+import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 
 private val Amber = Color(0xFFFFD24A)
@@ -68,6 +71,14 @@ private const val AMBIGUOUS_INLINE_CAP = 3
  */
 @Composable
 fun ImportScreen(modifier: Modifier = Modifier, viewModel: ImportViewModel = koinViewModel()) {
+    val inbox = koinInject<SharedTextInbox>()
+    val shared by inbox.pending.collectAsState()
+    LaunchedEffect(shared) {
+        shared?.let {
+            viewModel.receiveSharedText(it)
+            inbox.clear()
+        }
+    }
     when (val phase = viewModel.phase) {
         ImportPhase.Intake -> IntakePhase(viewModel, modifier)
         ImportPhase.Matching -> MatchingPhase(viewModel, modifier)
@@ -184,7 +195,7 @@ private fun ShareHint() {
         Column {
             Text("On desktop, drop a .txt or .csv file here.", style = AppTheme.type.caption, color = tokens.colors.muted)
             Spacer(Modifier.height(3.dp))
-            Text("On your phone: Share → GamesLibrary (coming soon).", style = AppTheme.type.caption, color = tokens.colors.faint)
+            Text("On your phone: Share a list → GamesLibrary lands it here.", style = AppTheme.type.caption, color = tokens.colors.faint)
         }
     }
 }
