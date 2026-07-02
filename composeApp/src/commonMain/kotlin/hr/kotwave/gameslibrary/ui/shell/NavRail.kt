@@ -29,11 +29,15 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import hr.kotwave.gameslibrary.resources.Res
+import hr.kotwave.gameslibrary.resources.action_add_game
+import hr.kotwave.gameslibrary.resources.nav_rail_section
 import hr.kotwave.gameslibrary.ui.components.BrandWordmark
 import hr.kotwave.gameslibrary.ui.components.GlowBox
 import hr.kotwave.gameslibrary.ui.components.PrimaryButton
 import hr.kotwave.gameslibrary.ui.icons.AppIcons
 import hr.kotwave.gameslibrary.ui.theme.AppTheme
+import org.jetbrains.compose.resources.stringResource
 
 private val RailItemShape = RoundedCornerShape(12.dp)
 
@@ -58,10 +62,10 @@ fun NavRail(
     ) {
         BrandWordmark(Modifier.padding(start = 8.dp), style = AppTheme.type.brand.copy(fontSize = 22.sp))
         Spacer(Modifier.height(18.dp))
-        PrimaryButton("Add game", onAdd, Modifier.fillMaxWidth(), leadingIcon = AppIcons.Plus)
+        PrimaryButton(stringResource(Res.string.action_add_game), onAdd, Modifier.fillMaxWidth(), leadingIcon = AppIcons.Plus)
         Spacer(Modifier.height(22.dp))
         Text(
-            "LIBRARY",
+            stringResource(Res.string.nav_rail_section).uppercase(),
             style = AppTheme.type.navLabel.copy(letterSpacing = 1.1.sp),
             color = tokens.colors.faint,
             modifier = Modifier.padding(start = 10.dp, bottom = 8.dp),
@@ -109,13 +113,13 @@ private fun RailItem(
         GlowBox(glow = if (active) tokens.colors.accent else null, shape = CircleShape, glowRadius = 7.dp, glowAlpha = 0.7f) {
             Icon(
                 destination.icon,
-                destination.label,
+                destination.label(),
                 Modifier.size(20.dp),
                 tint = if (active) tokens.colors.accent else tokens.colors.muted,
             )
         }
         Text(
-            destination.label,
+            destination.label(),
             style = AppTheme.type.bodyStrong,
             color = if (active) tokens.colors.text else tokens.colors.muted,
         )

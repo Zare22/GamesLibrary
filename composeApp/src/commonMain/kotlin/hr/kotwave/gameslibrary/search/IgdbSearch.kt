@@ -33,11 +33,19 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import hr.kotwave.gameslibrary.data.IgdbSearchResult
 import hr.kotwave.gameslibrary.igdb.IgdbClient
+import hr.kotwave.gameslibrary.resources.Res
+import hr.kotwave.gameslibrary.resources.igdb_unreachable_short
+import hr.kotwave.gameslibrary.resources.no_matches
+import hr.kotwave.gameslibrary.resources.search_hint
+import hr.kotwave.gameslibrary.resources.search_result_count
+import hr.kotwave.gameslibrary.resources.search_searching
 import hr.kotwave.gameslibrary.ui.components.CoverArt
 import hr.kotwave.gameslibrary.ui.components.GlassSurface
 import hr.kotwave.gameslibrary.ui.icons.AppIcons
 import hr.kotwave.gameslibrary.ui.model.gameMeta
 import hr.kotwave.gameslibrary.ui.theme.AppTheme
+import org.jetbrains.compose.resources.pluralStringResource
+import org.jetbrains.compose.resources.stringResource
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -123,7 +131,7 @@ fun IgdbSearchField(value: String, onValueChange: (String) -> Unit, modifier: Mo
             Icon(AppIcons.Search, null, Modifier.size(18.dp), tint = tokens.colors.accent)
             Box(Modifier.weight(1f)) {
                 if (value.isEmpty()) {
-                    Text("Search IGDB…", style = AppTheme.type.body, color = tokens.colors.faint)
+                    Text(stringResource(Res.string.search_hint), style = AppTheme.type.body, color = tokens.colors.faint)
                 }
                 BasicTextField(
                     value = value,
@@ -144,10 +152,10 @@ fun IgdbSearchField(value: String, onValueChange: (String) -> Unit, modifier: Mo
 fun IgdbSearchStatus(searching: Boolean, count: Int, failed: Boolean) {
     val tokens = AppTheme.tokens
     val text = when {
-        searching -> "Searching IGDB…"
-        failed -> "Couldn't reach IGDB — check your connection."
-        count > 0 -> "$count result${if (count == 1) "" else "s"}"
-        else -> "No matches"
+        searching -> stringResource(Res.string.search_searching)
+        failed -> stringResource(Res.string.igdb_unreachable_short)
+        count > 0 -> pluralStringResource(Res.plurals.search_result_count, count, count)
+        else -> stringResource(Res.string.no_matches)
     }
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
         Box(Modifier.size(7.dp).clip(CircleShape).background(if (failed) Color(0xFFF4707A) else tokens.colors.accent))

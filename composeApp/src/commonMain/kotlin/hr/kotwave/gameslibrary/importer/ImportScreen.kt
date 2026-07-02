@@ -45,6 +45,41 @@ import androidx.compose.ui.unit.sp
 import hr.kotwave.gameslibrary.data.IgdbSearchResult
 import hr.kotwave.gameslibrary.data.ImportSummary
 import hr.kotwave.gameslibrary.data.Store
+import hr.kotwave.gameslibrary.resources.Res
+import hr.kotwave.gameslibrary.resources.cd_back
+import hr.kotwave.gameslibrary.resources.cd_selected
+import hr.kotwave.gameslibrary.resources.common_cancel
+import hr.kotwave.gameslibrary.resources.error_igdb_unreachable
+import hr.kotwave.gameslibrary.resources.import_add_button
+import hr.kotwave.gameslibrary.resources.import_adding
+import hr.kotwave.gameslibrary.resources.import_ambiguous_count
+import hr.kotwave.gameslibrary.resources.import_done_another
+import hr.kotwave.gameslibrary.resources.import_done_subtitle
+import hr.kotwave.gameslibrary.resources.import_done_title
+import hr.kotwave.gameslibrary.resources.import_footnote_empty
+import hr.kotwave.gameslibrary.resources.import_footnote_pick_store
+import hr.kotwave.gameslibrary.resources.import_footnote_ready
+import hr.kotwave.gameslibrary.resources.import_matching_title
+import hr.kotwave.gameslibrary.resources.import_parse_button
+import hr.kotwave.gameslibrary.resources.import_paste_label
+import hr.kotwave.gameslibrary.resources.import_paste_placeholder
+import hr.kotwave.gameslibrary.resources.import_progress
+import hr.kotwave.gameslibrary.resources.import_review_count
+import hr.kotwave.gameslibrary.resources.import_review_error
+import hr.kotwave.gameslibrary.resources.import_review_title
+import hr.kotwave.gameslibrary.resources.import_share_hint_desktop
+import hr.kotwave.gameslibrary.resources.import_share_hint_phone
+import hr.kotwave.gameslibrary.resources.import_show_all
+import hr.kotwave.gameslibrary.resources.import_step_paste
+import hr.kotwave.gameslibrary.resources.import_step_store
+import hr.kotwave.gameslibrary.resources.import_subtitle
+import hr.kotwave.gameslibrary.resources.import_tag_matched
+import hr.kotwave.gameslibrary.resources.import_tag_pick
+import hr.kotwave.gameslibrary.resources.import_tag_unmatched
+import hr.kotwave.gameslibrary.resources.import_title
+import hr.kotwave.gameslibrary.resources.import_unmatched_manual
+import hr.kotwave.gameslibrary.resources.line_count
+import hr.kotwave.gameslibrary.resources.similar_title_warning
 import hr.kotwave.gameslibrary.search.IgdbResultRow
 import hr.kotwave.gameslibrary.ui.components.CoverArt
 import hr.kotwave.gameslibrary.ui.components.GlowBox
@@ -56,6 +91,8 @@ import hr.kotwave.gameslibrary.ui.shell.LocalIsCompact
 import hr.kotwave.gameslibrary.ui.model.glyph
 import hr.kotwave.gameslibrary.ui.model.label
 import hr.kotwave.gameslibrary.ui.theme.AppTheme
+import org.jetbrains.compose.resources.pluralStringResource
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -95,17 +132,17 @@ private fun IntakePhase(viewModel: ImportViewModel, modifier: Modifier) {
     val compact = LocalIsCompact.current
     Column(modifier.fillMaxSize().padding(horizontal = 20.dp)) {
         Spacer(Modifier.height(18.dp))
-        Text("Import games", style = AppTheme.type.display, color = tokens.colors.text)
+        Text(stringResource(Res.string.import_title), style = AppTheme.type.display, color = tokens.colors.text)
         Spacer(Modifier.height(3.dp))
-        Text("Paste your list — one game per line.", style = AppTheme.type.body, color = tokens.colors.faint)
+        Text(stringResource(Res.string.import_subtitle), style = AppTheme.type.body, color = tokens.colors.faint)
 
         Column((if (compact) Modifier.weight(1f) else Modifier.fillMaxWidth()).verticalScroll(rememberScrollState())) {
             Spacer(Modifier.height(16.dp))
             if (viewModel.failed) {
-                Notice("Couldn't reach IGDB — check your connection and try again.", ErrorRed)
+                Notice(stringResource(Res.string.error_igdb_unreachable), ErrorRed)
                 Spacer(Modifier.height(14.dp))
             }
-            StepLabel(1, "Paste your list")
+            StepLabel(1, stringResource(Res.string.import_step_paste))
             Spacer(Modifier.height(9.dp))
             PasteCard(
                 text = viewModel.pasteText,
@@ -116,7 +153,7 @@ private fun IntakePhase(viewModel: ImportViewModel, modifier: Modifier) {
             Spacer(Modifier.height(13.dp))
             ShareHint()
             Spacer(Modifier.height(18.dp))
-            StepLabel(2, "Which store is this for?")
+            StepLabel(2, stringResource(Res.string.import_step_store))
             Spacer(Modifier.height(11.dp))
             StorePicker(selected = viewModel.store, onSelect = viewModel::selectStore)
             Spacer(Modifier.height(16.dp))
@@ -143,9 +180,9 @@ private fun PasteCard(text: String, lineCount: Int, onTextChange: (String) -> Un
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Icon(AppIcons.Import, null, Modifier.size(14.dp), tint = tokens.colors.accent)
-            Text("PASTED TEXT", style = AppTheme.type.section.copy(fontSize = 11.sp), color = tokens.colors.faint)
+            Text(stringResource(Res.string.import_paste_label), style = AppTheme.type.section.copy(fontSize = 11.sp), color = tokens.colors.faint)
             Spacer(Modifier.weight(1f))
-            Text("$lineCount lines", style = AppTheme.type.caption, color = tokens.colors.muted)
+            Text(pluralStringResource(Res.plurals.line_count, lineCount, lineCount), style = AppTheme.type.caption, color = tokens.colors.muted)
         }
         Box(
             Modifier
@@ -156,7 +193,7 @@ private fun PasteCard(text: String, lineCount: Int, onTextChange: (String) -> Un
         ) {
             if (text.isEmpty()) {
                 Text(
-                    "Persona 5 Royal\nGod of War Ragnarök\nGhost of Tsushima…",
+                    stringResource(Res.string.import_paste_placeholder),
                     style = AppTheme.type.body,
                     color = tokens.colors.faint,
                 )
@@ -193,9 +230,9 @@ private fun ShareHint() {
             Icon(AppIcons.Import, null, Modifier.size(16.dp), tint = tokens.colors.accent)
         }
         Column {
-            Text("On desktop, drop a .txt or .csv file here.", style = AppTheme.type.caption, color = tokens.colors.muted)
+            Text(stringResource(Res.string.import_share_hint_desktop), style = AppTheme.type.caption, color = tokens.colors.muted)
             Spacer(Modifier.height(3.dp))
-            Text("On your phone: Share a list → GamesLibrary lands it here.", style = AppTheme.type.caption, color = tokens.colors.faint)
+            Text(stringResource(Res.string.import_share_hint_phone), style = AppTheme.type.caption, color = tokens.colors.faint)
         }
     }
 }
@@ -205,7 +242,7 @@ private fun IntakeFooter(viewModel: ImportViewModel) {
     val tokens = AppTheme.tokens
     Column(Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 18.dp)) {
         PrimaryButton(
-            text = "Parse list · Review games",
+            text = stringResource(Res.string.import_parse_button),
             onClick = viewModel::parse,
             leadingIcon = AppIcons.Import,
             enabled = viewModel.canParse,
@@ -214,9 +251,9 @@ private fun IntakeFooter(viewModel: ImportViewModel) {
         Spacer(Modifier.height(9.dp))
         val store = viewModel.store
         val footnote = when {
-            viewModel.pasteText.isBlank() -> "Paste a list to begin."
-            store == null -> "${viewModel.lineCount} lines · pick a store below."
-            else -> "${viewModel.lineCount} lines · matched against IGDB, assigned to ${store.label}."
+            viewModel.pasteText.isBlank() -> stringResource(Res.string.import_footnote_empty)
+            store == null -> pluralStringResource(Res.plurals.import_footnote_pick_store, viewModel.lineCount, viewModel.lineCount)
+            else -> pluralStringResource(Res.plurals.import_footnote_ready, viewModel.lineCount, viewModel.lineCount, store.label)
         }
         Text(footnote, style = AppTheme.type.caption, color = tokens.colors.faint, modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp))
     }
@@ -236,9 +273,9 @@ internal fun MatchingPhase(viewModel: ImportViewModel, modifier: Modifier) {
     ) {
         CircularProgressIndicator(color = tokens.colors.accent, strokeWidth = 3.dp, modifier = Modifier.size(44.dp))
         Spacer(Modifier.height(20.dp))
-        Text("Matching against IGDB", style = AppTheme.type.bodyStrong, color = tokens.colors.text)
+        Text(stringResource(Res.string.import_matching_title), style = AppTheme.type.bodyStrong, color = tokens.colors.text)
         Spacer(Modifier.height(6.dp))
-        Text("$done of $total", style = AppTheme.type.caption, color = tokens.colors.faint)
+        Text(stringResource(Res.string.import_progress, done, total), style = AppTheme.type.caption, color = tokens.colors.faint)
         Spacer(Modifier.height(18.dp))
         ProgressBar(fraction = if (total == 0) 0f else done.toFloat() / total)
         Spacer(Modifier.height(22.dp))
@@ -268,13 +305,13 @@ internal fun ReviewPhase(viewModel: ImportViewModel, modifier: Modifier) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             BackButton(viewModel::backToIntake)
             Column {
-                Text("Review games", style = AppTheme.type.brand.copy(fontSize = 16.sp), color = tokens.colors.text)
-                Text("${viewModel.candidates.size} found · ${viewModel.checkedCount} selected", style = AppTheme.type.caption, color = tokens.colors.faint)
+                Text(stringResource(Res.string.import_review_title), style = AppTheme.type.brand.copy(fontSize = 16.sp), color = tokens.colors.text)
+                Text(stringResource(Res.string.import_review_count, viewModel.candidates.size, viewModel.checkedCount), style = AppTheme.type.caption, color = tokens.colors.faint)
             }
         }
         Spacer(Modifier.height(8.dp))
         if (viewModel.failed) {
-            Notice("Couldn't reach IGDB — your selections are kept. Try Confirm again.", ErrorRed)
+            Notice(stringResource(Res.string.import_review_error), ErrorRed)
             Spacer(Modifier.height(6.dp))
         }
 
@@ -291,7 +328,7 @@ internal fun ReviewPhase(viewModel: ImportViewModel, modifier: Modifier) {
 
         Column(Modifier.fillMaxWidth().padding(top = 10.dp, bottom = 18.dp)) {
             PrimaryButton(
-                text = if (viewModel.importing) "Adding…" else "Add ${viewModel.checkedCount} to library",
+                text = if (viewModel.importing) stringResource(Res.string.import_adding) else stringResource(Res.string.import_add_button, viewModel.checkedCount),
                 onClick = viewModel::confirm,
                 leadingIcon = AppIcons.Check,
                 enabled = viewModel.checkedCount > 0 && !viewModel.importing,
@@ -327,7 +364,7 @@ private fun MatchedHead(candidate: ImportCandidate, result: IgdbSearchResult) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         CoverArt(result.name, result.coverImageId, Modifier.size(width = 44.dp, height = 58.dp), RoundedCornerShape(9.dp))
         Column(Modifier.weight(1f)) {
-            MatchTag("Matched", tokens.colors.accent)
+            MatchTag(stringResource(Res.string.import_tag_matched), tokens.colors.accent)
             Spacer(Modifier.height(4.dp))
             Text(result.name, style = AppTheme.type.bodyStrong, color = tokens.colors.text, maxLines = 1, overflow = TextOverflow.Ellipsis)
             gameMeta(result.firstReleaseDate, result.developer)?.let {
@@ -343,11 +380,11 @@ private fun AmbiguousHead(candidate: ImportCandidate, options: List<IgdbSearchRe
     val tokens = AppTheme.tokens
     var expanded by remember { mutableStateOf(false) }
     val limit = if (expanded) options.size else maxOf(AMBIGUOUS_INLINE_CAP, candidate.pickedIndex + 1)
-    MatchTag("Pick a match", Amber)
+    MatchTag(stringResource(Res.string.import_tag_pick), Amber)
     Spacer(Modifier.height(7.dp))
     Text("“${candidate.rawTitle}”", style = AppTheme.type.bodyStrong, color = tokens.colors.text, maxLines = 1, overflow = TextOverflow.Ellipsis)
     Spacer(Modifier.height(2.dp))
-    Text("${options.size} possible matches — pick the right one.", style = AppTheme.type.caption, color = tokens.colors.faint)
+    Text(pluralStringResource(Res.plurals.import_ambiguous_count, options.size, options.size), style = AppTheme.type.caption, color = tokens.colors.faint)
     Spacer(Modifier.height(6.dp))
     options.take(limit).forEachIndexed { index, option ->
         IgdbResultRow(result = option, selected = candidate.pickedIndex == index, onClick = { candidate.pick(index) })
@@ -366,7 +403,7 @@ private fun ShowAllMatches(total: Int, onClick: () -> Unit) {
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         Icon(AppIcons.ChevronRight, null, Modifier.size(14.dp), tint = tokens.colors.accent)
-        Text("Show all $total matches", style = AppTheme.type.bodyStrong.copy(fontSize = 13.sp), color = tokens.colors.accent)
+        Text(pluralStringResource(Res.plurals.import_show_all, total, total), style = AppTheme.type.bodyStrong.copy(fontSize = 13.sp), color = tokens.colors.accent)
     }
 }
 
@@ -381,10 +418,10 @@ private fun UnmatchedHead(candidate: ImportCandidate) {
             Icon(AppIcons.Plus, null, Modifier.size(18.dp), tint = tokens.colors.muted)
         }
         Column(Modifier.weight(1f)) {
-            MatchTag("No IGDB match", tokens.colors.muted)
+            MatchTag(stringResource(Res.string.import_tag_unmatched), tokens.colors.muted)
             Spacer(Modifier.height(4.dp))
             Text(candidate.rawTitle, style = AppTheme.type.bodyStrong, color = tokens.colors.text, maxLines = 2, overflow = TextOverflow.Ellipsis)
-            Text("Adds as a manual game.", style = AppTheme.type.caption, color = tokens.colors.faint)
+            Text(stringResource(Res.string.import_unmatched_manual), style = AppTheme.type.caption, color = tokens.colors.faint)
         }
         CheckBox(candidate.checked) { candidate.checked = !candidate.checked }
     }
@@ -412,15 +449,15 @@ internal fun DonePhase(summary: ImportSummary, onDone: () -> Unit, modifier: Mod
             Icon(AppIcons.Check, null, Modifier.size(30.dp), tint = tokens.colors.accent)
         }
         Spacer(Modifier.height(18.dp))
-        Text("Imported ${summary.total} games", style = AppTheme.type.display.copy(fontSize = 22.sp), color = tokens.colors.text)
+        Text(pluralStringResource(Res.plurals.import_done_title, summary.total, summary.total), style = AppTheme.type.display.copy(fontSize = 22.sp), color = tokens.colors.text)
         Spacer(Modifier.height(6.dp))
         Text(
-            "${summary.added} added · ${summary.attached} already in your library.",
+            stringResource(Res.string.import_done_subtitle, summary.added, summary.attached),
             style = AppTheme.type.body,
             color = tokens.colors.faint,
         )
         Spacer(Modifier.height(24.dp))
-        PrimaryButton("Import another", onDone, leadingIcon = AppIcons.Import)
+        PrimaryButton(stringResource(Res.string.import_done_another), onDone, leadingIcon = AppIcons.Import)
     }
 }
 
@@ -437,7 +474,7 @@ private fun CheckBox(checked: Boolean, onToggle: () -> Unit) {
             .clickable(onClick = onToggle),
         contentAlignment = Alignment.Center,
     ) {
-        if (checked) Icon(AppIcons.Check, "Selected", Modifier.size(16.dp), tint = tokens.colors.accent)
+        if (checked) Icon(AppIcons.Check, stringResource(Res.string.cd_selected), Modifier.size(16.dp), tint = tokens.colors.accent)
     }
 }
 
@@ -454,7 +491,7 @@ private fun BackButton(onClick: () -> Unit) {
             .border(1.dp, tokens.colors.border, RoundedCornerShape(11.dp)).clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
-        Icon(AppIcons.ChevronLeft, "Back", Modifier.size(18.dp), tint = tokens.colors.muted)
+        Icon(AppIcons.ChevronLeft, stringResource(Res.string.cd_back), Modifier.size(18.dp), tint = tokens.colors.muted)
     }
 }
 
@@ -462,7 +499,7 @@ private fun BackButton(onClick: () -> Unit) {
 private fun CancelAction(onClick: () -> Unit) {
     val tokens = AppTheme.tokens
     Text(
-        "Cancel",
+        stringResource(Res.string.common_cancel),
         style = AppTheme.type.bodyStrong.copy(fontSize = 13.sp),
         color = tokens.colors.muted,
         modifier = Modifier.clip(RoundedCornerShape(10.dp)).clickable(onClick = onClick).padding(horizontal = 14.dp, vertical = 8.dp),
@@ -492,7 +529,7 @@ private fun SimilarTitleWarning(existing: String) {
     ) {
         Icon(AppIcons.Heart, null, Modifier.size(14.dp), tint = Amber)
         Text(
-            "“$existing” is already in your library — you can add it anyway.",
+            stringResource(Res.string.similar_title_warning, existing),
             style = AppTheme.type.caption,
             color = AppTheme.tokens.colors.muted,
         )

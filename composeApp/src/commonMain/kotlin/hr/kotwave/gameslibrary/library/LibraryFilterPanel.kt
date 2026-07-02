@@ -37,19 +37,30 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import hr.kotwave.gameslibrary.data.Status
 import hr.kotwave.gameslibrary.data.Store
+import hr.kotwave.gameslibrary.resources.Res
+import hr.kotwave.gameslibrary.resources.filter_no_status
+import hr.kotwave.gameslibrary.resources.filter_reset
+import hr.kotwave.gameslibrary.resources.filter_section_sort
+import hr.kotwave.gameslibrary.resources.filter_section_status
+import hr.kotwave.gameslibrary.resources.filter_section_store
+import hr.kotwave.gameslibrary.resources.filter_title
+import hr.kotwave.gameslibrary.resources.sort_rating
+import hr.kotwave.gameslibrary.resources.sort_recently_added
+import hr.kotwave.gameslibrary.resources.sort_title
 import hr.kotwave.gameslibrary.ui.components.AppIconButton
 import hr.kotwave.gameslibrary.ui.icons.AppIcons
 import hr.kotwave.gameslibrary.ui.model.label
 import hr.kotwave.gameslibrary.ui.shell.LocalIsCompact
 import hr.kotwave.gameslibrary.ui.theme.AppTheme
+import org.jetbrains.compose.resources.stringResource
 
 /** Display name for a [LibrarySort]. */
-private val LibrarySort.label: String
-    get() = when (this) {
-        LibrarySort.TITLE -> "Title"
-        LibrarySort.RECENTLY_ADDED -> "Recently added"
-        LibrarySort.RATING -> "Rating"
-    }
+@Composable
+private fun LibrarySort.label(): String = when (this) {
+    LibrarySort.TITLE -> stringResource(Res.string.sort_title)
+    LibrarySort.RECENTLY_ADDED -> stringResource(Res.string.sort_recently_added)
+    LibrarySort.RATING -> stringResource(Res.string.sort_rating)
+}
 
 /**
  * The Sliders button with an active-facet count badge, opening the sort/filter panel — a bottom sheet
@@ -69,7 +80,7 @@ fun LibraryFilterButton(
 
     Box {
         Box {
-            AppIconButton(AppIcons.Sliders, onClick = { open = true }, contentDescription = "Sort & filter")
+            AppIconButton(AppIcons.Sliders, onClick = { open = true }, contentDescription = stringResource(Res.string.filter_title))
             if (filter.activeFacetCount > 0) {
                 FacetBadge(filter.activeFacetCount, Modifier.align(Alignment.TopEnd).offset(x = 5.dp, y = (-5).dp))
             }
@@ -126,11 +137,11 @@ private fun FilterPanelContent(
     val tokens = AppTheme.tokens
     Column(modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Sort & filter", style = AppTheme.type.bodyStrong, color = tokens.colors.text)
+            Text(stringResource(Res.string.filter_title), style = AppTheme.type.bodyStrong, color = tokens.colors.text)
             Spacer(Modifier.weight(1f))
             if (filter.activeFacetCount > 0 || filter.sort != LibrarySort.TITLE) {
                 Text(
-                    "Reset",
+                    stringResource(Res.string.filter_reset),
                     style = AppTheme.type.caption,
                     color = tokens.colors.accent,
                     modifier = Modifier.clip(RoundedCornerShape(6.dp)).clickable(onClick = onReset).padding(4.dp),
@@ -139,15 +150,15 @@ private fun FilterPanelContent(
         }
         Spacer(Modifier.height(14.dp))
 
-        SectionLabel("Sort")
+        SectionLabel(stringResource(Res.string.filter_section_sort))
         ChipRow {
             LibrarySort.entries.forEach { sort ->
-                FilterChip(selected = filter.sort == sort, label = sort.label, onClick = { onSetSort(sort) })
+                FilterChip(selected = filter.sort == sort, label = sort.label(), onClick = { onSetSort(sort) })
             }
         }
         Spacer(Modifier.height(16.dp))
 
-        SectionLabel("Store")
+        SectionLabel(stringResource(Res.string.filter_section_store))
         ChipRow {
             Store.entries.forEach { store ->
                 FilterChip(selected = store in filter.stores, label = store.label, onClick = { onToggleStore(store) })
@@ -155,12 +166,12 @@ private fun FilterPanelContent(
         }
         Spacer(Modifier.height(16.dp))
 
-        SectionLabel("Status")
+        SectionLabel(stringResource(Res.string.filter_section_status))
         ChipRow {
             Status.entries.forEach { status ->
-                FilterChip(selected = status in filter.statuses, label = status.label, onClick = { onToggleStatus(status) })
+                FilterChip(selected = status in filter.statuses, label = status.label(), onClick = { onToggleStatus(status) })
             }
-            FilterChip(selected = null in filter.statuses, label = "No status", onClick = { onToggleStatus(null) })
+            FilterChip(selected = null in filter.statuses, label = stringResource(Res.string.filter_no_status), onClick = { onToggleStatus(null) })
         }
     }
 }

@@ -35,6 +35,36 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import hr.kotwave.gameslibrary.data.Game
 import hr.kotwave.gameslibrary.data.Store
+import hr.kotwave.gameslibrary.resources.Res
+import hr.kotwave.gameslibrary.resources.cd_dismiss
+import hr.kotwave.gameslibrary.resources.settings_about_subtitle
+import hr.kotwave.gameslibrary.resources.settings_about_title
+import hr.kotwave.gameslibrary.resources.settings_account_sync
+import hr.kotwave.gameslibrary.resources.settings_battlenet_subtitle
+import hr.kotwave.gameslibrary.resources.settings_coming_soon
+import hr.kotwave.gameslibrary.resources.settings_connect_subtitle
+import hr.kotwave.gameslibrary.resources.settings_credits_subtitle
+import hr.kotwave.gameslibrary.resources.settings_credits_title
+import hr.kotwave.gameslibrary.resources.settings_export_cancelled
+import hr.kotwave.gameslibrary.resources.settings_export_ok
+import hr.kotwave.gameslibrary.resources.settings_export_subtitle
+import hr.kotwave.gameslibrary.resources.settings_export_title
+import hr.kotwave.gameslibrary.resources.settings_gallery_subtitle
+import hr.kotwave.gameslibrary.resources.settings_gallery_title
+import hr.kotwave.gameslibrary.resources.settings_import_subtitle
+import hr.kotwave.gameslibrary.resources.settings_import_title
+import hr.kotwave.gameslibrary.resources.settings_orphaned_body
+import hr.kotwave.gameslibrary.resources.settings_orphaned_title
+import hr.kotwave.gameslibrary.resources.settings_paste_subtitle
+import hr.kotwave.gameslibrary.resources.settings_paste_title
+import hr.kotwave.gameslibrary.resources.settings_rematch_all
+import hr.kotwave.gameslibrary.resources.settings_rematching
+import hr.kotwave.gameslibrary.resources.settings_section_about
+import hr.kotwave.gameslibrary.resources.settings_section_connections
+import hr.kotwave.gameslibrary.resources.settings_section_developer
+import hr.kotwave.gameslibrary.resources.settings_section_library
+import hr.kotwave.gameslibrary.resources.settings_section_maintenance
+import hr.kotwave.gameslibrary.resources.settings_title
 import hr.kotwave.gameslibrary.settings.SettingsViewModel
 import hr.kotwave.gameslibrary.transfer.LIBRARY_EXPORT_FILENAME
 import hr.kotwave.gameslibrary.transfer.LibraryTransferViewModel
@@ -46,6 +76,8 @@ import hr.kotwave.gameslibrary.ui.model.glyph
 import hr.kotwave.gameslibrary.ui.model.label
 import hr.kotwave.gameslibrary.ui.theme.AppTheme
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.pluralStringResource
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
 private val OrphanRed = Color(0xFFF4707A)
@@ -73,12 +105,14 @@ fun SettingsScreen(
     val fileIo = rememberLibraryFileIo()
     val scope = rememberCoroutineScope()
     var exportNote by remember { mutableStateOf<String?>(null) }
+    val exportedMsg = stringResource(Res.string.settings_export_ok, LIBRARY_EXPORT_FILENAME)
+    val cancelledMsg = stringResource(Res.string.settings_export_cancelled)
 
     val onExport = {
         scope.launch {
             val json = transfer.buildExport()
             fileIo.export(LIBRARY_EXPORT_FILENAME, json) { ok ->
-                exportNote = if (ok) "Library exported to $LIBRARY_EXPORT_FILENAME." else "Export cancelled."
+                exportNote = if (ok) exportedMsg else cancelledMsg
             }
         }
         Unit
@@ -87,7 +121,7 @@ fun SettingsScreen(
     Column(
         modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 24.dp),
     ) {
-        Text("Settings", style = AppTheme.type.display, color = tokens.colors.text)
+        Text(stringResource(Res.string.settings_title), style = AppTheme.type.display, color = tokens.colors.text)
 
         exportNote?.let { note ->
             Spacer(Modifier.height(14.dp))
@@ -96,7 +130,7 @@ fun SettingsScreen(
 
         if (orphaned.isNotEmpty()) {
             Spacer(Modifier.height(20.dp))
-            SectionLabel("MAINTENANCE")
+            SectionLabel(stringResource(Res.string.settings_section_maintenance))
             OrphanedSection(
                 games = orphaned,
                 retrying = viewModel.retrying,
@@ -106,25 +140,25 @@ fun SettingsScreen(
         }
 
         Spacer(Modifier.height(20.dp))
-        SectionLabel("CONNECTIONS")
+        SectionLabel(stringResource(Res.string.settings_section_connections))
         SettingsCard {
             SettingsItem(
                 icon = AppIcons.Steam,
                 iconTint = tokens.store.glyph(Store.STEAM),
                 title = "Steam",
-                subtitle = "Sign in and sync your owned games",
+                subtitle = stringResource(Res.string.settings_connect_subtitle),
                 onClick = onOpenSteam,
             )
             HairlineDivider()
             StoreConnectionItem(
                 store = Store.GOG,
-                subtitle = "Sign in and sync your owned games",
+                subtitle = stringResource(Res.string.settings_connect_subtitle),
                 onClick = onOpenGog,
             )
             HairlineDivider()
             StoreConnectionItem(
                 store = Store.BATTLE_NET,
-                subtitle = "Tick the Blizzard games you own",
+                subtitle = stringResource(Res.string.settings_battlenet_subtitle),
                 onClick = onOpenBattleNet,
             )
             COMING_SOON_STORES.forEach { store ->
@@ -134,57 +168,57 @@ fun SettingsScreen(
         }
 
         Spacer(Modifier.height(20.dp))
-        SectionLabel("LIBRARY")
+        SectionLabel(stringResource(Res.string.settings_section_library))
         SettingsCard {
             SettingsItem(
                 icon = AppIcons.Export,
                 iconTint = ExportGreen,
-                title = "Export library to file",
-                subtitle = "Save your games as $LIBRARY_EXPORT_FILENAME",
+                title = stringResource(Res.string.settings_export_title),
+                subtitle = stringResource(Res.string.settings_export_subtitle, LIBRARY_EXPORT_FILENAME),
                 onClick = onExport,
             )
             HairlineDivider()
             SettingsItem(
                 icon = AppIcons.ImportFile,
                 iconTint = tokens.colors.accent,
-                title = "Import from file",
-                subtitle = "Restore or merge a $LIBRARY_EXPORT_FILENAME backup",
+                title = stringResource(Res.string.settings_import_title),
+                subtitle = stringResource(Res.string.settings_import_subtitle, LIBRARY_EXPORT_FILENAME),
                 onClick = onOpenImport,
             )
             HairlineDivider()
             SettingsItem(
                 icon = AppIcons.Import,
                 iconTint = tokens.colors.muted,
-                title = "Paste import",
-                subtitle = "Add games from a pasted or shared list",
+                title = stringResource(Res.string.settings_paste_title),
+                subtitle = stringResource(Res.string.settings_paste_subtitle),
                 onClick = onOpenPasteImport,
             )
         }
 
         Spacer(Modifier.height(20.dp))
-        SectionLabel("ABOUT")
+        SectionLabel(stringResource(Res.string.settings_section_about))
         SettingsCard {
             StaticItem(
                 icon = AppIcons.Settings,
-                title = "About GamesLibrary",
-                subtitle = "Version 1.0.0 · Android + Desktop",
+                title = stringResource(Res.string.settings_about_title),
+                subtitle = stringResource(Res.string.settings_about_subtitle),
             )
             HairlineDivider()
             StaticItem(
                 icon = AppIcons.Sliders,
-                title = "Metadata & credits",
-                subtitle = "Cover art and details from IGDB",
+                title = stringResource(Res.string.settings_credits_title),
+                subtitle = stringResource(Res.string.settings_credits_subtitle),
             )
         }
 
         Spacer(Modifier.height(20.dp))
-        SectionLabel("DEVELOPER")
+        SectionLabel(stringResource(Res.string.settings_section_developer))
         SettingsCard {
             SettingsItem(
                 icon = AppIcons.Grid,
                 iconTint = tokens.colors.muted,
-                title = "Component gallery",
-                subtitle = "Every reusable component",
+                title = stringResource(Res.string.settings_gallery_title),
+                subtitle = stringResource(Res.string.settings_gallery_subtitle),
                 onClick = onOpenGallery,
             )
         }
@@ -274,9 +308,9 @@ private fun ComingSoonItem(store: Store) {
         horizontalArrangement = Arrangement.spacedBy(13.dp),
     ) {
         GlyphIcon(store)
-        ItemText(store.label, "Account sync", Modifier.weight(1f))
+        ItemText(store.label, stringResource(Res.string.settings_account_sync), Modifier.weight(1f))
         Text(
-            "Coming soon",
+            stringResource(Res.string.settings_coming_soon),
             style = AppTheme.type.caption.copy(fontSize = 10.5.sp),
             color = tokens.colors.faint,
             modifier = Modifier.clip(RoundedCornerShape(7.dp)).background(tokens.colors.surfaceRaised)
@@ -330,7 +364,7 @@ private fun ExportNotice(text: String, onDismiss: () -> Unit) {
     ) {
         Icon(AppIcons.Check, null, Modifier.size(14.dp), tint = ExportGreen)
         Text(text, style = AppTheme.type.caption, color = tokens.colors.muted, modifier = Modifier.weight(1f))
-        Icon(AppIcons.Close, "Dismiss", Modifier.size(13.dp), tint = tokens.colors.faint)
+        Icon(AppIcons.Close, stringResource(Res.string.cd_dismiss), Modifier.size(13.dp), tint = tokens.colors.faint)
     }
 }
 
@@ -358,9 +392,9 @@ private fun OrphanedSection(
                 Icon(AppIcons.Sync, null, Modifier.size(18.dp), tint = OrphanRed)
             }
             Column(Modifier.weight(1f)) {
-                Text("Orphaned games · ${games.size}", style = AppTheme.type.bodyStrong, color = tokens.colors.text)
+                Text(pluralStringResource(Res.plurals.settings_orphaned_title, games.size, games.size), style = AppTheme.type.bodyStrong, color = tokens.colors.text)
                 Text(
-                    "Their IGDB link broke. Retry resolves any that came back; re-match the rest individually.",
+                    stringResource(Res.string.settings_orphaned_body),
                     style = AppTheme.type.caption.copy(fontSize = 11.5.sp),
                     color = tokens.colors.muted,
                 )
@@ -379,7 +413,7 @@ private fun OrphanedSection(
             }
         }
         SecondaryButton(
-            text = if (retrying) "Re-matching…" else "Re-match all",
+            text = if (retrying) stringResource(Res.string.settings_rematching) else stringResource(Res.string.settings_rematch_all),
             onClick = onRetryAll,
             leadingIcon = AppIcons.Sync,
             enabled = !retrying,

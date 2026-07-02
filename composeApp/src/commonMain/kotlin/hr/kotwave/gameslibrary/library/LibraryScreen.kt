@@ -29,6 +29,16 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import hr.kotwave.gameslibrary.resources.Res
+import hr.kotwave.gameslibrary.resources.action_add_game
+import hr.kotwave.gameslibrary.resources.cd_clear_search
+import hr.kotwave.gameslibrary.resources.library_clear
+import hr.kotwave.gameslibrary.resources.library_empty_body
+import hr.kotwave.gameslibrary.resources.library_empty_title
+import hr.kotwave.gameslibrary.resources.library_no_matches_body
+import hr.kotwave.gameslibrary.resources.library_search_hint
+import hr.kotwave.gameslibrary.resources.library_title
+import hr.kotwave.gameslibrary.resources.no_matches
 import hr.kotwave.gameslibrary.ui.components.AppIconButton
 import hr.kotwave.gameslibrary.ui.components.BrandWordmark
 import hr.kotwave.gameslibrary.ui.components.GameTile
@@ -37,6 +47,7 @@ import hr.kotwave.gameslibrary.ui.components.SecondaryButton
 import hr.kotwave.gameslibrary.ui.icons.AppIcons
 import hr.kotwave.gameslibrary.ui.shell.LocalIsCompact
 import hr.kotwave.gameslibrary.ui.theme.AppTheme
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
 /** Library home: header chrome + search/filter controls over the owned-games grid. */
@@ -66,12 +77,12 @@ fun LibraryScreen(
                     onReset = viewModel::resetFilters,
                 )
                 Spacer(Modifier.size(10.dp))
-                AppIconButton(AppIcons.Plus, onClick = onAdd, contentDescription = "Add game", accent = true)
+                AppIconButton(AppIcons.Plus, onClick = onAdd, contentDescription = stringResource(Res.string.action_add_game), accent = true)
             }
             Spacer(Modifier.height(12.dp))
         } else {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Library", style = AppTheme.type.display, color = tokens.colors.text)
+                Text(stringResource(Res.string.library_title), style = AppTheme.type.display, color = tokens.colors.text)
                 Spacer(Modifier.weight(1f))
                 LibraryFilterButton(
                     filter,
@@ -115,10 +126,10 @@ private fun EmptyLibrary() {
     val tokens = AppTheme.tokens
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("No games yet", style = AppTheme.type.display, color = tokens.colors.text)
+            Text(stringResource(Res.string.library_empty_title), style = AppTheme.type.display, color = tokens.colors.text)
             Spacer(Modifier.height(6.dp))
             Text(
-                "Add your first game to start your library.",
+                stringResource(Res.string.library_empty_body),
                 style = AppTheme.type.body,
                 color = tokens.colors.faint,
                 textAlign = TextAlign.Center,
@@ -132,16 +143,16 @@ private fun NoMatches(onClear: () -> Unit) {
     val tokens = AppTheme.tokens
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("No matches", style = AppTheme.type.display, color = tokens.colors.text)
+            Text(stringResource(Res.string.no_matches), style = AppTheme.type.display, color = tokens.colors.text)
             Spacer(Modifier.height(6.dp))
             Text(
-                "No games match your search and filters.",
+                stringResource(Res.string.library_no_matches_body),
                 style = AppTheme.type.body,
                 color = tokens.colors.faint,
                 textAlign = TextAlign.Center,
             )
             Spacer(Modifier.height(16.dp))
-            SecondaryButton("Clear search & filters", onClick = onClear)
+            SecondaryButton(stringResource(Res.string.library_clear), onClick = onClear)
         }
     }
 }
@@ -163,7 +174,7 @@ private fun SearchField(query: String, onQueryChange: (String) -> Unit) {
             Icon(AppIcons.Search, null, Modifier.size(17.dp), tint = tokens.colors.faint)
             Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
                 if (query.isEmpty()) {
-                    Text("Search games", style = AppTheme.type.body, color = tokens.colors.faint)
+                    Text(stringResource(Res.string.library_search_hint), style = AppTheme.type.body, color = tokens.colors.faint)
                 }
                 BasicTextField(
                     value = query,
@@ -177,7 +188,7 @@ private fun SearchField(query: String, onQueryChange: (String) -> Unit) {
             if (query.isNotEmpty()) {
                 Icon(
                     AppIcons.Close,
-                    "Clear search",
+                    stringResource(Res.string.cd_clear_search),
                     Modifier.size(17.dp).clip(CircleShape).clickable { onQueryChange("") },
                     tint = tokens.colors.faint,
                 )

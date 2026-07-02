@@ -29,6 +29,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import hr.kotwave.gameslibrary.data.Store
+import hr.kotwave.gameslibrary.resources.Res
+import hr.kotwave.gameslibrary.resources.battlenet_intro
+import hr.kotwave.gameslibrary.resources.cd_back
+import hr.kotwave.gameslibrary.resources.cd_selected
+import hr.kotwave.gameslibrary.resources.error_igdb_unreachable
+import hr.kotwave.gameslibrary.resources.import_add_button
 import hr.kotwave.gameslibrary.importer.DonePhase
 import hr.kotwave.gameslibrary.importer.ImportPhase
 import hr.kotwave.gameslibrary.importer.ImportViewModel
@@ -38,6 +44,7 @@ import hr.kotwave.gameslibrary.ui.components.PrimaryButton
 import hr.kotwave.gameslibrary.ui.components.actionWidth
 import hr.kotwave.gameslibrary.ui.icons.AppIcons
 import hr.kotwave.gameslibrary.ui.theme.AppTheme
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
 private val ErrorRed = Color(0xFFF4707A)
@@ -73,7 +80,7 @@ private fun CatalogPhase(viewModel: ImportViewModel, onBack: () -> Unit, modifie
         Spacer(Modifier.height(16.dp))
         Header(onBack)
         Spacer(Modifier.height(4.dp))
-        Text("Tick the games you own — they’re matched against IGDB before anything is added.", style = AppTheme.type.body, color = tokens.colors.faint)
+        Text(stringResource(Res.string.battlenet_intro), style = AppTheme.type.body, color = tokens.colors.faint)
 
         if (viewModel.failed) {
             Spacer(Modifier.height(12.dp))
@@ -97,7 +104,7 @@ private fun CatalogPhase(viewModel: ImportViewModel, onBack: () -> Unit, modifie
 
         Column(Modifier.fillMaxWidth().padding(top = 10.dp, bottom = 18.dp)) {
             PrimaryButton(
-                text = "Add $selectedCount to library",
+                text = stringResource(Res.string.import_add_button, selectedCount),
                 onClick = { viewModel.startFromTitles(Store.BATTLE_NET, BattleNetCatalog.titles.filter { checked[it] == true }) },
                 leadingIcon = AppIcons.Check,
                 enabled = selectedCount > 0,
@@ -117,7 +124,7 @@ private fun Header(onBack: () -> Unit) {
                 .clickable(onClick = onBack),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(AppIcons.ChevronLeft, "Back", Modifier.size(18.dp), tint = tokens.colors.muted)
+            Icon(AppIcons.ChevronLeft, stringResource(Res.string.cd_back), Modifier.size(18.dp), tint = tokens.colors.muted)
         }
         Text("Battle.net", style = AppTheme.type.brand.copy(fontSize = 16.sp), color = tokens.colors.text)
     }
@@ -163,7 +170,7 @@ private fun CheckBox(checked: Boolean, accent: Color) {
             .border(1.dp, if (checked) accent.copy(alpha = 0.60f) else tokens.colors.borderStrong, shape),
         contentAlignment = Alignment.Center,
     ) {
-        if (checked) Icon(AppIcons.Check, "Selected", Modifier.size(16.dp), tint = accent)
+        if (checked) Icon(AppIcons.Check, stringResource(Res.string.cd_selected), Modifier.size(16.dp), tint = accent)
     }
 }
 
@@ -176,6 +183,6 @@ private fun IgdbUnreachableNotice() {
         horizontalArrangement = Arrangement.spacedBy(9.dp),
     ) {
         Icon(AppIcons.Close, null, Modifier.size(14.dp), tint = ErrorRed)
-        Text("Couldn’t reach IGDB — check your connection and try again.", style = AppTheme.type.caption, color = AppTheme.tokens.colors.muted)
+        Text(stringResource(Res.string.error_igdb_unreachable), style = AppTheme.type.caption, color = AppTheme.tokens.colors.muted)
     }
 }

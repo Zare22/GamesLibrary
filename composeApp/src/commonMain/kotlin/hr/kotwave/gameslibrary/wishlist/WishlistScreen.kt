@@ -19,9 +19,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import hr.kotwave.gameslibrary.resources.Res
+import hr.kotwave.gameslibrary.resources.wishlist_empty_body
+import hr.kotwave.gameslibrary.resources.wishlist_empty_title
+import hr.kotwave.gameslibrary.resources.wishlist_title
 import hr.kotwave.gameslibrary.ui.components.GameTile
 import hr.kotwave.gameslibrary.ui.shell.LocalIsCompact
 import hr.kotwave.gameslibrary.ui.theme.AppTheme
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
 /** Wishlist tab: the same cover grid as the Library, filtered to Wishlisted Games (no store/status). */
@@ -36,7 +41,7 @@ fun WishlistScreen(
 
     Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
         Spacer(Modifier.height(20.dp))
-        Text("Wishlist", style = AppTheme.type.display, color = tokens.colors.text)
+        Text(stringResource(Res.string.wishlist_title), style = AppTheme.type.display, color = tokens.colors.text)
         Spacer(Modifier.height(14.dp))
 
         if (games.isEmpty()) {
@@ -68,10 +73,10 @@ private fun EmptyWishlist() {
     val tokens = AppTheme.tokens
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("Nothing wishlisted", style = AppTheme.type.display, color = tokens.colors.text)
+            Text(stringResource(Res.string.wishlist_empty_title), style = AppTheme.type.display, color = tokens.colors.text)
             Spacer(Modifier.height(6.dp))
             Text(
-                "Add a game and mark it as wanted to see it here.",
+                stringResource(Res.string.wishlist_empty_body),
                 style = AppTheme.type.body,
                 color = tokens.colors.faint,
                 textAlign = TextAlign.Center,

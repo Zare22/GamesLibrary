@@ -40,6 +40,28 @@ import androidx.compose.ui.unit.sp
 import hr.kotwave.gameslibrary.data.IgdbGame
 import hr.kotwave.gameslibrary.data.Status
 import hr.kotwave.gameslibrary.data.Store
+import hr.kotwave.gameslibrary.resources.Res
+import hr.kotwave.gameslibrary.resources.add_already
+import hr.kotwave.gameslibrary.resources.add_already_stores
+import hr.kotwave.gameslibrary.resources.add_change
+import hr.kotwave.gameslibrary.resources.add_loading_details
+import hr.kotwave.gameslibrary.resources.add_manual_link
+import hr.kotwave.gameslibrary.resources.add_manual_query
+import hr.kotwave.gameslibrary.resources.add_own
+import hr.kotwave.gameslibrary.resources.add_search_prompt
+import hr.kotwave.gameslibrary.resources.add_section_adding
+import hr.kotwave.gameslibrary.resources.add_step_own
+import hr.kotwave.gameslibrary.resources.add_step_status
+import hr.kotwave.gameslibrary.resources.add_subtitle
+import hr.kotwave.gameslibrary.resources.add_subtitle_desktop
+import hr.kotwave.gameslibrary.resources.add_title
+import hr.kotwave.gameslibrary.resources.add_title_hint
+import hr.kotwave.gameslibrary.resources.add_to_library
+import hr.kotwave.gameslibrary.resources.add_to_wishlist
+import hr.kotwave.gameslibrary.resources.add_wishlist
+import hr.kotwave.gameslibrary.resources.add_wishlist_hint
+import hr.kotwave.gameslibrary.resources.common_done
+import hr.kotwave.gameslibrary.resources.similar_title_warning
 import hr.kotwave.gameslibrary.search.IgdbResultRow
 import hr.kotwave.gameslibrary.search.IgdbSearchField
 import hr.kotwave.gameslibrary.search.IgdbSearchStatus
@@ -54,6 +76,7 @@ import hr.kotwave.gameslibrary.ui.model.gameMeta
 import hr.kotwave.gameslibrary.ui.model.glyph
 import hr.kotwave.gameslibrary.ui.model.label
 import hr.kotwave.gameslibrary.ui.theme.AppTheme
+import org.jetbrains.compose.resources.stringResource
 
 private val Amber = Color(0xFFFFD24A)
 
@@ -70,9 +93,9 @@ fun AddGameScreen(onClose: () -> Unit, modifier: Modifier = Modifier) {
         Spacer(Modifier.height(18.dp))
         CloseButton(onClick = onClose)
         Spacer(Modifier.height(14.dp))
-        Text("Add a game", style = AppTheme.type.display, color = tokens.colors.text)
+        Text(stringResource(Res.string.add_title), style = AppTheme.type.display, color = tokens.colors.text)
         Spacer(Modifier.height(3.dp))
-        Text("Search IGDB and tap to add — metadata fills itself.", style = AppTheme.type.body, color = tokens.colors.faint)
+        Text(stringResource(Res.string.add_subtitle), style = AppTheme.type.body, color = tokens.colors.faint)
         Spacer(Modifier.height(18.dp))
         AddGameContent(onDismiss = onClose, modifier = Modifier.fillMaxWidth())
         Spacer(Modifier.height(24.dp))
@@ -108,9 +131,9 @@ fun AddGameModal(onDismiss: () -> Unit) {
                     verticalAlignment = Alignment.Top,
                 ) {
                     Column(Modifier.weight(1f)) {
-                        Text("Add a game", style = AppTheme.type.display, color = tokens.colors.text)
+                        Text(stringResource(Res.string.add_title), style = AppTheme.type.display, color = tokens.colors.text)
                         Spacer(Modifier.height(3.dp))
-                        Text("Search IGDB and tap to add.", style = AppTheme.type.body, color = tokens.colors.faint)
+                        Text(stringResource(Res.string.add_subtitle_desktop), style = AppTheme.type.body, color = tokens.colors.faint)
                     }
                     Spacer(Modifier.width(12.dp))
                     CloseButton(onClick = onDismiss)
@@ -151,7 +174,7 @@ fun AddGameContent(
             }
             if (!state.searching && state.results.isEmpty() && !state.searchFailed) {
                 Spacer(Modifier.height(8.dp))
-                ManualLink(text = "Add “${state.query.trim()}” manually", onClick = state::addManually)
+                ManualLink(text = stringResource(Res.string.add_manual_query, state.query.trim()), onClick = state::addManually)
             }
         } else if (state.query.isBlank() && !state.configuring) {
             SearchPrompt(onAddManually = state::addManually)
@@ -159,12 +182,12 @@ fun AddGameContent(
 
         if (state.loadingSelection) {
             Spacer(Modifier.height(12.dp))
-            Text("Loading details…", style = AppTheme.type.caption, color = AppTheme.tokens.colors.faint)
+            Text(stringResource(Res.string.add_loading_details), style = AppTheme.type.caption, color = AppTheme.tokens.colors.faint)
         }
 
         if (state.collapsed) {
             Spacer(Modifier.height(16.dp))
-            SectionDivider("Adding to library")
+            SectionDivider(stringResource(Res.string.add_section_adding))
             Spacer(Modifier.height(12.dp))
             AddingCard(state = state, onDismiss = onDismiss)
         }
@@ -211,11 +234,11 @@ private fun AddingCard(state: AddGameState, onDismiss: () -> Unit) {
             Spacer(Modifier.height(8.dp))
         } else {
             Spacer(Modifier.height(8.dp))
-            StepLabel(1, "Where do you own it?")
+            StepLabel(1, stringResource(Res.string.add_step_own))
             Spacer(Modifier.height(9.dp))
             StorePicker(selected = state.selectedStores, onToggle = state::toggleStore)
             Spacer(Modifier.height(18.dp))
-            StepLabel(2, "Initial status")
+            StepLabel(2, stringResource(Res.string.add_step_status))
             Spacer(Modifier.height(9.dp))
             StatusSelector(selected = state.status, onSelect = state::selectStatus)
             Spacer(Modifier.height(18.dp))
@@ -224,10 +247,10 @@ private fun AddingCard(state: AddGameState, onDismiss: () -> Unit) {
         if (state.alreadyInLibrary) {
             AlreadyInLibraryBanner(wishlist = wishlist, stores = state.selectedStores)
             Spacer(Modifier.height(12.dp))
-            PrimaryButton(text = "Done", onClick = onDismiss, leadingIcon = AppIcons.Check, modifier = Modifier.fillMaxWidth())
+            PrimaryButton(text = stringResource(Res.string.common_done), onClick = onDismiss, leadingIcon = AppIcons.Check, modifier = Modifier.fillMaxWidth())
         } else {
             PrimaryButton(
-                text = if (wishlist) "Add to wishlist" else "Add to library",
+                text = if (wishlist) stringResource(Res.string.add_to_wishlist) else stringResource(Res.string.add_to_library),
                 onClick = { state.save(onDismiss) },
                 leadingIcon = AppIcons.Check,
                 enabled = state.canSave,
@@ -261,7 +284,7 @@ private fun MatchedHeader(game: IgdbGame, onChange: () -> Unit) {
             }
         }
         Text(
-            "Change",
+            stringResource(Res.string.add_change),
             style = AppTheme.type.bodyStrong.copy(fontSize = 13.sp),
             color = tokens.colors.accent,
             modifier = Modifier.clip(RoundedCornerShape(9.dp)).clickable(onClick = onChange).padding(horizontal = 10.dp, vertical = 6.dp),
@@ -286,9 +309,9 @@ private fun SearchPrompt(onAddManually: () -> Unit) {
         Modifier.fillMaxWidth().padding(vertical = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text("Search IGDB to add a game.", style = AppTheme.type.body, color = tokens.colors.faint)
+        Text(stringResource(Res.string.add_search_prompt), style = AppTheme.type.body, color = tokens.colors.faint)
         Spacer(Modifier.height(8.dp))
-        ManualLink(text = "Add a game manually", onClick = onAddManually)
+        ManualLink(text = stringResource(Res.string.add_manual_link), onClick = onAddManually)
     }
 }
 
@@ -309,9 +332,9 @@ private fun ManualLink(text: String, onClick: () -> Unit) {
 private fun AlreadyInLibraryBanner(wishlist: Boolean, stores: Set<Store>) {
     val tokens = AppTheme.tokens
     val message = if (wishlist || stores.isEmpty()) {
-        "Already in your library."
+        stringResource(Res.string.add_already)
     } else {
-        "Already in your library — added ${stores.joinToString { it.label }}."
+        stringResource(Res.string.add_already_stores, stores.joinToString { it.label })
     }
     Row(
         Modifier
@@ -344,7 +367,7 @@ private fun TitleField(value: String, onValueChange: (String) -> Unit) {
             Icon(AppIcons.Edit, null, Modifier.size(18.dp), tint = tokens.colors.accent)
             Box(Modifier.weight(1f)) {
                 if (value.isEmpty()) {
-                    Text("Game title", style = AppTheme.type.body, color = tokens.colors.faint)
+                    Text(stringResource(Res.string.add_title_hint), style = AppTheme.type.body, color = tokens.colors.faint)
                 }
                 BasicTextField(
                     value = value,
@@ -373,7 +396,7 @@ private fun SimilarTitleWarning(existing: String) {
     ) {
         Icon(AppIcons.Heart, null, Modifier.size(14.dp), tint = Amber)
         Text(
-            "“$existing” is already in your library — you can add it anyway.",
+            stringResource(Res.string.similar_title_warning, existing),
             style = AppTheme.type.caption,
             color = AppTheme.tokens.colors.muted,
         )
@@ -392,10 +415,10 @@ private fun OwnWishlistSegment(mode: AddMode, onSelect: (AddMode) -> Unit) {
             .padding(4.dp),
         horizontalArrangement = Arrangement.spacedBy(7.dp),
     ) {
-        SegmentCell(Modifier.weight(1f), selected = mode == AddMode.OWN, icon = AppIcons.Check, label = "I own it") {
+        SegmentCell(Modifier.weight(1f), selected = mode == AddMode.OWN, icon = AppIcons.Check, label = stringResource(Res.string.add_own)) {
             onSelect(AddMode.OWN)
         }
-        SegmentCell(Modifier.weight(1f), selected = mode == AddMode.WISHLIST, icon = AppIcons.Heart, label = "Wishlist") {
+        SegmentCell(Modifier.weight(1f), selected = mode == AddMode.WISHLIST, icon = AppIcons.Heart, label = stringResource(Res.string.add_wishlist)) {
             onSelect(AddMode.WISHLIST)
         }
     }
@@ -444,7 +467,7 @@ private fun WishlistHint() {
     ) {
         Icon(AppIcons.HeartFilled, null, Modifier.size(13.dp), tint = Amber)
         Text(
-            "Wishlist hides store & status — you don't own it yet.",
+            stringResource(Res.string.add_wishlist_hint),
             style = AppTheme.type.caption,
             color = AppTheme.tokens.colors.faint,
         )
@@ -526,7 +549,7 @@ private fun StatusCell(modifier: Modifier, status: Status, selected: Boolean, on
     ) {
         StatusDot(status = status, size = 8.dp, bordered = false)
         Text(
-            status.label,
+            status.label(),
             style = AppTheme.type.caption.copy(fontSize = 11.sp),
             color = if (selected) tokens.colors.text else tokens.colors.muted,
         )

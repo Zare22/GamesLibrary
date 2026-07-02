@@ -11,6 +11,9 @@ import hr.kotwave.gameslibrary.data.ImportSummary
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
+/** Why a library import couldn't proceed; the screen maps each to display copy. */
+enum class TransferFailure { InvalidFile, EmptyFile, ImportFailed }
+
 /** Which leg of the library-import flow is on screen. */
 sealed interface TransferPhase {
     /** Waiting for the file picker (the screen triggers it once on entry). */
@@ -18,7 +21,7 @@ sealed interface TransferPhase {
     data object Working : TransferPhase
     data object Review : TransferPhase
     data class Done(val summary: ImportSummary) : TransferPhase
-    data class Failed(val message: String) : TransferPhase
+    data class Failed(val reason: TransferFailure) : TransferPhase
 }
 
 /**
@@ -65,12 +68,12 @@ class LibraryTransferViewModel(private val repository: GameRepository) : ViewMod
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                phase = TransferPhase.Failed("That doesn't look like a GamesLibrary export file.")
+                phase = TransferPhase.Failed(TransferFailure.InvalidFile)
                 return@launch
             }
             val rows = repository.classifyImport(export)
             if (rows.isEmpty()) {
-                phase = TransferPhase.Failed("The file has no games to import.")
+                phase = TransferPhase.Failed(TransferFailure.EmptyFile)
                 return@launch
             }
             candidates = rows.map { LibraryImportCandidate(it) }
@@ -90,7 +93,7 @@ class LibraryTransferViewModel(private val repository: GameRepository) : ViewMod
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                phase = TransferPhase.Failed("Import failed — your library is unchanged.")
+                phase = TransferPhase.Failed(TransferFailure.ImportFailed)
             } finally {
                 importing = false
             }

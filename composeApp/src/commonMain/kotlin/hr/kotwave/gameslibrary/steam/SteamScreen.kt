@@ -32,11 +32,43 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import hr.kotwave.gameslibrary.resources.Res
+import hr.kotwave.gameslibrary.resources.cd_back
+import hr.kotwave.gameslibrary.resources.common_cancel
+import hr.kotwave.gameslibrary.resources.steam_connect_note
+import hr.kotwave.gameslibrary.resources.steam_connecting
+import hr.kotwave.gameslibrary.resources.steam_fail_network
+import hr.kotwave.gameslibrary.resources.steam_fail_verification
+import hr.kotwave.gameslibrary.resources.steam_hero_connect_body
+import hr.kotwave.gameslibrary.resources.steam_hero_connect_title
+import hr.kotwave.gameslibrary.resources.steam_hero_connected_body
+import hr.kotwave.gameslibrary.resources.steam_hero_connected_title
+import hr.kotwave.gameslibrary.resources.steam_owned_count
+import hr.kotwave.gameslibrary.resources.steam_privacy_open
+import hr.kotwave.gameslibrary.resources.steam_privacy_step1
+import hr.kotwave.gameslibrary.resources.steam_privacy_step2
+import hr.kotwave.gameslibrary.resources.steam_privacy_step3
+import hr.kotwave.gameslibrary.resources.steam_privacy_subtitle
+import hr.kotwave.gameslibrary.resources.steam_privacy_title
+import hr.kotwave.gameslibrary.resources.steam_privacy_zero
+import hr.kotwave.gameslibrary.resources.steam_sign_in
+import hr.kotwave.gameslibrary.resources.steam_signed_in
+import hr.kotwave.gameslibrary.resources.steam_sync_failed
+import hr.kotwave.gameslibrary.resources.store_connected
+import hr.kotwave.gameslibrary.resources.store_disconnect
+import hr.kotwave.gameslibrary.resources.store_sync_now
+import hr.kotwave.gameslibrary.resources.store_sync_prompt
+import hr.kotwave.gameslibrary.resources.store_syncing
+import hr.kotwave.gameslibrary.resources.sync_stat_added
+import hr.kotwave.gameslibrary.resources.sync_stat_already
+import hr.kotwave.gameslibrary.resources.sync_stat_synced
 import hr.kotwave.gameslibrary.ui.components.GlassSurface
 import hr.kotwave.gameslibrary.ui.components.PrimaryButton
 import hr.kotwave.gameslibrary.ui.components.actionWidth
 import hr.kotwave.gameslibrary.ui.icons.AppIcons
 import hr.kotwave.gameslibrary.ui.theme.AppTheme
+import org.jetbrains.compose.resources.pluralStringResource
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
 private val SteamWarn = Color(0xFFFFCE4A)
@@ -89,7 +121,7 @@ private fun Header(onBack: () -> Unit) {
                 .clickable(onClick = onBack),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(AppIcons.ChevronLeft, "Back", Modifier.size(18.dp), tint = tokens.colors.muted)
+            Icon(AppIcons.ChevronLeft, stringResource(Res.string.cd_back), Modifier.size(18.dp), tint = tokens.colors.muted)
         }
         Text("Steam", style = AppTheme.type.brand.copy(fontSize = 16.sp), color = tokens.colors.text)
     }
@@ -117,16 +149,16 @@ private fun Hero(connected: Boolean, steam: Color) {
             }
             Spacer(Modifier.height(16.dp))
             Text(
-                if (connected) "Connected to Steam" else "Connect Steam",
+                if (connected) stringResource(Res.string.steam_hero_connected_title) else stringResource(Res.string.steam_hero_connect_title),
                 style = AppTheme.type.display.copy(fontSize = 22.sp),
                 color = tokens.colors.text,
             )
             Spacer(Modifier.height(8.dp))
             Text(
                 if (connected) {
-                    "GamesLibrary auto-imports the games you own and keeps your Steam library in sync."
+                    stringResource(Res.string.steam_hero_connected_body)
                 } else {
-                    "Sign in to auto-import the games you own. Steam shares only your public game list — no password, no purchases."
+                    stringResource(Res.string.steam_hero_connect_body)
                 },
                 style = AppTheme.type.body.copy(fontSize = 13.5.sp),
                 color = tokens.colors.muted,
@@ -141,7 +173,7 @@ private fun ConnectSection(viewModel: SteamViewModel, steam: Color) {
     GlassSurface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(18.dp)) {
         Column(Modifier.fillMaxWidth().padding(16.dp)) {
             Text(
-                "We never see your password — Steam returns only your public profile, which GamesLibrary verifies.",
+                stringResource(Res.string.steam_connect_note),
                 style = AppTheme.type.caption.copy(fontSize = 11.5.sp),
                 color = tokens.colors.faint,
             )
@@ -150,7 +182,7 @@ private fun ConnectSection(viewModel: SteamViewModel, steam: Color) {
                 SteamConnectState.Connecting -> ConnectingRow(steam = steam, onCancel = viewModel::cancelConnect)
                 else -> {
                     PrimaryButton(
-                        text = "Sign in through Steam",
+                        text = stringResource(Res.string.steam_sign_in),
                         onClick = viewModel::connect,
                         leadingIcon = AppIcons.Steam,
                         modifier = Modifier.actionWidth(),
@@ -171,13 +203,13 @@ private fun ConnectingRow(steam: Color, onCancel: () -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         CircularProgressIndicator(Modifier.size(18.dp), color = steam, strokeWidth = 2.dp)
         Text(
-            "Waiting for Steam — finish signing in, in your browser.",
+            stringResource(Res.string.steam_connecting),
             style = AppTheme.type.body.copy(fontSize = 13.sp),
             color = tokens.colors.muted,
             modifier = Modifier.weight(1f),
         )
         Text(
-            "Cancel",
+            stringResource(Res.string.common_cancel),
             style = AppTheme.type.caption,
             color = tokens.colors.faint,
             modifier = Modifier.clickable(onClick = onCancel),
@@ -185,9 +217,10 @@ private fun ConnectingRow(steam: Color, onCancel: () -> Unit) {
     }
 }
 
+@Composable
 private fun SteamConnectFailure.message(): String = when (this) {
-    SteamConnectFailure.Verification -> "Steam couldn't verify that sign-in. Try again."
-    SteamConnectFailure.Network -> "Couldn't reach Steam — check your connection and try again."
+    SteamConnectFailure.Verification -> stringResource(Res.string.steam_fail_verification)
+    SteamConnectFailure.Network -> stringResource(Res.string.steam_fail_network)
 }
 
 @Composable
@@ -220,7 +253,7 @@ private fun ConnectedCard(viewModel: SteamViewModel, steam: Color) {
                         overflow = TextOverflow.Ellipsis,
                     )
                     Text(
-                        "Signed in through Steam",
+                        stringResource(Res.string.steam_signed_in),
                         style = AppTheme.type.caption,
                         color = tokens.colors.faint,
                         maxLines = 1,
@@ -229,7 +262,7 @@ private fun ConnectedCard(viewModel: SteamViewModel, steam: Color) {
                 }
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     Box(Modifier.size(8.dp).clip(CircleShape).background(ok))
-                    Text("Connected", style = AppTheme.type.caption.copy(fontSize = 11.5.sp), color = ok)
+                    Text(stringResource(Res.string.store_connected), style = AppTheme.type.caption.copy(fontSize = 11.5.sp), color = ok)
                 }
             }
 
@@ -239,7 +272,7 @@ private fun ConnectedCard(viewModel: SteamViewModel, steam: Color) {
                 Column(Modifier.weight(1f)) {
                     val count = viewModel.ownedCount
                     Text(
-                        if (count != null) "$count games owned on Steam" else "Sync to pull your owned games",
+                        if (count != null) pluralStringResource(Res.plurals.steam_owned_count, count, count) else stringResource(Res.string.store_sync_prompt),
                         style = AppTheme.type.body.copy(fontSize = 12.5.sp),
                         color = tokens.colors.muted,
                     )
@@ -250,16 +283,16 @@ private fun ConnectedCard(viewModel: SteamViewModel, steam: Color) {
             viewModel.lastSummary?.let { summary ->
                 Divider()
                 Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-                    SyncStat(summary.added.toString(), "ADDED", tokens.status.playing)
-                    SyncStat(summary.updated.toString(), "ALREADY HAD", tokens.colors.text)
-                    SyncStat(summary.total.toString(), "SYNCED", tokens.colors.text)
+                    SyncStat(summary.added.toString(), stringResource(Res.string.sync_stat_added), tokens.status.playing)
+                    SyncStat(summary.updated.toString(), stringResource(Res.string.sync_stat_already), tokens.colors.text)
+                    SyncStat(summary.total.toString(), stringResource(Res.string.sync_stat_synced), tokens.colors.text)
                 }
             }
 
             if (viewModel.syncFailed) {
                 Spacer(Modifier.height(12.dp))
                 Text(
-                    "Can't sync from Steam — check your connection and try again.",
+                    stringResource(Res.string.steam_sync_failed),
                     style = AppTheme.type.caption,
                     color = SteamError,
                 )
@@ -267,7 +300,7 @@ private fun ConnectedCard(viewModel: SteamViewModel, steam: Color) {
 
             Spacer(Modifier.height(14.dp))
             Text(
-                "Disconnect",
+                stringResource(Res.string.store_disconnect),
                 style = AppTheme.type.caption,
                 color = tokens.colors.faint,
                 modifier = Modifier.clickable(onClick = viewModel::disconnect),
@@ -290,7 +323,7 @@ private fun SyncButton(syncing: Boolean, steam: Color, onClick: () -> Unit) {
     ) {
         Icon(AppIcons.Sync, null, Modifier.size(15.dp), tint = steam)
         Text(
-            if (syncing) "Syncing…" else "Sync now",
+            if (syncing) stringResource(Res.string.store_syncing) else stringResource(Res.string.store_sync_now),
             style = AppTheme.type.button.copy(fontSize = 13.5.sp),
             color = steam,
         )
@@ -326,16 +359,16 @@ private fun PrivacyHelper(highlighted: Boolean) {
                 Icon(AppIcons.Check, null, Modifier.size(17.dp), tint = SteamWarn)
             }
             Column(Modifier.weight(1f)) {
-                Text("Set your privacy right", style = AppTheme.type.bodyStrong, color = tokens.colors.text)
-                Text("Steam only shares games when these match", style = AppTheme.type.caption.copy(fontSize = 11.sp), color = tokens.colors.faint)
+                Text(stringResource(Res.string.steam_privacy_title), style = AppTheme.type.bodyStrong, color = tokens.colors.text)
+                Text(stringResource(Res.string.steam_privacy_subtitle), style = AppTheme.type.caption.copy(fontSize = 11.sp), color = tokens.colors.faint)
             }
         }
-        PrivacyStep("1", "Open Steam → Profile → Edit Profile → Privacy Settings.")
-        PrivacyStep("2", "Set Game details to Public — not Friends Only.")
-        PrivacyStep("3", "Leave \"Always keep my total playtime private\" unchecked.")
+        PrivacyStep("1", stringResource(Res.string.steam_privacy_step1))
+        PrivacyStep("2", stringResource(Res.string.steam_privacy_step2))
+        PrivacyStep("3", stringResource(Res.string.steam_privacy_step3))
         if (highlighted) {
             Text(
-                "Steam returned 0 games — your Game details are likely private.",
+                stringResource(Res.string.steam_privacy_zero),
                 style = AppTheme.type.caption,
                 color = SteamWarn,
             )
@@ -349,7 +382,7 @@ private fun PrivacyHelper(highlighted: Boolean) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
         ) {
-            Text("Open Steam privacy settings", style = AppTheme.type.bodyStrong.copy(fontSize = 13.sp), color = tokens.colors.muted)
+            Text(stringResource(Res.string.steam_privacy_open), style = AppTheme.type.bodyStrong.copy(fontSize = 13.sp), color = tokens.colors.muted)
         }
     }
 }

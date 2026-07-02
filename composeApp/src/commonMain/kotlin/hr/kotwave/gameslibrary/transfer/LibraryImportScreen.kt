@@ -30,11 +30,38 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import hr.kotwave.gameslibrary.data.ImportSummary
+import hr.kotwave.gameslibrary.resources.Res
+import hr.kotwave.gameslibrary.resources.action_back
+import hr.kotwave.gameslibrary.resources.cd_back
+import hr.kotwave.gameslibrary.resources.common_done
+import hr.kotwave.gameslibrary.resources.import_add_button
+import hr.kotwave.gameslibrary.resources.import_adding
+import hr.kotwave.gameslibrary.resources.import_done_title
+import hr.kotwave.gameslibrary.resources.transfer_add_new
+import hr.kotwave.gameslibrary.resources.transfer_choose_another
+import hr.kotwave.gameslibrary.resources.transfer_collision_note
+import hr.kotwave.gameslibrary.resources.transfer_done_subtitle
+import hr.kotwave.gameslibrary.resources.transfer_fail_empty
+import hr.kotwave.gameslibrary.resources.transfer_fail_import
+import hr.kotwave.gameslibrary.resources.transfer_fail_invalid
+import hr.kotwave.gameslibrary.resources.transfer_failed_title
+import hr.kotwave.gameslibrary.resources.transfer_importing
+import hr.kotwave.gameslibrary.resources.transfer_kind_already
+import hr.kotwave.gameslibrary.resources.transfer_kind_collision
+import hr.kotwave.gameslibrary.resources.transfer_kind_manual
+import hr.kotwave.gameslibrary.resources.transfer_kind_new
+import hr.kotwave.gameslibrary.resources.transfer_merge
+import hr.kotwave.gameslibrary.resources.transfer_picking
+import hr.kotwave.gameslibrary.resources.transfer_reading
+import hr.kotwave.gameslibrary.resources.transfer_review_count
+import hr.kotwave.gameslibrary.resources.transfer_title
 import hr.kotwave.gameslibrary.ui.components.CoverArt
 import hr.kotwave.gameslibrary.ui.components.PrimaryButton
 import hr.kotwave.gameslibrary.ui.icons.AppIcons
 import hr.kotwave.gameslibrary.ui.model.gameMeta
 import hr.kotwave.gameslibrary.ui.theme.AppTheme
+import org.jetbrains.compose.resources.pluralStringResource
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
 private val Amber = Color(0xFFFFD24A)
@@ -53,12 +80,19 @@ fun LibraryImportScreen(onBack: () -> Unit, viewModel: LibraryTransferViewModel 
     LaunchedEffect(Unit) { pickFile() }
 
     when (val phase = viewModel.phase) {
-        TransferPhase.Picking -> LoadingState("Choose a GamesLibrary file…")
-        TransferPhase.Working -> LoadingState(if (viewModel.importing) "Adding to your library…" else "Reading file…")
+        TransferPhase.Picking -> LoadingState(stringResource(Res.string.transfer_picking))
+        TransferPhase.Working -> LoadingState(if (viewModel.importing) stringResource(Res.string.transfer_importing) else stringResource(Res.string.transfer_reading))
         TransferPhase.Review -> ReviewState(viewModel, onBack)
         is TransferPhase.Done -> DoneState(phase.summary, onBack)
-        is TransferPhase.Failed -> FailedState(phase.message, onRetry = pickFile, onBack = onBack)
+        is TransferPhase.Failed -> FailedState(phase.reason.message(), onRetry = pickFile, onBack = onBack)
     }
+}
+
+@Composable
+private fun TransferFailure.message(): String = when (this) {
+    TransferFailure.InvalidFile -> stringResource(Res.string.transfer_fail_invalid)
+    TransferFailure.EmptyFile -> stringResource(Res.string.transfer_fail_empty)
+    TransferFailure.ImportFailed -> stringResource(Res.string.transfer_fail_import)
 }
 
 @Composable
@@ -83,9 +117,9 @@ private fun ReviewState(viewModel: LibraryTransferViewModel, onBack: () -> Unit)
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             BackButton(onBack)
             Column {
-                Text("Import library", style = AppTheme.type.brand.copy(fontSize = 16.sp), color = tokens.colors.text)
+                Text(stringResource(Res.string.transfer_title), style = AppTheme.type.brand.copy(fontSize = 16.sp), color = tokens.colors.text)
                 Text(
-                    "${viewModel.candidates.size} in file · ${viewModel.checkedCount} selected",
+                    stringResource(Res.string.transfer_review_count, viewModel.candidates.size, viewModel.checkedCount),
                     style = AppTheme.type.caption,
                     color = tokens.colors.faint,
                 )
@@ -100,7 +134,7 @@ private fun ReviewState(viewModel: LibraryTransferViewModel, onBack: () -> Unit)
 
         Column(Modifier.fillMaxWidth().padding(top = 10.dp, bottom = 18.dp)) {
             PrimaryButton(
-                text = if (viewModel.importing) "Adding…" else "Add ${viewModel.checkedCount} to library",
+                text = if (viewModel.importing) stringResource(Res.string.import_adding) else stringResource(Res.string.import_add_button, viewModel.checkedCount),
                 onClick = viewModel::confirm,
                 leadingIcon = AppIcons.Check,
                 enabled = viewModel.checkedCount > 0 && !viewModel.importing,
@@ -154,14 +188,14 @@ private fun CandidateRow(candidate: LibraryImportCandidate) {
 private fun CollisionChoice(candidate: LibraryImportCandidate) {
     val tokens = AppTheme.tokens
     Text(
-        "A game with this title is already in your library.",
+        stringResource(Res.string.transfer_collision_note),
         style = AppTheme.type.caption,
         color = tokens.colors.muted,
     )
     Spacer(Modifier.height(7.dp))
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        ChoiceChip("Merge onto it", selected = candidate.mergeByTitle) { candidate.mergeByTitle = true }
-        ChoiceChip("Add as new", selected = !candidate.mergeByTitle) { candidate.mergeByTitle = false }
+        ChoiceChip(stringResource(Res.string.transfer_merge), selected = candidate.mergeByTitle) { candidate.mergeByTitle = true }
+        ChoiceChip(stringResource(Res.string.transfer_add_new), selected = !candidate.mergeByTitle) { candidate.mergeByTitle = false }
     }
 }
 
@@ -184,10 +218,10 @@ private fun ChoiceChip(label: String, selected: Boolean, onClick: () -> Unit) {
 @Composable
 private fun KindTag(kind: ImportRowKind) {
     val (text, color) = when (kind) {
-        ImportRowKind.AlreadyById -> "Already in library" to AppTheme.tokens.colors.muted
-        ImportRowKind.NewMatched -> "New" to AppTheme.tokens.colors.accent
-        ImportRowKind.TitleCollision -> "Title exists" to Amber
-        ImportRowKind.NewManual -> "New · manual" to AppTheme.tokens.colors.accent
+        ImportRowKind.AlreadyById -> stringResource(Res.string.transfer_kind_already) to AppTheme.tokens.colors.muted
+        ImportRowKind.NewMatched -> stringResource(Res.string.transfer_kind_new) to AppTheme.tokens.colors.accent
+        ImportRowKind.TitleCollision -> stringResource(Res.string.transfer_kind_collision) to Amber
+        ImportRowKind.NewManual -> stringResource(Res.string.transfer_kind_manual) to AppTheme.tokens.colors.accent
     }
     Text(text.uppercase(), style = AppTheme.type.section.copy(fontSize = 10.sp), color = color)
 }
@@ -207,15 +241,15 @@ private fun DoneState(summary: ImportSummary, onDone: () -> Unit) {
             Icon(AppIcons.Check, null, Modifier.size(30.dp), tint = Ok)
         }
         Spacer(Modifier.height(18.dp))
-        Text("Imported ${summary.total} games", style = AppTheme.type.display.copy(fontSize = 22.sp), color = tokens.colors.text)
+        Text(pluralStringResource(Res.plurals.import_done_title, summary.total, summary.total), style = AppTheme.type.display.copy(fontSize = 22.sp), color = tokens.colors.text)
         Spacer(Modifier.height(6.dp))
         Text(
-            "${summary.added} added · ${summary.attached} merged into existing.",
+            stringResource(Res.string.transfer_done_subtitle, summary.added, summary.attached),
             style = AppTheme.type.body,
             color = tokens.colors.faint,
         )
         Spacer(Modifier.height(24.dp))
-        PrimaryButton("Done", onDone, leadingIcon = AppIcons.Check)
+        PrimaryButton(stringResource(Res.string.common_done), onDone, leadingIcon = AppIcons.Check)
     }
 }
 
@@ -234,14 +268,14 @@ private fun FailedState(message: String, onRetry: () -> Unit, onBack: () -> Unit
             Icon(AppIcons.Close, null, Modifier.size(28.dp), tint = ErrorRed)
         }
         Spacer(Modifier.height(18.dp))
-        Text("Couldn't import", style = AppTheme.type.display.copy(fontSize = 20.sp), color = tokens.colors.text)
+        Text(stringResource(Res.string.transfer_failed_title), style = AppTheme.type.display.copy(fontSize = 20.sp), color = tokens.colors.text)
         Spacer(Modifier.height(6.dp))
         Text(message, style = AppTheme.type.body, color = tokens.colors.faint)
         Spacer(Modifier.height(24.dp))
-        PrimaryButton("Choose another file", onRetry, leadingIcon = AppIcons.ImportFile)
+        PrimaryButton(stringResource(Res.string.transfer_choose_another), onRetry, leadingIcon = AppIcons.ImportFile)
         Spacer(Modifier.height(10.dp))
         Text(
-            "Back",
+            stringResource(Res.string.action_back),
             style = AppTheme.type.bodyStrong.copy(fontSize = 13.sp),
             color = tokens.colors.muted,
             modifier = Modifier.clip(RoundedCornerShape(10.dp)).clickable(onClick = onBack).padding(horizontal = 14.dp, vertical = 8.dp),
@@ -257,7 +291,7 @@ private fun BackButton(onClick: () -> Unit) {
             .border(1.dp, tokens.colors.border, RoundedCornerShape(11.dp)).clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
-        Icon(AppIcons.ChevronLeft, "Back", Modifier.size(18.dp), tint = tokens.colors.muted)
+        Icon(AppIcons.ChevronLeft, stringResource(Res.string.cd_back), Modifier.size(18.dp), tint = tokens.colors.muted)
     }
 }
 

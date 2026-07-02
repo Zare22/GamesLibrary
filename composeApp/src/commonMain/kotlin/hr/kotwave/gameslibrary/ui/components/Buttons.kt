@@ -22,8 +22,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import hr.kotwave.gameslibrary.resources.Res
+import hr.kotwave.gameslibrary.resources.action_delete
+import hr.kotwave.gameslibrary.resources.cd_close
 import hr.kotwave.gameslibrary.ui.icons.AppIcons
 import hr.kotwave.gameslibrary.ui.theme.AppTheme
+import org.jetbrains.compose.resources.stringResource
 
 private val ButtonShape = RoundedCornerShape(14.dp)
 private val IconButtonShape = RoundedCornerShape(12.dp)
@@ -100,7 +104,7 @@ fun DestructiveButton(
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
-        Icon(icon, "Delete", Modifier.size(17.dp), tint = Color(0xFFF4A3AA))
+        Icon(icon, stringResource(Res.string.action_delete), Modifier.size(17.dp), tint = Color(0xFFF4A3AA))
     }
 }
 
@@ -177,6 +181,6 @@ fun CloseButton(
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
-        Icon(AppIcons.Close, "Close", Modifier.size(17.dp), tint = tokens.colors.muted)
+        Icon(AppIcons.Close, stringResource(Res.string.cd_close), Modifier.size(17.dp), tint = tokens.colors.muted)
     }
 }

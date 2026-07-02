@@ -83,9 +83,9 @@ private fun NavItem(
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         GlowBox(glow = if (active) tokens.colors.accent else null, shape = CircleShape, glowRadius = 7.dp, glowAlpha = 0.7f) {
-            Icon(destination.icon, destination.label, Modifier.size(21.dp), tint = color)
+            Icon(destination.icon, destination.label(), Modifier.size(21.dp), tint = color)
         }
-        Text(destination.label, style = AppTheme.type.navLabel, color = color)
+        Text(destination.label(), style = AppTheme.type.navLabel, color = color)
         if (active) {
             Box(Modifier.size(5.dp).clip(CircleShape).background(tokens.colors.accent))
         }

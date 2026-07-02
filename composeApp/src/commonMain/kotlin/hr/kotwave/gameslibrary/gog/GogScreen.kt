@@ -29,12 +29,37 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import hr.kotwave.gameslibrary.data.Store
+import hr.kotwave.gameslibrary.resources.Res
+import hr.kotwave.gameslibrary.resources.cd_back
+import hr.kotwave.gameslibrary.resources.common_cancel
+import hr.kotwave.gameslibrary.resources.gog_account
+import hr.kotwave.gameslibrary.resources.gog_connect
+import hr.kotwave.gameslibrary.resources.gog_connect_note
+import hr.kotwave.gameslibrary.resources.gog_fail_auth
+import hr.kotwave.gameslibrary.resources.gog_fail_network
+import hr.kotwave.gameslibrary.resources.gog_finishing
+import hr.kotwave.gameslibrary.resources.gog_hero_connect_body
+import hr.kotwave.gameslibrary.resources.gog_hero_connect_title
+import hr.kotwave.gameslibrary.resources.gog_hero_connected_body
+import hr.kotwave.gameslibrary.resources.gog_hero_connected_title
+import hr.kotwave.gameslibrary.resources.gog_owned_count
+import hr.kotwave.gameslibrary.resources.gog_sync_failed
+import hr.kotwave.gameslibrary.resources.store_connected
+import hr.kotwave.gameslibrary.resources.store_disconnect
+import hr.kotwave.gameslibrary.resources.store_sync_now
+import hr.kotwave.gameslibrary.resources.store_sync_prompt
+import hr.kotwave.gameslibrary.resources.store_syncing
+import hr.kotwave.gameslibrary.resources.sync_stat_added
+import hr.kotwave.gameslibrary.resources.sync_stat_already
+import hr.kotwave.gameslibrary.resources.sync_stat_synced
 import hr.kotwave.gameslibrary.ui.components.GlassSurface
 import hr.kotwave.gameslibrary.ui.components.PrimaryButton
 import hr.kotwave.gameslibrary.ui.components.actionWidth
 import hr.kotwave.gameslibrary.ui.icons.AppIcons
 import hr.kotwave.gameslibrary.ui.model.glyph
 import hr.kotwave.gameslibrary.ui.theme.AppTheme
+import org.jetbrains.compose.resources.pluralStringResource
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
 private val GogError = Color(0xFFF4707A)
@@ -82,7 +107,7 @@ private fun Header(onBack: () -> Unit) {
                 .clickable(onClick = onBack),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(AppIcons.ChevronLeft, "Back", Modifier.size(18.dp), tint = tokens.colors.muted)
+            Icon(AppIcons.ChevronLeft, stringResource(Res.string.cd_back), Modifier.size(18.dp), tint = tokens.colors.muted)
         }
         Text("GOG", style = AppTheme.type.brand.copy(fontSize = 16.sp), color = tokens.colors.text)
     }
@@ -110,16 +135,16 @@ private fun Hero(connected: Boolean, gog: Color) {
             }
             Spacer(Modifier.height(16.dp))
             Text(
-                if (connected) "Connected to GOG" else "Connect GOG",
+                if (connected) stringResource(Res.string.gog_hero_connected_title) else stringResource(Res.string.gog_hero_connect_title),
                 style = AppTheme.type.display.copy(fontSize = 22.sp),
                 color = tokens.colors.text,
             )
             Spacer(Modifier.height(8.dp))
             Text(
                 if (connected) {
-                    "GamesLibrary auto-imports the games you own and keeps your GOG library in sync."
+                    stringResource(Res.string.gog_hero_connected_body)
                 } else {
-                    "Sign in to auto-import the games you own. GamesLibrary only reads your owned games — no purchases."
+                    stringResource(Res.string.gog_hero_connect_body)
                 },
                 style = AppTheme.type.body.copy(fontSize = 13.5.sp),
                 color = tokens.colors.muted,
@@ -138,22 +163,22 @@ private fun ConnectSection(viewModel: GogViewModel, gog: Color) {
                     GogConnectCapture(authUrl = state.authUrl, onRedirect = viewModel::onRedirectCaptured)
                     Spacer(Modifier.height(12.dp))
                     Text(
-                        "Cancel",
+                        stringResource(Res.string.common_cancel),
                         style = AppTheme.type.caption,
                         color = tokens.colors.faint,
                         modifier = Modifier.clickable(onClick = viewModel::cancelConnect),
                     )
                 }
-                GogConnectState.Exchanging -> ConnectingRow(gog, "Finishing GOG sign-in…")
+                GogConnectState.Exchanging -> ConnectingRow(gog, stringResource(Res.string.gog_finishing))
                 else -> {
                     Text(
-                        "GamesLibrary opens GOG in a browser and only reads the list of games you own.",
+                        stringResource(Res.string.gog_connect_note),
                         style = AppTheme.type.caption.copy(fontSize = 11.5.sp),
                         color = tokens.colors.faint,
                     )
                     Spacer(Modifier.height(14.dp))
                     PrimaryButton(
-                        text = "Connect GOG",
+                        text = stringResource(Res.string.gog_connect),
                         onClick = viewModel::connect,
                         modifier = Modifier.actionWidth(),
                     )
@@ -176,9 +201,10 @@ private fun ConnectingRow(gog: Color, label: String) {
     }
 }
 
+@Composable
 private fun GogConnectFailure.message(): String = when (this) {
-    GogConnectFailure.Auth -> "That sign-in didn't return a GOG code. Try connecting again."
-    GogConnectFailure.Network -> "Couldn't reach GOG — check your connection and try again."
+    GogConnectFailure.Auth -> stringResource(Res.string.gog_fail_auth)
+    GogConnectFailure.Network -> stringResource(Res.string.gog_fail_network)
 }
 
 @Composable
@@ -197,12 +223,12 @@ private fun ConnectedCard(viewModel: GogViewModel, gog: Color) {
                     Text(Store.GOG.glyph, style = AppTheme.type.brand.copy(fontSize = 20.sp), color = Color.White)
                 }
                 Column(Modifier.weight(1f)) {
-                    Text("GOG account", style = AppTheme.type.bodyStrong, color = tokens.colors.text)
-                    Text("Connected", style = AppTheme.type.caption, color = tokens.colors.faint)
+                    Text(stringResource(Res.string.gog_account), style = AppTheme.type.bodyStrong, color = tokens.colors.text)
+                    Text(stringResource(Res.string.store_connected), style = AppTheme.type.caption, color = tokens.colors.faint)
                 }
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     Box(Modifier.size(8.dp).clip(CircleShape).background(ok))
-                    Text("Connected", style = AppTheme.type.caption.copy(fontSize = 11.5.sp), color = ok)
+                    Text(stringResource(Res.string.store_connected), style = AppTheme.type.caption.copy(fontSize = 11.5.sp), color = ok)
                 }
             }
 
@@ -212,7 +238,7 @@ private fun ConnectedCard(viewModel: GogViewModel, gog: Color) {
                 Column(Modifier.weight(1f)) {
                     val count = viewModel.ownedCount
                     Text(
-                        if (count != null) "$count games owned on GOG" else "Sync to pull your owned games",
+                        if (count != null) pluralStringResource(Res.plurals.gog_owned_count, count, count) else stringResource(Res.string.store_sync_prompt),
                         style = AppTheme.type.body.copy(fontSize = 12.5.sp),
                         color = tokens.colors.muted,
                     )
@@ -223,16 +249,16 @@ private fun ConnectedCard(viewModel: GogViewModel, gog: Color) {
             viewModel.lastSummary?.let { summary ->
                 Divider()
                 Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-                    SyncStat(summary.added.toString(), "ADDED", tokens.status.playing)
-                    SyncStat(summary.updated.toString(), "ALREADY HAD", tokens.colors.text)
-                    SyncStat(summary.total.toString(), "SYNCED", tokens.colors.text)
+                    SyncStat(summary.added.toString(), stringResource(Res.string.sync_stat_added), tokens.status.playing)
+                    SyncStat(summary.updated.toString(), stringResource(Res.string.sync_stat_already), tokens.colors.text)
+                    SyncStat(summary.total.toString(), stringResource(Res.string.sync_stat_synced), tokens.colors.text)
                 }
             }
 
             if (viewModel.syncFailed) {
                 Spacer(Modifier.height(12.dp))
                 Text(
-                    "Couldn't reach GOG or IGDB — check your connection and try again.",
+                    stringResource(Res.string.gog_sync_failed),
                     style = AppTheme.type.caption,
                     color = GogError,
                 )
@@ -240,7 +266,7 @@ private fun ConnectedCard(viewModel: GogViewModel, gog: Color) {
 
             Spacer(Modifier.height(14.dp))
             Text(
-                "Disconnect",
+                stringResource(Res.string.store_disconnect),
                 style = AppTheme.type.caption,
                 color = tokens.colors.faint,
                 modifier = Modifier.clickable(onClick = viewModel::disconnect),
@@ -263,7 +289,7 @@ private fun SyncButton(syncing: Boolean, gog: Color, onClick: () -> Unit) {
     ) {
         Icon(AppIcons.Sync, null, Modifier.size(15.dp), tint = gog)
         Text(
-            if (syncing) "Syncing…" else "Sync now",
+            if (syncing) stringResource(Res.string.store_syncing) else stringResource(Res.string.store_sync_now),
             style = AppTheme.type.button.copy(fontSize = 13.5.sp),
             color = gog,
         )

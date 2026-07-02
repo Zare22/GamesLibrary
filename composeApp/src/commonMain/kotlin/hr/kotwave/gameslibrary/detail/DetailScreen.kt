@@ -23,7 +23,6 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
@@ -55,6 +54,37 @@ import hr.kotwave.gameslibrary.data.Game
 import hr.kotwave.gameslibrary.data.GameWithOwnerships
 import hr.kotwave.gameslibrary.data.Status
 import hr.kotwave.gameslibrary.data.Store
+import hr.kotwave.gameslibrary.resources.Res
+import hr.kotwave.gameslibrary.resources.action_delete
+import hr.kotwave.gameslibrary.resources.cd_back
+import hr.kotwave.gameslibrary.resources.cd_close
+import hr.kotwave.gameslibrary.resources.cd_rating_clear
+import hr.kotwave.gameslibrary.resources.cd_rating_lower
+import hr.kotwave.gameslibrary.resources.cd_rating_raise
+import hr.kotwave.gameslibrary.resources.cd_refresh_metadata
+import hr.kotwave.gameslibrary.resources.cd_remove_store
+import hr.kotwave.gameslibrary.resources.common_cancel
+import hr.kotwave.gameslibrary.resources.detail_add_store
+import hr.kotwave.gameslibrary.resources.detail_delete_body
+import hr.kotwave.gameslibrary.resources.detail_delete_title
+import hr.kotwave.gameslibrary.resources.detail_not_owned_body
+import hr.kotwave.gameslibrary.resources.detail_not_owned_title
+import hr.kotwave.gameslibrary.resources.detail_not_tracked
+import hr.kotwave.gameslibrary.resources.detail_on_wishlist
+import hr.kotwave.gameslibrary.resources.detail_orphan_body
+import hr.kotwave.gameslibrary.resources.detail_orphan_title
+import hr.kotwave.gameslibrary.resources.detail_ownership
+import hr.kotwave.gameslibrary.resources.detail_platforms
+import hr.kotwave.gameslibrary.resources.detail_rating_subtitle
+import hr.kotwave.gameslibrary.resources.detail_rating_title
+import hr.kotwave.gameslibrary.resources.detail_rematch
+import hr.kotwave.gameslibrary.resources.detail_rematch_body
+import hr.kotwave.gameslibrary.resources.detail_rematch_conflict
+import hr.kotwave.gameslibrary.resources.detail_rematch_title
+import hr.kotwave.gameslibrary.resources.detail_status
+import hr.kotwave.gameslibrary.resources.detail_unrated
+import hr.kotwave.gameslibrary.resources.igdb_unreachable_short
+import hr.kotwave.gameslibrary.resources.library_title
 import hr.kotwave.gameslibrary.igdb.IgdbImage
 import hr.kotwave.gameslibrary.search.IgdbResultRow
 import hr.kotwave.gameslibrary.search.IgdbSearchField
@@ -74,6 +104,7 @@ import hr.kotwave.gameslibrary.ui.model.label
 import hr.kotwave.gameslibrary.ui.model.releaseYear
 import hr.kotwave.gameslibrary.ui.shell.LocalIsCompact
 import hr.kotwave.gameslibrary.ui.theme.AppTheme
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import kotlin.math.roundToInt
 
@@ -181,9 +212,9 @@ private fun PhoneHero(owned: GameWithOwnerships, actions: DetailActions) {
             Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 18.dp, vertical = 10.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            CircularButton(AppIcons.ChevronLeft, onClick = actions.onBack, contentDescription = "Back")
+            CircularButton(AppIcons.ChevronLeft, onClick = actions.onBack, contentDescription = stringResource(Res.string.cd_back))
             if (owned.game.igdbId != null) {
-                CircularButton(AppIcons.Sync, onClick = actions.onRefresh, contentDescription = "Refresh metadata")
+                CircularButton(AppIcons.Sync, onClick = actions.onRefresh, contentDescription = stringResource(Res.string.cd_refresh_metadata))
             }
         }
         Column(Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(horizontal = 22.dp, vertical = 16.dp)) {
@@ -207,8 +238,8 @@ private fun DesktopDetail(owned: GameWithOwnerships, igdbUnreachable: Boolean, a
     ContentColumn(maxWidth = DetailMaxWidth) {
         Column(Modifier.fillMaxSize().padding(start = 30.dp, end = 30.dp, top = 18.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                CircularButton(AppIcons.ChevronLeft, onClick = actions.onBack, contentDescription = "Back")
-                Text("Library", style = AppTheme.type.bodyStrong, color = tokens.colors.muted)
+                CircularButton(AppIcons.ChevronLeft, onClick = actions.onBack, contentDescription = stringResource(Res.string.cd_back))
+                Text(stringResource(Res.string.library_title), style = AppTheme.type.bodyStrong, color = tokens.colors.muted)
                 Text("/", style = AppTheme.type.bodyStrong, color = tokens.colors.faint)
                 Text(owned.game.name, style = AppTheme.type.bodyStrong, color = tokens.colors.text, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
@@ -275,7 +306,7 @@ private fun DesktopPoster(owned: GameWithOwnerships) {
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 StatusDot(status = owned.game.status!!)
-                Text(owned.game.status!!.label, style = AppTheme.type.bodyStrong, color = tokens.colors.text)
+                Text(owned.game.status!!.label(), style = AppTheme.type.bodyStrong, color = tokens.colors.text)
             }
         }
     }
@@ -290,7 +321,7 @@ private fun DetailBody(owned: GameWithOwnerships, igdbUnreachable: Boolean, acti
         OrphanedBanner(onRematch = actions.onRematch)
     }
     if (igdbUnreachable) {
-        InlineNote("Couldn't reach IGDB — check your connection.", OrphanRed)
+        InlineNote(stringResource(Res.string.igdb_unreachable_short), OrphanRed)
     }
     if (game.wishlist) {
         NotOwnedSection()
@@ -354,7 +385,7 @@ private fun WishlistPill() {
         horizontalArrangement = Arrangement.spacedBy(7.dp),
     ) {
         Icon(AppIcons.HeartFilled, null, Modifier.size(13.dp), tint = Amber)
-        Text("On your wishlist", style = AppTheme.type.caption.copy(fontSize = 11.sp), color = Amber)
+        Text(stringResource(Res.string.detail_on_wishlist), style = AppTheme.type.caption.copy(fontSize = 11.sp), color = Amber)
     }
 }
 
@@ -382,8 +413,8 @@ private fun RatingSection(value: Double?, onChange: (Double?) -> Unit) {
             Icon(AppIcons.Star, null, Modifier.size(17.dp), tint = RatingBlue)
         }
         Column(Modifier.weight(1f)) {
-            Text("Your rating", style = AppTheme.type.bodyStrong, color = tokens.colors.text)
-            Text("Your own score, out of 10", style = AppTheme.type.caption.copy(fontSize = 11.5.sp), color = tokens.colors.faint)
+            Text(stringResource(Res.string.detail_rating_title), style = AppTheme.type.bodyStrong, color = tokens.colors.text)
+            Text(stringResource(Res.string.detail_rating_subtitle), style = AppTheme.type.caption.copy(fontSize = 11.5.sp), color = tokens.colors.faint)
         }
         RatingStepper(value, onChange)
     }
@@ -396,7 +427,7 @@ private fun RatingStepper(value: Double?, onChange: (Double?) -> Unit) {
     var text by remember(value) { mutableStateOf(value?.let(::formatUserRating) ?: "") }
 
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        StepButton(AppIcons.Minus, "Lower") { editing = false; onChange(stepped(value, -0.5)) }
+        StepButton(AppIcons.Minus, stringResource(Res.string.cd_rating_lower)) { editing = false; onChange(stepped(value, -0.5)) }
         Box(Modifier.widthIn(min = 56.dp), contentAlignment = Alignment.Center) {
             if (editing) {
                 BasicTextField(
@@ -418,14 +449,14 @@ private fun RatingStepper(value: Double?, onChange: (Double?) -> Unit) {
                     },
                 ) {
                     Text(value?.let(::formatUserRating) ?: "—", style = AppTheme.type.numeric, color = RatingBlue)
-                    Text(if (value == null) "Unrated" else "/ 10", style = AppTheme.type.caption.copy(fontSize = 10.sp), color = tokens.colors.faint)
+                    Text(if (value == null) stringResource(Res.string.detail_unrated) else "/ 10", style = AppTheme.type.caption.copy(fontSize = 10.sp), color = tokens.colors.faint)
                 }
             }
         }
-        StepButton(AppIcons.Plus, "Raise") { editing = false; onChange(stepped(value, 0.5)) }
+        StepButton(AppIcons.Plus, stringResource(Res.string.cd_rating_raise)) { editing = false; onChange(stepped(value, 0.5)) }
         StepButton(
             AppIcons.Close,
-            "Clear rating",
+            stringResource(Res.string.cd_rating_clear),
             modifier = Modifier.alpha(if (value != null) 1f else 0f),
             enabled = value != null,
         ) { editing = false; onChange(null) }
@@ -457,7 +488,7 @@ private fun StepButton(
 @Composable
 private fun OwnershipSection(stores: List<Store>, onAdd: (Store) -> Unit, onRemove: (Store) -> Unit) {
     val tokens = AppTheme.tokens
-    SectionHeader("Ownership")
+    SectionHeader(stringResource(Res.string.detail_ownership))
     Column(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
             .background(tokens.colors.surface).border(1.dp, tokens.colors.border, RoundedCornerShape(16.dp))
@@ -465,14 +496,14 @@ private fun OwnershipSection(stores: List<Store>, onAdd: (Store) -> Unit, onRemo
         verticalArrangement = Arrangement.spacedBy(9.dp),
     ) {
         if (stores.isEmpty()) {
-            Text("Not tracked on any store yet.", style = AppTheme.type.caption, color = tokens.colors.faint)
+            Text(stringResource(Res.string.detail_not_tracked), style = AppTheme.type.caption, color = tokens.colors.faint)
         } else {
             stores.forEach { store -> OwnedStoreRow(store, onRemove = { onRemove(store) }) }
         }
         val addable = Store.entries.filter { it !in stores }
         if (addable.isNotEmpty()) {
             Spacer(Modifier.height(2.dp))
-            Text("ADD A STORE", style = AppTheme.type.section.copy(fontSize = 10.sp), color = tokens.colors.faint)
+            Text(stringResource(Res.string.detail_add_store), style = AppTheme.type.section.copy(fontSize = 10.sp), color = tokens.colors.faint)
             AddStoreChips(addable, onAdd)
         }
     }
@@ -501,7 +532,7 @@ private fun OwnedStoreRow(store: Store, onRemove: () -> Unit) {
             Modifier.size(28.dp).clip(RoundedCornerShape(8.dp)).clickable(onClick = onRemove),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(AppIcons.Close, "Remove ${store.label}", Modifier.size(15.dp), tint = tokens.colors.faint)
+            Icon(AppIcons.Close, stringResource(Res.string.cd_remove_store, store.label), Modifier.size(15.dp), tint = tokens.colors.faint)
         }
     }
 }
@@ -530,7 +561,7 @@ private fun AddStoreChips(stores: List<Store>, onAdd: (Store) -> Unit) {
 
 @Composable
 private fun StatusSection(selected: Status?, onSelect: (Status) -> Unit) {
-    SectionHeader("Completion status")
+    SectionHeader(stringResource(Res.string.detail_status))
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
         Status.entries.forEach { status ->
             StatusCell(Modifier.weight(1f), status = status, active = selected == status) { onSelect(status) }
@@ -555,7 +586,7 @@ private fun StatusCell(modifier: Modifier, status: Status, active: Boolean, onCl
     ) {
         StatusDot(status = status, size = 9.dp, bordered = false)
         Text(
-            status.label,
+            status.label(),
             style = AppTheme.type.caption.copy(fontSize = 11.5.sp),
             color = if (active) tokens.colors.text else tokens.colors.muted,
         )
@@ -567,7 +598,7 @@ private fun StatusCell(modifier: Modifier, status: Status, active: Boolean, onCl
 @Composable
 private fun NotOwnedSection() {
     val tokens = AppTheme.tokens
-    SectionHeader("Ownership")
+    SectionHeader(stringResource(Res.string.detail_ownership))
     Row(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
             .background(Brush.linearGradient(listOf(Amber.copy(alpha = 0.10f), Amber.copy(alpha = 0.02f))))
@@ -584,9 +615,9 @@ private fun NotOwnedSection() {
             Icon(AppIcons.HeartFilled, null, Modifier.size(19.dp), tint = Amber)
         }
         Column(Modifier.weight(1f)) {
-            Text("Not owned yet · On your wishlist", style = AppTheme.type.bodyStrong, color = tokens.colors.text)
+            Text(stringResource(Res.string.detail_not_owned_title), style = AppTheme.type.bodyStrong, color = tokens.colors.text)
             Text(
-                "Add it to a store after you buy, and your status & rating unlock.",
+                stringResource(Res.string.detail_not_owned_body),
                 style = AppTheme.type.caption.copy(fontSize = 11.5.sp),
                 color = tokens.colors.faint,
             )
@@ -600,7 +631,7 @@ private fun NotOwnedSection() {
 @Composable
 private fun PlatformsSection(platforms: List<String>) {
     val tokens = AppTheme.tokens
-    SectionHeader("Platforms")
+    SectionHeader(stringResource(Res.string.detail_platforms))
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         platforms.forEach { name ->
             Text(
@@ -634,15 +665,15 @@ private fun OrphanedBanner(onRematch: () -> Unit) {
                 Icon(AppIcons.Sync, null, Modifier.size(18.dp), tint = OrphanRed)
             }
             Column(Modifier.weight(1f)) {
-                Text("IGDB link broke", style = AppTheme.type.bodyStrong, color = tokens.colors.text)
+                Text(stringResource(Res.string.detail_orphan_title), style = AppTheme.type.bodyStrong, color = tokens.colors.text)
                 Text(
-                    "This game's IGDB entry no longer resolves. Its data is kept — re-match to a new entry to refresh.",
+                    stringResource(Res.string.detail_orphan_body),
                     style = AppTheme.type.caption.copy(fontSize = 11.5.sp),
                     color = tokens.colors.muted,
                 )
             }
         }
-        SecondaryButton(text = "Re-match", onClick = onRematch, leadingIcon = AppIcons.Search, modifier = Modifier.actionWidth())
+        SecondaryButton(text = stringResource(Res.string.detail_rematch), onClick = onRematch, leadingIcon = AppIcons.Search, modifier = Modifier.actionWidth())
     }
 }
 
@@ -664,21 +695,21 @@ private fun RematchOverlay(vm: DetailViewModel) {
                 .padding(20.dp),
         ) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text("Re-match game", style = AppTheme.type.bodyStrong.copy(fontSize = 16.sp), color = tokens.colors.text)
+                Text(stringResource(Res.string.detail_rematch_title), style = AppTheme.type.bodyStrong.copy(fontSize = 16.sp), color = tokens.colors.text)
                 Box(
                     Modifier.size(32.dp).clip(RoundedCornerShape(10.dp)).clickable(onClick = vm::cancelRematch),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Icon(AppIcons.Close, "Close", Modifier.size(16.dp), tint = tokens.colors.muted)
+                    Icon(AppIcons.Close, stringResource(Res.string.cd_close), Modifier.size(16.dp), tint = tokens.colors.muted)
                 }
             }
             Spacer(Modifier.height(4.dp))
-            Text("Pick the correct IGDB entry — its metadata replaces the broken one.", style = AppTheme.type.caption, color = tokens.colors.faint)
+            Text(stringResource(Res.string.detail_rematch_body), style = AppTheme.type.caption, color = tokens.colors.faint)
             Spacer(Modifier.height(14.dp))
             IgdbSearchField(value = vm.rematchSearch.query, onValueChange = vm.rematchSearch::updateQuery)
             if (vm.rematchConflict) {
                 Spacer(Modifier.height(10.dp))
-                InlineNote("That game is already in your library — pick a different entry.", Amber)
+                InlineNote(stringResource(Res.string.detail_rematch_conflict), Amber)
             }
             if (vm.rematchSearch.query.isNotBlank()) {
                 Spacer(Modifier.height(12.dp))
@@ -722,17 +753,17 @@ private fun ConfirmDeleteDialog(name: String, onConfirm: () -> Unit, onDismiss: 
                 .clickable(interactionSource = card, indication = null, onClick = {})
                 .padding(22.dp),
         ) {
-            Text("Delete this game?", style = AppTheme.type.bodyStrong.copy(fontSize = 17.sp), color = tokens.colors.text)
+            Text(stringResource(Res.string.detail_delete_title), style = AppTheme.type.bodyStrong.copy(fontSize = 17.sp), color = tokens.colors.text)
             Spacer(Modifier.height(8.dp))
             Text(
-                "“$name” will be removed from your library, along with its ownerships. This can't be undone.",
+                stringResource(Res.string.detail_delete_body, name),
                 style = AppTheme.type.body.copy(fontSize = 13.sp),
                 color = tokens.colors.muted,
             )
             Spacer(Modifier.height(20.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(11.dp)) {
-                SecondaryButton(text = "Cancel", onClick = onDismiss, modifier = Modifier.weight(1f))
-                PrimaryButton(text = "Delete", onClick = onConfirm, leadingIcon = AppIcons.Trash, modifier = Modifier.weight(1f))
+                SecondaryButton(text = stringResource(Res.string.common_cancel), onClick = onDismiss, modifier = Modifier.weight(1f))
+                PrimaryButton(text = stringResource(Res.string.action_delete), onClick = onConfirm, leadingIcon = AppIcons.Trash, modifier = Modifier.weight(1f))
             }
         }
     }

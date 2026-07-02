@@ -37,9 +37,25 @@ import hr.kotwave.gameslibrary.ui.components.StoreBadge
 import hr.kotwave.gameslibrary.ui.components.StoreBadgeRow
 import hr.kotwave.gameslibrary.data.Status
 import hr.kotwave.gameslibrary.data.Store
+import hr.kotwave.gameslibrary.resources.Res
+import hr.kotwave.gameslibrary.resources.add_to_library
+import hr.kotwave.gameslibrary.resources.cd_back
+import hr.kotwave.gameslibrary.resources.gallery_btn_edit
+import hr.kotwave.gameslibrary.resources.gallery_glass_glow
+import hr.kotwave.gameslibrary.resources.gallery_glass_plain
+import hr.kotwave.gameslibrary.resources.gallery_section_brand
+import hr.kotwave.gameslibrary.resources.gallery_section_buttons
+import hr.kotwave.gameslibrary.resources.gallery_section_glass
+import hr.kotwave.gameslibrary.resources.gallery_section_icon_buttons
+import hr.kotwave.gameslibrary.resources.gallery_section_icons
+import hr.kotwave.gameslibrary.resources.gallery_section_status
+import hr.kotwave.gameslibrary.resources.gallery_section_store_badges
+import hr.kotwave.gameslibrary.resources.gallery_section_typography
+import hr.kotwave.gameslibrary.resources.settings_gallery_title
 import hr.kotwave.gameslibrary.ui.icons.AppIcons
 import hr.kotwave.gameslibrary.ui.model.label
 import hr.kotwave.gameslibrary.ui.theme.AppTheme
+import org.jetbrains.compose.resources.stringResource
 
 /** Renders every backbone component with its variants. */
 @OptIn(ExperimentalLayoutApi::class)
@@ -56,24 +72,24 @@ fun ComponentGalleryScreen(
             .padding(horizontal = 20.dp, vertical = 20.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-            CircularButton(AppIcons.ChevronLeft, onBack, contentDescription = "Back")
-            Text("Component gallery", style = AppTheme.type.display.copy(fontSize = 24.sp), color = tokens.colors.text)
+            CircularButton(AppIcons.ChevronLeft, onBack, contentDescription = stringResource(Res.string.cd_back))
+            Text(stringResource(Res.string.settings_gallery_title), style = AppTheme.type.display.copy(fontSize = 24.sp), color = tokens.colors.text)
         }
         Spacer(Modifier.height(24.dp))
 
-        GallerySection("Brand") {
+        GallerySection(stringResource(Res.string.gallery_section_brand)) {
             BrandWordmark()
         }
 
-        GallerySection("Buttons") {
+        GallerySection(stringResource(Res.string.gallery_section_buttons)) {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                PrimaryButton("Add to library", onClick = {}, leadingIcon = AppIcons.Check)
-                SecondaryButton("Edit", onClick = {}, leadingIcon = AppIcons.Edit)
+                PrimaryButton(stringResource(Res.string.add_to_library), onClick = {}, leadingIcon = AppIcons.Check)
+                SecondaryButton(stringResource(Res.string.gallery_btn_edit), onClick = {}, leadingIcon = AppIcons.Edit)
                 DestructiveButton(onClick = {})
             }
         }
 
-        GallerySection("Icon buttons") {
+        GallerySection(stringResource(Res.string.gallery_section_icon_buttons)) {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
                 AppIconButton(AppIcons.Plus, onClick = {}, accent = true)
                 AppIconButton(AppIcons.Sliders, onClick = {})
@@ -82,24 +98,24 @@ fun ComponentGalleryScreen(
             }
         }
 
-        GallerySection("Icons") {
+        GallerySection(stringResource(Res.string.gallery_section_icons)) {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 AllIcons.forEach { (name, icon) -> IconCell(name, icon) }
             }
         }
 
-        GallerySection("Status pips") {
+        GallerySection(stringResource(Res.string.gallery_section_status)) {
             Row(horizontalArrangement = Arrangement.spacedBy(22.dp)) {
                 Status.entries.forEach { status ->
                     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(7.dp)) {
                         StatusDot(status)
-                        Text(status.label, style = AppTheme.type.caption, color = tokens.colors.muted)
+                        Text(status.label(), style = AppTheme.type.caption, color = tokens.colors.muted)
                     }
                 }
             }
         }
 
-        GallerySection("Store badges") {
+        GallerySection(stringResource(Res.string.gallery_section_store_badges)) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Store.entries.forEach { StoreBadge(it) }
@@ -108,10 +124,10 @@ fun ComponentGalleryScreen(
             }
         }
 
-        GallerySection("Glass surface") {
+        GallerySection(stringResource(Res.string.gallery_section_glass)) {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 GlassSurface(modifier = Modifier.size(140.dp, 88.dp), shape = RoundedCornerShape(18.dp)) {
-                    Text("Plain", style = AppTheme.type.bodyStrong, color = tokens.colors.text, modifier = Modifier.padding(16.dp))
+                    Text(stringResource(Res.string.gallery_glass_plain), style = AppTheme.type.bodyStrong, color = tokens.colors.text, modifier = Modifier.padding(16.dp))
                 }
                 GlassSurface(
                     modifier = Modifier.size(140.dp, 88.dp),
@@ -119,12 +135,12 @@ fun ComponentGalleryScreen(
                     borderColor = tokens.colors.borderStrong,
                     glow = tokens.colors.accent,
                 ) {
-                    Text("Glow", style = AppTheme.type.bodyStrong, color = tokens.colors.text, modifier = Modifier.padding(16.dp))
+                    Text(stringResource(Res.string.gallery_glass_glow), style = AppTheme.type.bodyStrong, color = tokens.colors.text, modifier = Modifier.padding(16.dp))
                 }
             }
         }
 
-        GallerySection("Typography") {
+        GallerySection(stringResource(Res.string.gallery_section_typography)) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 TypeSample("Display", AppTheme.type.display, "Baldur's Gate 3")
                 TypeSample("Tile title", AppTheme.type.tileTitle, "Red Dead Redemption 2")
