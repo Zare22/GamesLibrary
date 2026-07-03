@@ -43,6 +43,7 @@ import hr.kotwave.gameslibrary.data.Store
 import hr.kotwave.gameslibrary.resources.Res
 import hr.kotwave.gameslibrary.resources.add_already
 import hr.kotwave.gameslibrary.resources.add_already_stores
+import hr.kotwave.gameslibrary.resources.add_back_to_search
 import hr.kotwave.gameslibrary.resources.add_change
 import hr.kotwave.gameslibrary.resources.add_loading_details
 import hr.kotwave.gameslibrary.resources.add_manual_link
@@ -188,7 +189,9 @@ fun AddGameContent(
         if (state.collapsed) {
             Spacer(Modifier.height(16.dp))
             SectionDivider(stringResource(Res.string.add_section_adding))
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(10.dp))
+            BackToSearchLink(onClick = state::clearSelection)
+            Spacer(Modifier.height(10.dp))
             AddingCard(state = state, onDismiss = onDismiss)
         }
     }
@@ -312,6 +315,20 @@ private fun SearchPrompt(onAddManually: () -> Unit) {
         Text(stringResource(Res.string.add_search_prompt), style = AppTheme.type.body, color = tokens.colors.faint)
         Spacer(Modifier.height(8.dp))
         ManualLink(text = stringResource(Res.string.add_manual_link), onClick = onAddManually)
+    }
+}
+
+/** Accent link above the adding card: drop the current pick and return to the search results. */
+@Composable
+private fun BackToSearchLink(onClick: () -> Unit) {
+    val tokens = AppTheme.tokens
+    Row(
+        Modifier.clip(RoundedCornerShape(10.dp)).clickable(onClick = onClick).padding(end = 10.dp, top = 4.dp, bottom = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Icon(AppIcons.ChevronLeft, null, Modifier.size(16.dp), tint = tokens.colors.accent)
+        Text(stringResource(Res.string.add_back_to_search), style = AppTheme.type.bodyStrong.copy(fontSize = 13.sp), color = tokens.colors.accent)
     }
 }
 

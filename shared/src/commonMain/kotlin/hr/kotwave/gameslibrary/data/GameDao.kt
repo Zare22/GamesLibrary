@@ -55,6 +55,7 @@ interface GameDao {
     @Query("SELECT * FROM game WHERE name = :name COLLATE NOCASE")
     suspend fun gamesByTitle(name: String): List<Game>
 
+    /** Per-game reads the repository test-suite uses to assert what a write produced. */
     @Query("SELECT * FROM ownership WHERE gameId = :gameId")
     suspend fun ownershipsFor(gameId: Long): List<Ownership>
 
