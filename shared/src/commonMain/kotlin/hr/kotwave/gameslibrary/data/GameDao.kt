@@ -89,6 +89,23 @@ interface GameDao {
     @Query("DELETE FROM game WHERE id = :id")
     suspend fun deleteGame(id: Long)
 
+    @Query("DELETE FROM external_game")
+    suspend fun deleteAllExternalGames()
+
+    @Query("DELETE FROM ownership")
+    suspend fun deleteAllOwnerships()
+
+    @Query("DELETE FROM game")
+    suspend fun deleteAllGames()
+
+    /** Empties every table (child → parent) in one transaction — the local-data wipe. */
+    @Transaction
+    suspend fun clearAll() {
+        deleteAllExternalGames()
+        deleteAllOwnerships()
+        deleteAllGames()
+    }
+
     /** Overwrites a Game's row and replaces its external references in one transaction (refresh/re-match). */
     @Transaction
     suspend fun replaceMetadata(game: Game, externals: List<ExternalGame>) {

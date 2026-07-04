@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import hr.kotwave.gameslibrary.data.Game
 import hr.kotwave.gameslibrary.data.GameRepository
+import hr.kotwave.gameslibrary.data.LocalDataReset
 import hr.kotwave.gameslibrary.igdb.IgdbClient
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.SharingStarted
@@ -18,12 +19,16 @@ import kotlinx.coroutines.launch
 class SettingsViewModel(
     private val repository: GameRepository,
     private val igdbClient: IgdbClient,
+    private val localDataReset: LocalDataReset,
 ) : ViewModel() {
 
     val orphanedGames: StateFlow<List<Game>> = repository.orphanedGames
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     var retrying by mutableStateOf(false)
+        private set
+
+    var resetting by mutableStateOf(false)
         private set
 
     /**
@@ -49,6 +54,19 @@ class SettingsViewModel(
                 }
             } finally {
                 retrying = false
+            }
+        }
+    }
+
+    /** Wipes the local library and stored Steam/GOG secrets. The Library re-emits empty on its own. */
+    fun deleteLocalData() {
+        if (resetting) return
+        resetting = true
+        viewModelScope.launch {
+            try {
+                localDataReset.reset()
+            } finally {
+                resetting = false
             }
         }
     }

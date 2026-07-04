@@ -140,6 +140,9 @@ class GameRepository(
     /** Deletes a Game; its Ownerships and external references cascade away. */
     suspend fun deleteGame(gameId: Long) = gameDao.deleteGame(gameId)
 
+    /** Empties the whole library — every Game, Ownership, and external reference. */
+    suspend fun clearAllGames() = gameDao.clearAll()
+
     /**
      * Applies a manual metadata refresh from a fresh [fetched] IGDB result, overwriting IGDB-sourced
      * fields but never local state (`userRating`/Status/Wishlist/Ownership). A null fetch — the

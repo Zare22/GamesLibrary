@@ -2,6 +2,7 @@ package hr.kotwave.gameslibrary.di
 
 import hr.kotwave.gameslibrary.data.GameRepository
 import hr.kotwave.gameslibrary.data.GamesLibraryDatabase
+import hr.kotwave.gameslibrary.data.LocalDataReset
 import hr.kotwave.gameslibrary.gog.gogModule
 import hr.kotwave.gameslibrary.igdb.igdbModule
 import hr.kotwave.gameslibrary.steam.steamModule
@@ -14,6 +15,7 @@ expect val platformModule: Module
 val dataModule = module {
     single { get<GamesLibraryDatabase>().gameDao() }
     single { GameRepository(get()) }
+    single { LocalDataReset(get(), get()) }
 }
 
 val sharedModules: List<Module> = listOf(platformModule, dataModule, igdbModule, steamModule, gogModule)

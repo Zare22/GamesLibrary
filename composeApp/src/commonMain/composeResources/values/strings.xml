@@ -137,6 +137,7 @@
     <string name="settings_section_library">LIBRARY</string>
     <string name="settings_section_about">ABOUT</string>
     <string name="settings_section_developer">DEVELOPER</string>
+    <string name="settings_section_danger">DANGER ZONE</string>
     <string name="settings_connect_subtitle">Sign in and sync your owned games</string>
     <string name="settings_battlenet_subtitle">Tick the Blizzard games you own</string>
     <string name="settings_coming_soon">Coming soon</string>
@@ -156,6 +157,10 @@
     <string name="settings_orphaned_body">Their IGDB link broke. Retry resolves any that came back; re-match the rest individually.</string>
     <string name="settings_rematch_all">Re-match all</string>
     <string name="settings_rematching">Re-matching…</string>
+    <string name="settings_reset_title">Delete local data</string>
+    <string name="settings_reset_subtitle">Erase all games and disconnect all services</string>
+    <string name="settings_reset_confirm_title">Delete local data?</string>
+    <string name="settings_reset_confirm_body">This permanently erases every game in your library and disconnects all services. This can\'t be undone.</string>
 
     <!-- ==== Store connection (shared Steam / GOG) ==== -->
     <string name="store_connected">Connected</string>

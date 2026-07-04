@@ -3,6 +3,7 @@ package hr.kotwave.gameslibrary.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -36,7 +38,9 @@ import androidx.compose.ui.unit.sp
 import hr.kotwave.gameslibrary.data.Game
 import hr.kotwave.gameslibrary.data.Store
 import hr.kotwave.gameslibrary.resources.Res
+import hr.kotwave.gameslibrary.resources.action_delete
 import hr.kotwave.gameslibrary.resources.cd_dismiss
+import hr.kotwave.gameslibrary.resources.common_cancel
 import hr.kotwave.gameslibrary.resources.settings_about_subtitle
 import hr.kotwave.gameslibrary.resources.settings_about_title
 import hr.kotwave.gameslibrary.resources.settings_account_sync
@@ -59,8 +63,13 @@ import hr.kotwave.gameslibrary.resources.settings_paste_subtitle
 import hr.kotwave.gameslibrary.resources.settings_paste_title
 import hr.kotwave.gameslibrary.resources.settings_rematch_all
 import hr.kotwave.gameslibrary.resources.settings_rematching
+import hr.kotwave.gameslibrary.resources.settings_reset_confirm_body
+import hr.kotwave.gameslibrary.resources.settings_reset_confirm_title
+import hr.kotwave.gameslibrary.resources.settings_reset_subtitle
+import hr.kotwave.gameslibrary.resources.settings_reset_title
 import hr.kotwave.gameslibrary.resources.settings_section_about
 import hr.kotwave.gameslibrary.resources.settings_section_connections
+import hr.kotwave.gameslibrary.resources.settings_section_danger
 import hr.kotwave.gameslibrary.resources.settings_section_developer
 import hr.kotwave.gameslibrary.resources.settings_section_library
 import hr.kotwave.gameslibrary.resources.settings_section_maintenance
@@ -69,6 +78,7 @@ import hr.kotwave.gameslibrary.settings.SettingsViewModel
 import hr.kotwave.gameslibrary.transfer.LIBRARY_EXPORT_FILENAME
 import hr.kotwave.gameslibrary.transfer.LibraryTransferViewModel
 import hr.kotwave.gameslibrary.transfer.rememberLibraryFileIo
+import hr.kotwave.gameslibrary.ui.components.PrimaryButton
 import hr.kotwave.gameslibrary.ui.components.SecondaryButton
 import hr.kotwave.gameslibrary.ui.components.actionWidth
 import hr.kotwave.gameslibrary.ui.icons.AppIcons
@@ -105,6 +115,7 @@ fun SettingsScreen(
     val fileIo = rememberLibraryFileIo()
     val scope = rememberCoroutineScope()
     var exportNote by remember { mutableStateOf<String?>(null) }
+    var confirmReset by remember { mutableStateOf(false) }
     val exportedMsg = stringResource(Res.string.settings_export_ok, LIBRARY_EXPORT_FILENAME)
     val cancelledMsg = stringResource(Res.string.settings_export_cancelled)
 
@@ -118,8 +129,9 @@ fun SettingsScreen(
         Unit
     }
 
+    Box(modifier.fillMaxSize()) {
     Column(
-        modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = tokens.spacing.lg, vertical = tokens.spacing.xl),
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = tokens.spacing.lg, vertical = tokens.spacing.xl),
     ) {
         Text(stringResource(Res.string.settings_title), style = AppTheme.type.display, color = tokens.colors.text)
 
@@ -220,6 +232,24 @@ fun SettingsScreen(
                 title = stringResource(Res.string.settings_gallery_title),
                 subtitle = stringResource(Res.string.settings_gallery_subtitle),
                 onClick = onOpenGallery,
+            )
+        }
+
+        Spacer(Modifier.height(tokens.spacing.lg))
+        SectionLabel(stringResource(Res.string.settings_section_danger))
+        DangerCard {
+            DestructiveItem(
+                icon = AppIcons.Trash,
+                title = stringResource(Res.string.settings_reset_title),
+                subtitle = stringResource(Res.string.settings_reset_subtitle),
+                onClick = { confirmReset = true },
+            )
+        }
+    }
+        if (confirmReset) {
+            ConfirmResetDialog(
+                onConfirm = { confirmReset = false; viewModel.deleteLocalData() },
+                onDismiss = { confirmReset = false },
             )
         }
     }
@@ -356,6 +386,79 @@ private fun ItemText(title: String, subtitle: String, modifier: Modifier = Modif
     Column(modifier) {
         Text(title, style = AppTheme.type.bodyStrong, color = tokens.colors.text, maxLines = 1, overflow = TextOverflow.Ellipsis)
         Text(subtitle, style = AppTheme.type.caption, color = tokens.colors.faint, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    }
+}
+
+/** A grouped card with the destructive-red border, for the Danger zone. */
+@Composable
+private fun DangerCard(content: @Composable () -> Unit) {
+    val shape = RoundedCornerShape(AppTheme.tokens.radii.lg)
+    Column(
+        Modifier.fillMaxWidth().clip(shape)
+            .background(OrphanRed.copy(alpha = 0.06f))
+            .border(1.dp, OrphanRed.copy(alpha = 0.30f), shape),
+    ) {
+        content()
+    }
+}
+
+/** A red-tinted destructive row (the reset action). */
+@Composable
+private fun DestructiveItem(icon: ImageVector, title: String, subtitle: String, onClick: () -> Unit) {
+    val tokens = AppTheme.tokens
+    val shape = RoundedCornerShape(tokens.radii.md)
+    Row(
+        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(tokens.spacing.md),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm),
+    ) {
+        Box(
+            Modifier.size(36.dp).clip(shape)
+                .background(OrphanRed.copy(alpha = 0.14f)).border(1.dp, OrphanRed.copy(alpha = 0.40f), shape),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(icon, null, Modifier.size(18.dp), tint = OrphanRed)
+        }
+        Column(Modifier.weight(1f)) {
+            Text(title, style = AppTheme.type.bodyStrong, color = OrphanRed, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(subtitle, style = AppTheme.type.caption, color = tokens.colors.faint, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+        Icon(AppIcons.ChevronRight, null, Modifier.size(17.dp), tint = tokens.colors.faint)
+    }
+}
+
+/** Destructive confirm for the local-data wipe (the DetailScreen delete-dialog pattern). */
+@Composable
+private fun ConfirmResetDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    val tokens = AppTheme.tokens
+    val shape = RoundedCornerShape(tokens.radii.xl)
+    val scrim = remember { MutableInteractionSource() }
+    val card = remember { MutableInteractionSource() }
+    Box(
+        Modifier.fillMaxSize().background(Color(0xB2060810))
+            .clickable(interactionSource = scrim, indication = null, onClick = onDismiss),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            Modifier.widthIn(max = 380.dp).padding(tokens.spacing.xl)
+                .clip(shape).background(tokens.colors.bg2)
+                .border(1.dp, tokens.colors.borderStrong, shape)
+                .clickable(interactionSource = card, indication = null, onClick = {})
+                .padding(tokens.spacing.xl),
+        ) {
+            Text(stringResource(Res.string.settings_reset_confirm_title), style = AppTheme.type.bodyStrong.copy(fontSize = 17.sp), color = tokens.colors.text)
+            Spacer(Modifier.height(tokens.spacing.xs))
+            Text(
+                stringResource(Res.string.settings_reset_confirm_body),
+                style = AppTheme.type.body.copy(fontSize = 13.sp),
+                color = tokens.colors.muted,
+            )
+            Spacer(Modifier.height(tokens.spacing.lg))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm)) {
+                SecondaryButton(text = stringResource(Res.string.common_cancel), onClick = onDismiss, modifier = Modifier.weight(1f))
+                PrimaryButton(text = stringResource(Res.string.action_delete), onClick = onConfirm, leadingIcon = AppIcons.Trash, modifier = Modifier.weight(1f))
+            }
+        }
     }
 }
 
