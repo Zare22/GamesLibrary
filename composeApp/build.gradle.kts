@@ -105,6 +105,9 @@ compose.desktop {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "GamesLibrary"
             packageVersion = "1.0.0"
+            windows { iconFile.set(project.file("icons/GamesLibrary.ico")) }
+            macOS { iconFile.set(project.file("icons/GamesLibrary.icns")) }
+            linux { iconFile.set(project.file("icons/GamesLibrary.png")) }
         }
     }
 }

@@ -9,6 +9,9 @@ import androidx.compose.ui.window.rememberWindowState
 import hr.kotwave.gameslibrary.di.appModule
 import hr.kotwave.gameslibrary.di.platformAppModule
 import hr.kotwave.gameslibrary.di.sharedModules
+import hr.kotwave.gameslibrary.resources.Res
+import hr.kotwave.gameslibrary.resources.app_icon
+import org.jetbrains.compose.resources.painterResource
 import org.koin.core.context.startKoin
 
 fun main() {
@@ -24,6 +27,7 @@ fun main() {
             onCloseRequest = ::exitApplication,
             state = windowState,
             title = "GamesLibrary",
+            icon = painterResource(Res.drawable.app_icon),
         ) {
             App()
         }
