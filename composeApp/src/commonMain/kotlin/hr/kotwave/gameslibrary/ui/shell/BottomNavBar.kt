@@ -49,7 +49,7 @@ fun BottomNavBar(
                     strokeWidth = 1f,
                 )
             }
-            .padding(horizontal = 18.dp, vertical = 10.dp),
+            .padding(horizontal = tokens.spacing.lg, vertical = tokens.spacing.sm),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceAround,
     ) {
@@ -80,7 +80,7 @@ private fun NavItem(
             onClick = onClick,
         ),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+        verticalArrangement = Arrangement.spacedBy(tokens.spacing.micro),
     ) {
         GlowBox(glow = if (active) tokens.colors.accent else null, shape = CircleShape, glowRadius = 7.dp, glowAlpha = 0.7f) {
             Icon(destination.icon, destination.label(), Modifier.size(21.dp), tint = color)

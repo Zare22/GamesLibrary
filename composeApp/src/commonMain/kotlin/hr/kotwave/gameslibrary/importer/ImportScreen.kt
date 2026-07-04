@@ -130,33 +130,33 @@ fun ImportScreen(modifier: Modifier = Modifier, viewModel: ImportViewModel = koi
 private fun IntakePhase(viewModel: ImportViewModel, modifier: Modifier) {
     val tokens = AppTheme.tokens
     val compact = LocalIsCompact.current
-    Column(modifier.fillMaxSize().padding(horizontal = 20.dp)) {
-        Spacer(Modifier.height(18.dp))
+    Column(modifier.fillMaxSize().padding(horizontal = tokens.spacing.lg)) {
+        Spacer(Modifier.height(tokens.spacing.lg))
         Text(stringResource(Res.string.import_title), style = AppTheme.type.display, color = tokens.colors.text)
-        Spacer(Modifier.height(3.dp))
+        Spacer(Modifier.height(tokens.spacing.micro))
         Text(stringResource(Res.string.import_subtitle), style = AppTheme.type.body, color = tokens.colors.faint)
 
         Column((if (compact) Modifier.weight(1f) else Modifier.fillMaxWidth()).verticalScroll(rememberScrollState())) {
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(tokens.spacing.md))
             if (viewModel.failed) {
                 Notice(stringResource(Res.string.error_igdb_unreachable), ErrorRed)
-                Spacer(Modifier.height(14.dp))
+                Spacer(Modifier.height(tokens.spacing.md))
             }
             StepLabel(1, stringResource(Res.string.import_step_paste))
-            Spacer(Modifier.height(9.dp))
+            Spacer(Modifier.height(tokens.spacing.xs))
             PasteCard(
                 text = viewModel.pasteText,
                 lineCount = viewModel.lineCount,
                 onTextChange = viewModel::updateText,
                 modifier = Modifier.importFileDrop(viewModel::updateText),
             )
-            Spacer(Modifier.height(13.dp))
+            Spacer(Modifier.height(tokens.spacing.sm))
             ShareHint()
-            Spacer(Modifier.height(18.dp))
+            Spacer(Modifier.height(tokens.spacing.lg))
             StepLabel(2, stringResource(Res.string.import_step_store))
-            Spacer(Modifier.height(11.dp))
+            Spacer(Modifier.height(tokens.spacing.sm))
             StorePicker(selected = viewModel.store, onSelect = viewModel::selectStore)
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(tokens.spacing.md))
         }
 
         IntakeFooter(viewModel)
@@ -166,7 +166,7 @@ private fun IntakePhase(viewModel: ImportViewModel, modifier: Modifier) {
 @Composable
 private fun PasteCard(text: String, lineCount: Int, onTextChange: (String) -> Unit, modifier: Modifier = Modifier) {
     val tokens = AppTheme.tokens
-    val shape = RoundedCornerShape(18.dp)
+    val shape = RoundedCornerShape(tokens.radii.xl)
     Column(
         modifier
             .fillMaxWidth()
@@ -175,9 +175,9 @@ private fun PasteCard(text: String, lineCount: Int, onTextChange: (String) -> Un
             .border(1.dp, tokens.colors.borderStrong, shape),
     ) {
         Row(
-            Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp),
+            Modifier.fillMaxWidth().padding(horizontal = tokens.spacing.md, vertical = tokens.spacing.sm),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs),
         ) {
             Icon(AppIcons.Import, null, Modifier.size(14.dp), tint = tokens.colors.accent)
             Text(stringResource(Res.string.import_paste_label), style = AppTheme.type.section.copy(fontSize = 11.sp), color = tokens.colors.faint)
@@ -189,7 +189,7 @@ private fun PasteCard(text: String, lineCount: Int, onTextChange: (String) -> Un
                 .fillMaxWidth()
                 .heightIn(min = 200.dp, max = 200.dp)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 15.dp, vertical = 13.dp),
+                .padding(horizontal = tokens.spacing.md, vertical = tokens.spacing.sm),
         ) {
             if (text.isEmpty()) {
                 Text(
@@ -212,26 +212,28 @@ private fun PasteCard(text: String, lineCount: Int, onTextChange: (String) -> Un
 @Composable
 private fun ShareHint() {
     val tokens = AppTheme.tokens
+    val shape = RoundedCornerShape(tokens.radii.tile)
+    val iconShape = RoundedCornerShape(tokens.radii.sm)
     Row(
         Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
+            .clip(shape)
             .background(tokens.colors.surface)
-            .border(1.dp, tokens.colors.border, RoundedCornerShape(14.dp))
-            .padding(13.dp),
-        horizontalArrangement = Arrangement.spacedBy(11.dp),
+            .border(1.dp, tokens.colors.border, shape)
+            .padding(tokens.spacing.sm),
+        horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm),
     ) {
         Box(
-            Modifier.size(32.dp).clip(RoundedCornerShape(9.dp))
+            Modifier.size(32.dp).clip(iconShape)
                 .background(tokens.colors.accent.copy(alpha = 0.10f))
-                .border(1.dp, tokens.colors.accent.copy(alpha = 0.30f), RoundedCornerShape(9.dp)),
+                .border(1.dp, tokens.colors.accent.copy(alpha = 0.30f), iconShape),
             contentAlignment = Alignment.Center,
         ) {
             Icon(AppIcons.Import, null, Modifier.size(16.dp), tint = tokens.colors.accent)
         }
         Column {
             Text(stringResource(Res.string.import_share_hint_desktop), style = AppTheme.type.caption, color = tokens.colors.muted)
-            Spacer(Modifier.height(3.dp))
+            Spacer(Modifier.height(tokens.spacing.micro))
             Text(stringResource(Res.string.import_share_hint_phone), style = AppTheme.type.caption, color = tokens.colors.faint)
         }
     }
@@ -240,7 +242,7 @@ private fun ShareHint() {
 @Composable
 private fun IntakeFooter(viewModel: ImportViewModel) {
     val tokens = AppTheme.tokens
-    Column(Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 18.dp)) {
+    Column(Modifier.fillMaxWidth().padding(top = tokens.spacing.sm, bottom = tokens.spacing.lg)) {
         PrimaryButton(
             text = stringResource(Res.string.import_parse_button),
             onClick = viewModel::parse,
@@ -248,14 +250,14 @@ private fun IntakeFooter(viewModel: ImportViewModel) {
             enabled = viewModel.canParse,
             modifier = Modifier.actionWidth(),
         )
-        Spacer(Modifier.height(9.dp))
+        Spacer(Modifier.height(tokens.spacing.xs))
         val store = viewModel.store
         val footnote = when {
             viewModel.pasteText.isBlank() -> stringResource(Res.string.import_footnote_empty)
             store == null -> pluralStringResource(Res.plurals.import_footnote_pick_store, viewModel.lineCount, viewModel.lineCount)
             else -> pluralStringResource(Res.plurals.import_footnote_ready, viewModel.lineCount, viewModel.lineCount, store.label)
         }
-        Text(footnote, style = AppTheme.type.caption, color = tokens.colors.faint, modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp))
+        Text(footnote, style = AppTheme.type.caption, color = tokens.colors.faint, modifier = Modifier.fillMaxWidth().padding(horizontal = tokens.spacing.micro))
     }
 }
 
@@ -267,18 +269,18 @@ internal fun MatchingPhase(viewModel: ImportViewModel, modifier: Modifier) {
     val total = viewModel.matchTotal
     val done = viewModel.matchProgress
     Column(
-        modifier.fillMaxSize().padding(horizontal = 28.dp),
+        modifier.fillMaxSize().padding(horizontal = tokens.spacing.xl),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
         CircularProgressIndicator(color = tokens.colors.accent, strokeWidth = 3.dp, modifier = Modifier.size(44.dp))
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(tokens.spacing.lg))
         Text(stringResource(Res.string.import_matching_title), style = AppTheme.type.bodyStrong, color = tokens.colors.text)
-        Spacer(Modifier.height(6.dp))
+        Spacer(Modifier.height(tokens.spacing.xs))
         Text(stringResource(Res.string.import_progress, done, total), style = AppTheme.type.caption, color = tokens.colors.faint)
-        Spacer(Modifier.height(18.dp))
+        Spacer(Modifier.height(tokens.spacing.lg))
         ProgressBar(fraction = if (total == 0) 0f else done.toFloat() / total)
-        Spacer(Modifier.height(22.dp))
+        Spacer(Modifier.height(tokens.spacing.xl))
         CancelAction(viewModel::backToIntake)
     }
 }
@@ -300,25 +302,25 @@ private fun ProgressBar(fraction: Float) {
 @Composable
 internal fun ReviewPhase(viewModel: ImportViewModel, modifier: Modifier) {
     val tokens = AppTheme.tokens
-    Column(modifier.fillMaxSize().padding(horizontal = 20.dp)) {
-        Spacer(Modifier.height(16.dp))
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(modifier.fillMaxSize().padding(horizontal = tokens.spacing.lg)) {
+        Spacer(Modifier.height(tokens.spacing.md))
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm)) {
             BackButton(viewModel::backToIntake)
             Column {
                 Text(stringResource(Res.string.import_review_title), style = AppTheme.type.brand.copy(fontSize = 16.sp), color = tokens.colors.text)
                 Text(stringResource(Res.string.import_review_count, viewModel.candidates.size, viewModel.checkedCount), style = AppTheme.type.caption, color = tokens.colors.faint)
             }
         }
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(tokens.spacing.xs))
         if (viewModel.failed) {
             Notice(stringResource(Res.string.import_review_error), ErrorRed)
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(tokens.spacing.xs))
         }
 
         Box(Modifier.weight(1f)) {
-            LazyColumn(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            LazyColumn(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(tokens.spacing.sm)) {
                 items(viewModel.candidates) { candidate -> CandidateRow(candidate) }
-                item { Spacer(Modifier.height(4.dp)) }
+                item { Spacer(Modifier.height(tokens.spacing.micro)) }
             }
             Box(
                 Modifier.fillMaxWidth().height(12.dp).align(Alignment.TopCenter)
@@ -326,7 +328,7 @@ internal fun ReviewPhase(viewModel: ImportViewModel, modifier: Modifier) {
             )
         }
 
-        Column(Modifier.fillMaxWidth().padding(top = 10.dp, bottom = 18.dp)) {
+        Column(Modifier.fillMaxWidth().padding(top = tokens.spacing.sm, bottom = tokens.spacing.lg)) {
             PrimaryButton(
                 text = if (viewModel.importing) stringResource(Res.string.import_adding) else stringResource(Res.string.import_add_button, viewModel.checkedCount),
                 onClick = viewModel::confirm,
@@ -341,14 +343,14 @@ internal fun ReviewPhase(viewModel: ImportViewModel, modifier: Modifier) {
 @Composable
 private fun CandidateRow(candidate: ImportCandidate) {
     val tokens = AppTheme.tokens
-    val shape = RoundedCornerShape(16.dp)
+    val shape = RoundedCornerShape(tokens.radii.lg)
     Column(
         Modifier
             .fillMaxWidth()
             .clip(shape)
             .background(tokens.colors.surface)
             .border(1.dp, if (candidate.checked) tokens.colors.accent.copy(alpha = 0.40f) else tokens.colors.border, shape)
-            .padding(12.dp),
+            .padding(tokens.spacing.sm),
     ) {
         when (val classification = candidate.classification) {
             is MatchClassification.Matched -> MatchedHead(candidate, classification.result)
@@ -361,11 +363,11 @@ private fun CandidateRow(candidate: ImportCandidate) {
 @Composable
 private fun MatchedHead(candidate: ImportCandidate, result: IgdbSearchResult) {
     val tokens = AppTheme.tokens
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        CoverArt(result.name, result.coverImageId, Modifier.size(width = 44.dp, height = 58.dp), RoundedCornerShape(9.dp))
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm)) {
+        CoverArt(result.name, result.coverImageId, Modifier.size(width = 44.dp, height = 58.dp), RoundedCornerShape(tokens.radii.sm))
         Column(Modifier.weight(1f)) {
             MatchTag(stringResource(Res.string.import_tag_matched), tokens.colors.accent)
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(tokens.spacing.micro))
             Text(result.name, style = AppTheme.type.bodyStrong, color = tokens.colors.text, maxLines = 1, overflow = TextOverflow.Ellipsis)
             gameMeta(result.firstReleaseDate, result.developer)?.let {
                 Text(it, style = AppTheme.type.caption, color = tokens.colors.faint, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -381,11 +383,11 @@ private fun AmbiguousHead(candidate: ImportCandidate, options: List<IgdbSearchRe
     var expanded by remember { mutableStateOf(false) }
     val limit = if (expanded) options.size else maxOf(AMBIGUOUS_INLINE_CAP, candidate.pickedIndex + 1)
     MatchTag(stringResource(Res.string.import_tag_pick), Amber)
-    Spacer(Modifier.height(7.dp))
+    Spacer(Modifier.height(tokens.spacing.xs))
     Text("“${candidate.rawTitle}”", style = AppTheme.type.bodyStrong, color = tokens.colors.text, maxLines = 1, overflow = TextOverflow.Ellipsis)
-    Spacer(Modifier.height(2.dp))
+    Spacer(Modifier.height(tokens.spacing.micro))
     Text(pluralStringResource(Res.plurals.import_ambiguous_count, options.size, options.size), style = AppTheme.type.caption, color = tokens.colors.faint)
-    Spacer(Modifier.height(6.dp))
+    Spacer(Modifier.height(tokens.spacing.xs))
     options.take(limit).forEachIndexed { index, option ->
         IgdbResultRow(result = option, selected = candidate.pickedIndex == index, onClick = { candidate.pick(index) })
     }
@@ -398,9 +400,9 @@ private fun AmbiguousHead(candidate: ImportCandidate, options: List<IgdbSearchRe
 private fun ShowAllMatches(total: Int, onClick: () -> Unit) {
     val tokens = AppTheme.tokens
     Row(
-        Modifier.clip(RoundedCornerShape(10.dp)).clickable(onClick = onClick).padding(horizontal = 10.dp, vertical = 8.dp),
+        Modifier.clip(RoundedCornerShape(tokens.radii.md)).clickable(onClick = onClick).padding(horizontal = tokens.spacing.sm, vertical = tokens.spacing.xs),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs),
     ) {
         Icon(AppIcons.ChevronRight, null, Modifier.size(14.dp), tint = tokens.colors.accent)
         Text(pluralStringResource(Res.plurals.import_show_all, total, total), style = AppTheme.type.bodyStrong.copy(fontSize = 13.sp), color = tokens.colors.accent)
@@ -410,23 +412,23 @@ private fun ShowAllMatches(total: Int, onClick: () -> Unit) {
 @Composable
 private fun UnmatchedHead(candidate: ImportCandidate) {
     val tokens = AppTheme.tokens
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm)) {
         Box(
-            Modifier.size(width = 44.dp, height = 58.dp).clip(RoundedCornerShape(9.dp)).background(tokens.colors.bg2),
+            Modifier.size(width = 44.dp, height = 58.dp).clip(RoundedCornerShape(tokens.radii.sm)).background(tokens.colors.bg2),
             contentAlignment = Alignment.Center,
         ) {
             Icon(AppIcons.Plus, null, Modifier.size(18.dp), tint = tokens.colors.muted)
         }
         Column(Modifier.weight(1f)) {
             MatchTag(stringResource(Res.string.import_tag_unmatched), tokens.colors.muted)
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(tokens.spacing.micro))
             Text(candidate.rawTitle, style = AppTheme.type.bodyStrong, color = tokens.colors.text, maxLines = 2, overflow = TextOverflow.Ellipsis)
             Text(stringResource(Res.string.import_unmatched_manual), style = AppTheme.type.caption, color = tokens.colors.faint)
         }
         CheckBox(candidate.checked) { candidate.checked = !candidate.checked }
     }
     if (candidate.alreadyInLibrary) {
-        Spacer(Modifier.height(10.dp))
+        Spacer(Modifier.height(tokens.spacing.sm))
         SimilarTitleWarning(candidate.rawTitle)
     }
 }
@@ -437,7 +439,7 @@ private fun UnmatchedHead(candidate: ImportCandidate) {
 internal fun DonePhase(summary: ImportSummary, onDone: () -> Unit, modifier: Modifier) {
     val tokens = AppTheme.tokens
     Column(
-        modifier.fillMaxSize().padding(horizontal = 28.dp),
+        modifier.fillMaxSize().padding(horizontal = tokens.spacing.xl),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
@@ -448,15 +450,15 @@ internal fun DonePhase(summary: ImportSummary, onDone: () -> Unit, modifier: Mod
         ) {
             Icon(AppIcons.Check, null, Modifier.size(30.dp), tint = tokens.colors.accent)
         }
-        Spacer(Modifier.height(18.dp))
+        Spacer(Modifier.height(tokens.spacing.lg))
         Text(pluralStringResource(Res.plurals.import_done_title, summary.total, summary.total), style = AppTheme.type.display.copy(fontSize = 22.sp), color = tokens.colors.text)
-        Spacer(Modifier.height(6.dp))
+        Spacer(Modifier.height(tokens.spacing.xs))
         Text(
             stringResource(Res.string.import_done_subtitle, summary.added, summary.attached),
             style = AppTheme.type.body,
             color = tokens.colors.faint,
         )
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(tokens.spacing.xl))
         PrimaryButton(stringResource(Res.string.import_done_another), onDone, leadingIcon = AppIcons.Import)
     }
 }
@@ -466,7 +468,7 @@ internal fun DonePhase(summary: ImportSummary, onDone: () -> Unit, modifier: Mod
 @Composable
 private fun CheckBox(checked: Boolean, onToggle: () -> Unit) {
     val tokens = AppTheme.tokens
-    val shape = RoundedCornerShape(8.dp)
+    val shape = RoundedCornerShape(tokens.radii.sm)
     Box(
         Modifier.size(26.dp).clip(shape)
             .background(if (checked) tokens.colors.accent.copy(alpha = 0.18f) else tokens.colors.surface)
@@ -486,9 +488,10 @@ private fun MatchTag(text: String, color: Color) {
 @Composable
 private fun BackButton(onClick: () -> Unit) {
     val tokens = AppTheme.tokens
+    val shape = RoundedCornerShape(tokens.radii.md)
     Box(
-        Modifier.size(36.dp).clip(RoundedCornerShape(11.dp)).background(tokens.colors.surface)
-            .border(1.dp, tokens.colors.border, RoundedCornerShape(11.dp)).clickable(onClick = onClick),
+        Modifier.size(36.dp).clip(shape).background(tokens.colors.surface)
+            .border(1.dp, tokens.colors.border, shape).clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Icon(AppIcons.ChevronLeft, stringResource(Res.string.cd_back), Modifier.size(18.dp), tint = tokens.colors.muted)
@@ -502,36 +505,40 @@ private fun CancelAction(onClick: () -> Unit) {
         stringResource(Res.string.common_cancel),
         style = AppTheme.type.bodyStrong.copy(fontSize = 13.sp),
         color = tokens.colors.muted,
-        modifier = Modifier.clip(RoundedCornerShape(10.dp)).clickable(onClick = onClick).padding(horizontal = 14.dp, vertical = 8.dp),
+        modifier = Modifier.clip(RoundedCornerShape(tokens.radii.md)).clickable(onClick = onClick).padding(horizontal = tokens.spacing.md, vertical = tokens.spacing.xs),
     )
 }
 
 @Composable
 private fun Notice(text: String, color: Color) {
+    val tokens = AppTheme.tokens
+    val shape = RoundedCornerShape(tokens.radii.md)
     Row(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(color.copy(alpha = 0.10f))
-            .border(1.dp, color.copy(alpha = 0.35f), RoundedCornerShape(12.dp)).padding(horizontal = 13.dp, vertical = 11.dp),
+        Modifier.fillMaxWidth().clip(shape).background(color.copy(alpha = 0.10f))
+            .border(1.dp, color.copy(alpha = 0.35f), shape).padding(horizontal = tokens.spacing.sm, vertical = tokens.spacing.sm),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(9.dp),
+        horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs),
     ) {
         Icon(AppIcons.Close, null, Modifier.size(14.dp), tint = color)
-        Text(text, style = AppTheme.type.caption, color = AppTheme.tokens.colors.muted)
+        Text(text, style = AppTheme.type.caption, color = tokens.colors.muted)
     }
 }
 
 @Composable
 private fun SimilarTitleWarning(existing: String) {
+    val tokens = AppTheme.tokens
+    val shape = RoundedCornerShape(tokens.radii.md)
     Row(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Amber.copy(alpha = 0.08f))
-            .border(1.dp, Amber.copy(alpha = 0.30f), RoundedCornerShape(12.dp)).padding(horizontal = 13.dp, vertical = 11.dp),
+        Modifier.fillMaxWidth().clip(shape).background(Amber.copy(alpha = 0.08f))
+            .border(1.dp, Amber.copy(alpha = 0.30f), shape).padding(horizontal = tokens.spacing.sm, vertical = tokens.spacing.sm),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(9.dp),
+        horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs),
     ) {
         Icon(AppIcons.Heart, null, Modifier.size(14.dp), tint = Amber)
         Text(
             stringResource(Res.string.similar_title_warning, existing),
             style = AppTheme.type.caption,
-            color = AppTheme.tokens.colors.muted,
+            color = tokens.colors.muted,
         )
     }
 }
@@ -540,7 +547,7 @@ private fun SimilarTitleWarning(existing: String) {
 private fun StepLabel(number: Int, text: String) {
     val tokens = AppTheme.tokens
     val accent = tokens.colors.accent
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs)) {
         Box(
             Modifier.size(18.dp).clip(CircleShape).background(accent.copy(alpha = 0.20f))
                 .border(1.dp, accent.copy(alpha = 0.50f), CircleShape),
@@ -555,10 +562,11 @@ private fun StepLabel(number: Int, text: String) {
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun StorePicker(selected: Store?, onSelect: (Store) -> Unit) {
+    val tokens = AppTheme.tokens
     FlowRow(
         Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(9.dp),
-        verticalArrangement = Arrangement.spacedBy(9.dp),
+        horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs),
+        verticalArrangement = Arrangement.spacedBy(tokens.spacing.xs),
     ) {
         // Paste stores only; Battle.net intakes via its own checklist picker.
         Store.entries.filter { it != Store.BATTLE_NET }.forEach { store ->
@@ -571,7 +579,7 @@ private fun StorePicker(selected: Store?, onSelect: (Store) -> Unit) {
 private fun StoreChip(store: Store, selected: Boolean, onClick: () -> Unit) {
     val tokens = AppTheme.tokens
     val accent = tokens.store.accent(store)
-    val shape = RoundedCornerShape(12.dp)
+    val shape = RoundedCornerShape(tokens.radii.md)
     GlowBox(
         glow = if (selected && tokens.store.glows(store)) accent else null,
         shape = shape,
@@ -584,9 +592,9 @@ private fun StoreChip(store: Store, selected: Boolean, onClick: () -> Unit) {
                 .background(if (selected) accent.copy(alpha = 0.10f) else tokens.colors.surface)
                 .border(1.dp, if (selected) accent.copy(alpha = 0.55f) else tokens.colors.border, shape)
                 .clickable(onClick = onClick)
-                .padding(horizontal = 13.dp, vertical = 9.dp),
+                .padding(horizontal = tokens.spacing.sm, vertical = tokens.spacing.xs),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(7.dp),
+            horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs),
         ) {
             Box(Modifier.size(20.dp), contentAlignment = Alignment.Center) {
                 Text(store.glyph, style = AppTheme.type.brand.copy(fontSize = 10.sp), color = tokens.store.glyph(store))

@@ -50,7 +50,7 @@ fun GlassSurface(
     fill: Color = AppTheme.tokens.colors.surface,
     borderColor: Color = AppTheme.tokens.colors.border,
     glow: Color? = null,
-    glowRadius: Dp = 18.dp,
+    glowRadius: Dp = AppTheme.tokens.glass.blurRadius,
     content: @Composable BoxScope.() -> Unit = {},
 ) {
     GlowBox(glow = glow, shape = shape, glowRadius = glowRadius) {

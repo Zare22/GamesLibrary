@@ -39,8 +39,6 @@ import hr.kotwave.gameslibrary.ui.icons.AppIcons
 import hr.kotwave.gameslibrary.ui.theme.AppTheme
 import org.jetbrains.compose.resources.stringResource
 
-private val RailItemShape = RoundedCornerShape(12.dp)
-
 /** Desktop left rail: brand, Add CTA, destinations. */
 @Composable
 fun NavRail(
@@ -58,20 +56,20 @@ fun NavRail(
             .drawBehind {
                 drawLine(tokens.colors.border, Offset(size.width, 0f), Offset(size.width, size.height), 1f)
             }
-            .padding(horizontal = 16.dp, vertical = 20.dp),
+            .padding(horizontal = tokens.spacing.md, vertical = tokens.spacing.lg),
     ) {
-        BrandWordmark(Modifier.padding(start = 8.dp), style = AppTheme.type.brand.copy(fontSize = 22.sp))
-        Spacer(Modifier.height(18.dp))
+        BrandWordmark(Modifier.padding(start = tokens.spacing.xs), style = AppTheme.type.brand.copy(fontSize = 22.sp))
+        Spacer(Modifier.height(tokens.spacing.lg))
         PrimaryButton(stringResource(Res.string.action_add_game), onAdd, Modifier.fillMaxWidth(), leadingIcon = AppIcons.Plus)
-        Spacer(Modifier.height(22.dp))
+        Spacer(Modifier.height(tokens.spacing.xl))
         Text(
             stringResource(Res.string.nav_rail_section).uppercase(),
             style = AppTheme.type.navLabel.copy(letterSpacing = 1.1.sp),
             color = tokens.colors.faint,
-            modifier = Modifier.padding(start = 10.dp, bottom = 8.dp),
+            modifier = Modifier.padding(start = tokens.spacing.sm, bottom = tokens.spacing.xs),
         )
         TopDestination.entries.forEachIndexed { index, destination ->
-            if (index > 0) Spacer(Modifier.height(4.dp))
+            if (index > 0) Spacer(Modifier.height(tokens.spacing.micro))
             RailItem(destination, active = destination == current, onClick = { onSelect(destination) })
         }
     }
@@ -84,6 +82,7 @@ private fun RailItem(
     onClick: () -> Unit,
 ) {
     val tokens = AppTheme.tokens
+    val shape = RoundedCornerShape(tokens.radii.md)
     val activeBackground = Brush.linearGradient(
         listOf(tokens.colors.accent.copy(alpha = 0.16f), tokens.colors.brandGradient.last().copy(alpha = 0.08f)),
     )
@@ -91,12 +90,12 @@ private fun RailItem(
         Modifier
             .fillMaxWidth()
             .height(44.dp)
-            .clip(RailItemShape)
+            .clip(shape)
             .then(
                 if (active) {
                     Modifier
                         .background(activeBackground)
-                        .border(1.dp, tokens.colors.accent.copy(alpha = 0.32f), RailItemShape)
+                        .border(1.dp, tokens.colors.accent.copy(alpha = 0.32f), shape)
                 } else {
                     Modifier
                 },
@@ -106,9 +105,9 @@ private fun RailItem(
                 indication = null,
                 onClick = onClick,
             )
-            .padding(horizontal = 13.dp),
+            .padding(horizontal = tokens.spacing.sm),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(13.dp),
+        horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm),
     ) {
         GlowBox(glow = if (active) tokens.colors.accent else null, shape = CircleShape, glowRadius = 7.dp, glowAlpha = 0.7f) {
             Icon(

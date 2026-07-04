@@ -91,33 +91,34 @@ fun SteamScreen(
         modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp, vertical = 16.dp),
+            .padding(horizontal = tokens.spacing.lg, vertical = tokens.spacing.md),
     ) {
         Header(onBack)
-        Spacer(Modifier.height(14.dp))
+        Spacer(Modifier.height(tokens.spacing.md))
         Hero(connected = viewModel.connected, steam = steam)
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(tokens.spacing.md))
         if (viewModel.connected) {
             ConnectedCard(viewModel = viewModel, steam = steam)
         } else {
             ConnectSection(viewModel = viewModel, steam = steam)
         }
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(tokens.spacing.md))
         PrivacyHelper(highlighted = viewModel.lastSummary != null && viewModel.ownedCount == 0)
 
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(tokens.spacing.lg))
     }
 }
 
 @Composable
 private fun Header(onBack: () -> Unit) {
     val tokens = AppTheme.tokens
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+    val shape = RoundedCornerShape(tokens.radii.md)
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm)) {
         Box(
-            Modifier.size(36.dp).clip(RoundedCornerShape(11.dp))
-                .background(tokens.colors.surface).border(1.dp, tokens.colors.border, RoundedCornerShape(11.dp))
+            Modifier.size(36.dp).clip(shape)
+                .background(tokens.colors.surface).border(1.dp, tokens.colors.border, shape)
                 .clickable(onClick = onBack),
             contentAlignment = Alignment.Center,
         ) {
@@ -130,30 +131,31 @@ private fun Header(onBack: () -> Unit) {
 @Composable
 private fun Hero(connected: Boolean, steam: Color) {
     val tokens = AppTheme.tokens
-    val shape = RoundedCornerShape(22.dp)
+    val shape = RoundedCornerShape(tokens.radii.xl)
+    val iconShape = RoundedCornerShape(tokens.radii.xl)
     Box(
         Modifier.fillMaxWidth().clip(shape)
             .background(Brush.verticalGradient(listOf(Color(0xFF0D1B2A), Color(0xFF0A121D))))
             .border(1.dp, steam.copy(alpha = 0.25f), shape)
-            .padding(horizontal = 22.dp, vertical = 26.dp),
+            .padding(horizontal = tokens.spacing.xl, vertical = tokens.spacing.xl),
         contentAlignment = Alignment.Center,
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Box(
-                Modifier.size(70.dp).clip(RoundedCornerShape(20.dp))
+                Modifier.size(70.dp).clip(iconShape)
                     .background(Brush.linearGradient(listOf(Color(0xFF1B2838), Color(0xFF0E1722))))
-                    .border(1.dp, steam.copy(alpha = 0.40f), RoundedCornerShape(20.dp)),
+                    .border(1.dp, steam.copy(alpha = 0.40f), iconShape),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(AppIcons.Steam, null, Modifier.size(34.dp), tint = steam)
             }
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(tokens.spacing.md))
             Text(
                 if (connected) stringResource(Res.string.steam_hero_connected_title) else stringResource(Res.string.steam_hero_connect_title),
                 style = AppTheme.type.display.copy(fontSize = 22.sp),
                 color = tokens.colors.text,
             )
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(tokens.spacing.xs))
             Text(
                 if (connected) {
                     stringResource(Res.string.steam_hero_connected_body)
@@ -170,14 +172,14 @@ private fun Hero(connected: Boolean, steam: Color) {
 @Composable
 private fun ConnectSection(viewModel: SteamViewModel, steam: Color) {
     val tokens = AppTheme.tokens
-    GlassSurface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(18.dp)) {
-        Column(Modifier.fillMaxWidth().padding(16.dp)) {
+    GlassSurface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(tokens.radii.xl)) {
+        Column(Modifier.fillMaxWidth().padding(tokens.spacing.md)) {
             Text(
                 stringResource(Res.string.steam_connect_note),
                 style = AppTheme.type.caption.copy(fontSize = 11.5.sp),
                 color = tokens.colors.faint,
             )
-            Spacer(Modifier.height(14.dp))
+            Spacer(Modifier.height(tokens.spacing.md))
             when (val state = viewModel.connectState) {
                 SteamConnectState.Connecting -> ConnectingRow(steam = steam, onCancel = viewModel::cancelConnect)
                 else -> {
@@ -188,7 +190,7 @@ private fun ConnectSection(viewModel: SteamViewModel, steam: Color) {
                         modifier = Modifier.actionWidth(),
                     )
                     if (state is SteamConnectState.Failed) {
-                        Spacer(Modifier.height(10.dp))
+                        Spacer(Modifier.height(tokens.spacing.sm))
                         Text(state.reason.message(), style = AppTheme.type.caption, color = SteamError)
                     }
                 }
@@ -200,7 +202,7 @@ private fun ConnectSection(viewModel: SteamViewModel, steam: Color) {
 @Composable
 private fun ConnectingRow(steam: Color, onCancel: () -> Unit) {
     val tokens = AppTheme.tokens
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm)) {
         CircularProgressIndicator(Modifier.size(18.dp), color = steam, strokeWidth = 2.dp)
         Text(
             stringResource(Res.string.steam_connecting),
@@ -227,20 +229,21 @@ private fun SteamConnectFailure.message(): String = when (this) {
 private fun ConnectedCard(viewModel: SteamViewModel, steam: Color) {
     val tokens = AppTheme.tokens
     val ok = tokens.status.playing
-    GlassSurface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(18.dp)) {
-        Column(Modifier.fillMaxWidth().padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(13.dp)) {
+    val avatarShape = RoundedCornerShape(tokens.radii.tile)
+    GlassSurface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(tokens.radii.xl)) {
+        Column(Modifier.fillMaxWidth().padding(tokens.spacing.md)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm)) {
                 Box(
-                    Modifier.size(46.dp).clip(RoundedCornerShape(14.dp))
+                    Modifier.size(46.dp).clip(avatarShape)
                         .background(Brush.linearGradient(listOf(steam, Color(0xFF0E1722))))
-                        .border(1.dp, steam.copy(alpha = 0.40f), RoundedCornerShape(14.dp)),
+                        .border(1.dp, steam.copy(alpha = 0.40f), avatarShape),
                 ) {
                     viewModel.persona?.avatarUrl?.let { avatar ->
                         AsyncImage(
                             model = avatar,
                             contentDescription = null,
                             contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(14.dp)),
+                            modifier = Modifier.fillMaxSize().clip(avatarShape),
                         )
                     }
                 }
@@ -260,7 +263,7 @@ private fun ConnectedCard(viewModel: SteamViewModel, steam: Color) {
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs)) {
                     Box(Modifier.size(8.dp).clip(CircleShape).background(ok))
                     Text(stringResource(Res.string.store_connected), style = AppTheme.type.caption.copy(fontSize = 11.5.sp), color = ok)
                 }
@@ -282,7 +285,7 @@ private fun ConnectedCard(viewModel: SteamViewModel, steam: Color) {
 
             viewModel.lastSummary?.let { summary ->
                 Divider()
-                Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(tokens.spacing.lg)) {
                     SyncStat(summary.added.toString(), stringResource(Res.string.sync_stat_added), tokens.status.playing)
                     SyncStat(summary.updated.toString(), stringResource(Res.string.sync_stat_already), tokens.colors.text)
                     SyncStat(summary.total.toString(), stringResource(Res.string.sync_stat_synced), tokens.colors.text)
@@ -290,7 +293,7 @@ private fun ConnectedCard(viewModel: SteamViewModel, steam: Color) {
             }
 
             if (viewModel.syncFailed) {
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(tokens.spacing.sm))
                 Text(
                     stringResource(Res.string.steam_sync_failed),
                     style = AppTheme.type.caption,
@@ -298,7 +301,7 @@ private fun ConnectedCard(viewModel: SteamViewModel, steam: Color) {
                 )
             }
 
-            Spacer(Modifier.height(14.dp))
+            Spacer(Modifier.height(tokens.spacing.md))
             Text(
                 stringResource(Res.string.store_disconnect),
                 style = AppTheme.type.caption,
@@ -311,15 +314,16 @@ private fun ConnectedCard(viewModel: SteamViewModel, steam: Color) {
 
 @Composable
 private fun SyncButton(syncing: Boolean, steam: Color, onClick: () -> Unit) {
-    val shape = RoundedCornerShape(13.dp)
+    val tokens = AppTheme.tokens
+    val shape = RoundedCornerShape(tokens.radii.md)
     Row(
         Modifier.clip(shape)
             .background(steam.copy(alpha = 0.12f))
             .border(1.dp, steam.copy(alpha = 0.45f), shape)
             .clickable(enabled = !syncing, onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 11.dp),
+            .padding(horizontal = tokens.spacing.md, vertical = tokens.spacing.sm),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs),
     ) {
         Icon(AppIcons.Sync, null, Modifier.size(15.dp), tint = steam)
         Text(
@@ -342,18 +346,20 @@ private fun SyncStat(value: String, label: String, color: Color) {
 private fun PrivacyHelper(highlighted: Boolean) {
     val tokens = AppTheme.tokens
     val uriHandler = LocalUriHandler.current
-    val shape = RoundedCornerShape(18.dp)
+    val shape = RoundedCornerShape(tokens.radii.xl)
+    val iconShape = RoundedCornerShape(tokens.radii.md)
+    val buttonShape = RoundedCornerShape(tokens.radii.md)
     Column(
         Modifier.fillMaxWidth().clip(shape)
             .background(SteamWarn.copy(alpha = if (highlighted) 0.10f else 0.06f))
             .border(1.dp, SteamWarn.copy(alpha = if (highlighted) 0.45f else 0.25f), shape)
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+            .padding(tokens.spacing.md),
+        verticalArrangement = Arrangement.spacedBy(tokens.spacing.sm),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(11.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm)) {
             Box(
-                Modifier.size(34.dp).clip(RoundedCornerShape(10.dp))
-                    .background(SteamWarn.copy(alpha = 0.14f)).border(1.dp, SteamWarn.copy(alpha = 0.35f), RoundedCornerShape(10.dp)),
+                Modifier.size(34.dp).clip(iconShape)
+                    .background(SteamWarn.copy(alpha = 0.14f)).border(1.dp, SteamWarn.copy(alpha = 0.35f), iconShape),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(AppIcons.Check, null, Modifier.size(17.dp), tint = SteamWarn)
@@ -373,14 +379,14 @@ private fun PrivacyHelper(highlighted: Boolean) {
                 color = SteamWarn,
             )
         }
-        Spacer(Modifier.height(2.dp))
+        Spacer(Modifier.height(tokens.spacing.micro))
         Row(
-            Modifier.actionWidth().clip(RoundedCornerShape(13.dp))
-                .background(tokens.colors.surface).border(1.dp, tokens.colors.border, RoundedCornerShape(13.dp))
+            Modifier.actionWidth().clip(buttonShape)
+                .background(tokens.colors.surface).border(1.dp, tokens.colors.border, buttonShape)
                 .clickable { uriHandler.openUri(STEAM_PRIVACY_URL) }
-                .padding(horizontal = 18.dp, vertical = 13.dp),
+                .padding(horizontal = tokens.spacing.lg, vertical = tokens.spacing.sm),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+            horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs, Alignment.CenterHorizontally),
         ) {
             Text(stringResource(Res.string.steam_privacy_open), style = AppTheme.type.bodyStrong.copy(fontSize = 13.sp), color = tokens.colors.muted)
         }
@@ -390,7 +396,7 @@ private fun PrivacyHelper(highlighted: Boolean) {
 @Composable
 private fun PrivacyStep(number: String, text: String) {
     val tokens = AppTheme.tokens
-    Row(horizontalArrangement = Arrangement.spacedBy(11.dp)) {
+    Row(horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm)) {
         Box(
             Modifier.size(21.dp).clip(CircleShape)
                 .background(SteamWarn.copy(alpha = 0.15f)).border(1.dp, SteamWarn.copy(alpha = 0.40f), CircleShape),
@@ -404,7 +410,8 @@ private fun PrivacyStep(number: String, text: String) {
 
 @Composable
 private fun Divider() {
-    Spacer(Modifier.height(15.dp))
-    Box(Modifier.fillMaxWidth().height(1.dp).background(AppTheme.tokens.colors.border))
-    Spacer(Modifier.height(15.dp))
+    val tokens = AppTheme.tokens
+    Spacer(Modifier.height(tokens.spacing.md))
+    Box(Modifier.fillMaxWidth().height(1.dp).background(tokens.colors.border))
+    Spacer(Modifier.height(tokens.spacing.md))
 }

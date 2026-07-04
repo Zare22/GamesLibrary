@@ -76,6 +76,7 @@ fun LibraryFilterButton(
     onReset: () -> Unit,
 ) {
     val compact = LocalIsCompact.current
+    val tokens = AppTheme.tokens
     var open by remember { mutableStateOf(false) }
 
     Box {
@@ -90,11 +91,11 @@ fun LibraryFilterButton(
             if (open) {
                 ModalBottomSheet(
                     onDismissRequest = { open = false },
-                    containerColor = AppTheme.tokens.colors.bg2,
+                    containerColor = tokens.colors.bg2,
                 ) {
                     FilterPanelContent(
                         filter, onToggleStore, onToggleStatus, onSetSort, onReset,
-                        Modifier.padding(horizontal = 20.dp).padding(bottom = 24.dp),
+                        Modifier.padding(horizontal = tokens.spacing.lg).padding(bottom = tokens.spacing.xl),
                     )
                 }
             }
@@ -106,7 +107,7 @@ fun LibraryFilterButton(
             ) {
                 FilterPanelContent(
                     filter, onToggleStore, onToggleStatus, onSetSort, onReset,
-                    Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+                    Modifier.padding(horizontal = tokens.spacing.md, vertical = tokens.spacing.xs),
                 )
             }
         }
@@ -144,11 +145,11 @@ private fun FilterPanelContent(
                     stringResource(Res.string.filter_reset),
                     style = AppTheme.type.caption,
                     color = tokens.colors.accent,
-                    modifier = Modifier.clip(RoundedCornerShape(6.dp)).clickable(onClick = onReset).padding(4.dp),
+                    modifier = Modifier.clip(RoundedCornerShape(tokens.radii.sm)).clickable(onClick = onReset).padding(tokens.spacing.micro),
                 )
             }
         }
-        Spacer(Modifier.height(14.dp))
+        Spacer(Modifier.height(tokens.spacing.md))
 
         SectionLabel(stringResource(Res.string.filter_section_sort))
         ChipRow {
@@ -156,7 +157,7 @@ private fun FilterPanelContent(
                 FilterChip(selected = filter.sort == sort, label = sort.label(), onClick = { onSetSort(sort) })
             }
         }
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(tokens.spacing.md))
 
         SectionLabel(stringResource(Res.string.filter_section_store))
         ChipRow {
@@ -164,7 +165,7 @@ private fun FilterPanelContent(
                 FilterChip(selected = store in filter.stores, label = store.label, onClick = { onToggleStore(store) })
             }
         }
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(tokens.spacing.md))
 
         SectionLabel(stringResource(Res.string.filter_section_status))
         ChipRow {
@@ -178,32 +179,34 @@ private fun FilterPanelContent(
 
 @Composable
 private fun SectionLabel(text: String) {
-    Text(text.uppercase(), style = AppTheme.type.caption, color = AppTheme.tokens.colors.faint)
-    Spacer(Modifier.height(8.dp))
+    val tokens = AppTheme.tokens
+    Text(text.uppercase(), style = AppTheme.type.caption, color = tokens.colors.faint)
+    Spacer(Modifier.height(tokens.spacing.xs))
 }
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ChipRow(content: @Composable () -> Unit) {
+    val tokens = AppTheme.tokens
     FlowRow(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs),
+        verticalArrangement = Arrangement.spacedBy(tokens.spacing.xs),
     ) { content() }
 }
 
 @Composable
 private fun FilterChip(selected: Boolean, label: String, onClick: () -> Unit) {
     val tokens = AppTheme.tokens
-    val shape = RoundedCornerShape(999.dp)
+    val shape = RoundedCornerShape(tokens.radii.pill)
     Row(
         Modifier
             .clip(shape)
             .background(if (selected) tokens.colors.accent.copy(alpha = 0.16f) else tokens.colors.surface)
             .border(1.dp, if (selected) tokens.colors.accent else tokens.colors.border, shape)
             .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 7.dp),
+            .padding(horizontal = tokens.spacing.sm, vertical = tokens.spacing.xs),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs),
     ) {
         if (selected) Icon(AppIcons.Check, null, Modifier.size(13.dp), tint = tokens.colors.accent)
         Text(label, style = AppTheme.type.caption, color = if (selected) tokens.colors.text else tokens.colors.muted)

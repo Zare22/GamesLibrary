@@ -80,30 +80,31 @@ fun GogScreen(
         modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp, vertical = 16.dp),
+            .padding(horizontal = tokens.spacing.lg, vertical = tokens.spacing.md),
     ) {
         Header(onBack)
-        Spacer(Modifier.height(14.dp))
+        Spacer(Modifier.height(tokens.spacing.md))
         Hero(connected = viewModel.connected, gog = gog)
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(tokens.spacing.md))
         if (viewModel.connected) {
             ConnectedCard(viewModel = viewModel, gog = gog)
         } else {
             ConnectSection(viewModel = viewModel, gog = gog)
         }
 
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(tokens.spacing.lg))
     }
 }
 
 @Composable
 private fun Header(onBack: () -> Unit) {
     val tokens = AppTheme.tokens
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+    val shape = RoundedCornerShape(tokens.radii.md)
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm)) {
         Box(
-            Modifier.size(36.dp).clip(RoundedCornerShape(11.dp))
-                .background(tokens.colors.surface).border(1.dp, tokens.colors.border, RoundedCornerShape(11.dp))
+            Modifier.size(36.dp).clip(shape)
+                .background(tokens.colors.surface).border(1.dp, tokens.colors.border, shape)
                 .clickable(onClick = onBack),
             contentAlignment = Alignment.Center,
         ) {
@@ -116,30 +117,31 @@ private fun Header(onBack: () -> Unit) {
 @Composable
 private fun Hero(connected: Boolean, gog: Color) {
     val tokens = AppTheme.tokens
-    val shape = RoundedCornerShape(22.dp)
+    val shape = RoundedCornerShape(tokens.radii.xl)
+    val iconShape = RoundedCornerShape(tokens.radii.xl)
     Box(
         Modifier.fillMaxWidth().clip(shape)
             .background(Brush.verticalGradient(listOf(Color(0xFF1A1030), Color(0xFF120A22))))
             .border(1.dp, gog.copy(alpha = 0.25f), shape)
-            .padding(horizontal = 22.dp, vertical = 26.dp),
+            .padding(horizontal = tokens.spacing.xl, vertical = tokens.spacing.xl),
         contentAlignment = Alignment.Center,
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Box(
-                Modifier.size(70.dp).clip(RoundedCornerShape(20.dp))
+                Modifier.size(70.dp).clip(iconShape)
                     .background(Brush.linearGradient(listOf(Color(0xFF2A1B3D), Color(0xFF17102A))))
-                    .border(1.dp, gog.copy(alpha = 0.40f), RoundedCornerShape(20.dp)),
+                    .border(1.dp, gog.copy(alpha = 0.40f), iconShape),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(Store.GOG.glyph, style = AppTheme.type.brand.copy(fontSize = 30.sp), color = gog)
             }
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(tokens.spacing.md))
             Text(
                 if (connected) stringResource(Res.string.gog_hero_connected_title) else stringResource(Res.string.gog_hero_connect_title),
                 style = AppTheme.type.display.copy(fontSize = 22.sp),
                 color = tokens.colors.text,
             )
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(tokens.spacing.xs))
             Text(
                 if (connected) {
                     stringResource(Res.string.gog_hero_connected_body)
@@ -156,12 +158,12 @@ private fun Hero(connected: Boolean, gog: Color) {
 @Composable
 private fun ConnectSection(viewModel: GogViewModel, gog: Color) {
     val tokens = AppTheme.tokens
-    GlassSurface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(18.dp)) {
-        Column(Modifier.fillMaxWidth().padding(16.dp)) {
+    GlassSurface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(tokens.radii.xl)) {
+        Column(Modifier.fillMaxWidth().padding(tokens.spacing.md)) {
             when (val state = viewModel.connectState) {
                 is GogConnectState.AwaitingLogin -> {
                     GogConnectCapture(authUrl = state.authUrl, onRedirect = viewModel::onRedirectCaptured)
-                    Spacer(Modifier.height(12.dp))
+                    Spacer(Modifier.height(tokens.spacing.sm))
                     Text(
                         stringResource(Res.string.common_cancel),
                         style = AppTheme.type.caption,
@@ -176,14 +178,14 @@ private fun ConnectSection(viewModel: GogViewModel, gog: Color) {
                         style = AppTheme.type.caption.copy(fontSize = 11.5.sp),
                         color = tokens.colors.faint,
                     )
-                    Spacer(Modifier.height(14.dp))
+                    Spacer(Modifier.height(tokens.spacing.md))
                     PrimaryButton(
                         text = stringResource(Res.string.gog_connect),
                         onClick = viewModel::connect,
                         modifier = Modifier.actionWidth(),
                     )
                     if (state is GogConnectState.Failed) {
-                        Spacer(Modifier.height(10.dp))
+                        Spacer(Modifier.height(tokens.spacing.sm))
                         Text(state.reason.message(), style = AppTheme.type.caption, color = GogError)
                     }
                 }
@@ -195,7 +197,7 @@ private fun ConnectSection(viewModel: GogViewModel, gog: Color) {
 @Composable
 private fun ConnectingRow(gog: Color, label: String) {
     val tokens = AppTheme.tokens
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm)) {
         CircularProgressIndicator(Modifier.size(18.dp), color = gog, strokeWidth = 2.dp)
         Text(label, style = AppTheme.type.body.copy(fontSize = 13.sp), color = tokens.colors.muted)
     }
@@ -211,13 +213,14 @@ private fun GogConnectFailure.message(): String = when (this) {
 private fun ConnectedCard(viewModel: GogViewModel, gog: Color) {
     val tokens = AppTheme.tokens
     val ok = tokens.status.playing
-    GlassSurface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(18.dp)) {
-        Column(Modifier.fillMaxWidth().padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(13.dp)) {
+    val avatarShape = RoundedCornerShape(tokens.radii.tile)
+    GlassSurface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(tokens.radii.xl)) {
+        Column(Modifier.fillMaxWidth().padding(tokens.spacing.md)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm)) {
                 Box(
-                    Modifier.size(46.dp).clip(RoundedCornerShape(14.dp))
+                    Modifier.size(46.dp).clip(avatarShape)
                         .background(Brush.linearGradient(listOf(gog, Color(0xFF17102A))))
-                        .border(1.dp, gog.copy(alpha = 0.40f), RoundedCornerShape(14.dp)),
+                        .border(1.dp, gog.copy(alpha = 0.40f), avatarShape),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(Store.GOG.glyph, style = AppTheme.type.brand.copy(fontSize = 20.sp), color = Color.White)
@@ -226,7 +229,7 @@ private fun ConnectedCard(viewModel: GogViewModel, gog: Color) {
                     Text(stringResource(Res.string.gog_account), style = AppTheme.type.bodyStrong, color = tokens.colors.text)
                     Text(stringResource(Res.string.store_connected), style = AppTheme.type.caption, color = tokens.colors.faint)
                 }
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs)) {
                     Box(Modifier.size(8.dp).clip(CircleShape).background(ok))
                     Text(stringResource(Res.string.store_connected), style = AppTheme.type.caption.copy(fontSize = 11.5.sp), color = ok)
                 }
@@ -248,7 +251,7 @@ private fun ConnectedCard(viewModel: GogViewModel, gog: Color) {
 
             viewModel.lastSummary?.let { summary ->
                 Divider()
-                Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(tokens.spacing.lg)) {
                     SyncStat(summary.added.toString(), stringResource(Res.string.sync_stat_added), tokens.status.playing)
                     SyncStat(summary.updated.toString(), stringResource(Res.string.sync_stat_already), tokens.colors.text)
                     SyncStat(summary.total.toString(), stringResource(Res.string.sync_stat_synced), tokens.colors.text)
@@ -256,7 +259,7 @@ private fun ConnectedCard(viewModel: GogViewModel, gog: Color) {
             }
 
             if (viewModel.syncFailed) {
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(tokens.spacing.sm))
                 Text(
                     stringResource(Res.string.gog_sync_failed),
                     style = AppTheme.type.caption,
@@ -264,7 +267,7 @@ private fun ConnectedCard(viewModel: GogViewModel, gog: Color) {
                 )
             }
 
-            Spacer(Modifier.height(14.dp))
+            Spacer(Modifier.height(tokens.spacing.md))
             Text(
                 stringResource(Res.string.store_disconnect),
                 style = AppTheme.type.caption,
@@ -277,15 +280,16 @@ private fun ConnectedCard(viewModel: GogViewModel, gog: Color) {
 
 @Composable
 private fun SyncButton(syncing: Boolean, gog: Color, onClick: () -> Unit) {
-    val shape = RoundedCornerShape(13.dp)
+    val tokens = AppTheme.tokens
+    val shape = RoundedCornerShape(tokens.radii.md)
     Row(
         Modifier.clip(shape)
             .background(gog.copy(alpha = 0.12f))
             .border(1.dp, gog.copy(alpha = 0.45f), shape)
             .clickable(enabled = !syncing, onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 11.dp),
+            .padding(horizontal = tokens.spacing.md, vertical = tokens.spacing.sm),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs),
     ) {
         Icon(AppIcons.Sync, null, Modifier.size(15.dp), tint = gog)
         Text(
@@ -306,7 +310,8 @@ private fun SyncStat(value: String, label: String, color: Color) {
 
 @Composable
 private fun Divider() {
-    Spacer(Modifier.height(15.dp))
-    Box(Modifier.fillMaxWidth().height(1.dp).background(AppTheme.tokens.colors.border))
-    Spacer(Modifier.height(15.dp))
+    val tokens = AppTheme.tokens
+    Spacer(Modifier.height(tokens.spacing.md))
+    Box(Modifier.fillMaxWidth().height(1.dp).background(tokens.colors.border))
+    Spacer(Modifier.height(tokens.spacing.md))
 }

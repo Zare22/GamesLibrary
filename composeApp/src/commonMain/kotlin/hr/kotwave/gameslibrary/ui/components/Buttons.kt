@@ -29,8 +29,6 @@ import hr.kotwave.gameslibrary.ui.icons.AppIcons
 import hr.kotwave.gameslibrary.ui.theme.AppTheme
 import org.jetbrains.compose.resources.stringResource
 
-private val ButtonShape = RoundedCornerShape(14.dp)
-private val IconButtonShape = RoundedCornerShape(12.dp)
 private val DestructiveRed = Color(0xFFF4707A)
 
 @Composable
@@ -42,21 +40,22 @@ fun PrimaryButton(
     enabled: Boolean = true,
 ) {
     val tokens = AppTheme.tokens
+    val shape = RoundedCornerShape(tokens.radii.md)
     GlowBox(
         glow = if (enabled) tokens.colors.brandGradient.last() else null,
-        shape = ButtonShape,
+        shape = shape,
         glowRadius = 20.dp,
         glowAlpha = 0.45f,
     ) {
         Row(
             modifier
-                .clip(ButtonShape)
+                .clip(shape)
                 .background(Brush.linearGradient(tokens.colors.brandGradient))
                 .clickable(enabled = enabled, onClick = onClick)
                 .heightIn(min = 50.dp)
-                .padding(horizontal = 22.dp),
+                .padding(horizontal = tokens.spacing.xl),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(9.dp, Alignment.CenterHorizontally),
+            horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs, Alignment.CenterHorizontally),
         ) {
             if (leadingIcon != null) Icon(leadingIcon, null, Modifier.size(18.dp), tint = Color.White)
             Text(text, style = AppTheme.type.button.copy(fontSize = 15.sp), color = Color.White)
@@ -73,16 +72,17 @@ fun SecondaryButton(
     enabled: Boolean = true,
 ) {
     val tokens = AppTheme.tokens
+    val shape = RoundedCornerShape(tokens.radii.md)
     Row(
         modifier
-            .clip(ButtonShape)
+            .clip(shape)
             .background(tokens.colors.surfaceRaised)
-            .border(1.dp, tokens.colors.borderStrong, ButtonShape)
+            .border(1.dp, tokens.colors.borderStrong, shape)
             .clickable(enabled = enabled, onClick = onClick)
             .heightIn(min = 50.dp)
-            .padding(horizontal = 22.dp),
+            .padding(horizontal = tokens.spacing.xl),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(9.dp, Alignment.CenterHorizontally),
+        horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs, Alignment.CenterHorizontally),
     ) {
         if (leadingIcon != null) Icon(leadingIcon, null, Modifier.size(17.dp), tint = tokens.colors.text)
         Text(text, style = AppTheme.type.bodyStrong, color = tokens.colors.text)
@@ -95,12 +95,13 @@ fun DestructiveButton(
     modifier: Modifier = Modifier,
     icon: ImageVector = AppIcons.Trash,
 ) {
+    val shape = RoundedCornerShape(AppTheme.tokens.radii.md)
     Box(
         modifier
             .size(width = 60.dp, height = 50.dp)
-            .clip(ButtonShape)
+            .clip(shape)
             .background(DestructiveRed.copy(alpha = 0.08f))
-            .border(1.dp, DestructiveRed.copy(alpha = 0.3f), ButtonShape)
+            .border(1.dp, DestructiveRed.copy(alpha = 0.3f), shape)
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
@@ -117,12 +118,13 @@ fun AppIconButton(
     accent: Boolean = false,
 ) {
     val tokens = AppTheme.tokens
+    val shape = RoundedCornerShape(tokens.radii.md)
     if (accent) {
-        GlowBox(glow = tokens.colors.brandGradient.last(), shape = IconButtonShape, glowRadius = 16.dp, glowAlpha = 0.5f) {
+        GlowBox(glow = tokens.colors.brandGradient.last(), shape = shape, glowRadius = 16.dp, glowAlpha = 0.5f) {
             Box(
                 modifier
                     .size(38.dp)
-                    .clip(IconButtonShape)
+                    .clip(shape)
                     .background(Brush.linearGradient(tokens.colors.brandGradient))
                     .clickable(onClick = onClick),
                 contentAlignment = Alignment.Center,
@@ -134,9 +136,9 @@ fun AppIconButton(
         Box(
             modifier
                 .size(38.dp)
-                .clip(IconButtonShape)
+                .clip(shape)
                 .background(tokens.colors.surface)
-                .border(1.dp, tokens.colors.border, IconButtonShape)
+                .border(1.dp, tokens.colors.border, shape)
                 .clickable(onClick = onClick),
             contentAlignment = Alignment.Center,
         ) {
@@ -172,12 +174,13 @@ fun CloseButton(
     modifier: Modifier = Modifier,
 ) {
     val tokens = AppTheme.tokens
+    val shape = RoundedCornerShape(tokens.radii.md)
     Box(
         modifier
             .size(36.dp)
-            .clip(IconButtonShape)
+            .clip(shape)
             .background(tokens.colors.surface)
-            .border(1.dp, tokens.colors.border, IconButtonShape)
+            .border(1.dp, tokens.colors.border, shape)
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {

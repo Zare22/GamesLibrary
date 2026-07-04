@@ -39,19 +39,19 @@ fun WishlistScreen(
     val compact = LocalIsCompact.current
     val tokens = AppTheme.tokens
 
-    Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
-        Spacer(Modifier.height(20.dp))
+    Column(Modifier.fillMaxSize().padding(horizontal = tokens.spacing.lg)) {
+        Spacer(Modifier.height(tokens.spacing.lg))
         Text(stringResource(Res.string.wishlist_title), style = AppTheme.type.display, color = tokens.colors.text)
-        Spacer(Modifier.height(14.dp))
+        Spacer(Modifier.height(tokens.spacing.md))
 
         if (games.isEmpty()) {
             EmptyWishlist()
         } else {
             LazyVerticalGrid(
                 columns = if (compact) GridCells.Fixed(3) else GridCells.Adaptive(minSize = 150.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(bottom = 24.dp),
+                horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm),
+                verticalArrangement = Arrangement.spacedBy(tokens.spacing.sm),
+                contentPadding = PaddingValues(bottom = tokens.spacing.xl),
                 modifier = Modifier.fillMaxSize(),
             ) {
                 items(games, key = { it.id }) { game ->
@@ -74,7 +74,7 @@ private fun EmptyWishlist() {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(stringResource(Res.string.wishlist_empty_title), style = AppTheme.type.display, color = tokens.colors.text)
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(tokens.spacing.xs))
             Text(
                 stringResource(Res.string.wishlist_empty_body),
                 style = AppTheme.type.body,

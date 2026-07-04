@@ -88,22 +88,23 @@ data class Spacing(
     val sm: Dp = 12.dp,
     val md: Dp = 16.dp,
     val lg: Dp = 20.dp,
-    val gutter: Dp = 22.dp,
+    val xl: Dp = 24.dp,
 )
 
 @Immutable
 data class Radii(
-    val window: Dp = 18.dp,
-    val largeCard: Dp = 18.dp,
+    val sm: Dp = 8.dp,
+    val md: Dp = 12.dp,
     val tile: Dp = 14.dp,
-    val button: Dp = 13.dp,
-    val badge: Dp = 9.dp,
+    val lg: Dp = 16.dp,
+    val xl: Dp = 20.dp,
     val pill: Dp = 999.dp,
 )
 
 @Immutable
 data class GlassStyle(
-    val blurRadius: Dp = 14.dp,
+    val blurRadius: Dp = 18.dp,
+    val backdropBlur: Dp = 34.dp,
 )
 
 @Immutable

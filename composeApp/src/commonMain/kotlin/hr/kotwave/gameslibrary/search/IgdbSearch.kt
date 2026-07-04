@@ -120,13 +120,13 @@ fun IgdbSearchField(value: String, onValueChange: (String) -> Unit, modifier: Mo
     val tokens = AppTheme.tokens
     GlassSurface(
         modifier = modifier.fillMaxWidth().height(50.dp),
-        shape = RoundedCornerShape(15.dp),
+        shape = RoundedCornerShape(tokens.radii.lg),
         borderColor = tokens.colors.borderStrong,
     ) {
         Row(
-            Modifier.fillMaxSize().padding(horizontal = 15.dp),
+            Modifier.fillMaxSize().padding(horizontal = tokens.spacing.md),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(11.dp),
+            horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm),
         ) {
             Icon(AppIcons.Search, null, Modifier.size(18.dp), tint = tokens.colors.accent)
             Box(Modifier.weight(1f)) {
@@ -157,7 +157,7 @@ fun IgdbSearchStatus(searching: Boolean, count: Int, failed: Boolean) {
         count > 0 -> pluralStringResource(Res.plurals.search_result_count, count, count)
         else -> stringResource(Res.string.no_matches)
     }
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs)) {
         Box(Modifier.size(7.dp).clip(CircleShape).background(if (failed) Color(0xFFF4707A) else tokens.colors.accent))
         Text(text, style = AppTheme.type.caption, color = tokens.colors.faint)
     }
@@ -172,22 +172,22 @@ fun IgdbResultRow(
     selected: Boolean = false,
 ) {
     val tokens = AppTheme.tokens
-    val shape = RoundedCornerShape(14.dp)
+    val shape = RoundedCornerShape(tokens.radii.tile)
     Row(
         modifier
             .fillMaxWidth()
             .clip(shape)
             .then(if (selected) Modifier.background(tokens.colors.surface).border(1.dp, tokens.colors.border, shape) else Modifier)
             .clickable(onClick = onClick)
-            .padding(10.dp),
+            .padding(tokens.spacing.sm),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(13.dp),
+        horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm),
     ) {
         CoverArt(
             title = result.name,
             coverImageId = result.coverImageId,
             modifier = Modifier.size(width = 46.dp, height = 61.dp),
-            shape = RoundedCornerShape(9.dp),
+            shape = RoundedCornerShape(tokens.radii.sm),
         )
         Column(Modifier.weight(1f)) {
             Text(
@@ -198,16 +198,16 @@ fun IgdbResultRow(
                 overflow = TextOverflow.Ellipsis,
             )
             gameMeta(result.firstReleaseDate, result.developer)?.let {
-                Spacer(Modifier.height(2.dp))
+                Spacer(Modifier.height(tokens.spacing.micro))
                 Text(it, style = AppTheme.type.caption, color = tokens.colors.faint, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
         Box(
             Modifier
                 .size(32.dp)
-                .clip(RoundedCornerShape(10.dp))
+                .clip(RoundedCornerShape(tokens.radii.md))
                 .background(tokens.colors.surface)
-                .border(1.dp, tokens.colors.border, RoundedCornerShape(10.dp)),
+                .border(1.dp, tokens.colors.border, RoundedCornerShape(tokens.radii.md)),
             contentAlignment = Alignment.Center,
         ) {
             Icon(

@@ -99,12 +99,12 @@ private fun TransferFailure.message(): String = when (this) {
 private fun LoadingState(label: String) {
     val tokens = AppTheme.tokens
     Column(
-        Modifier.fillMaxSize().padding(horizontal = 28.dp),
+        Modifier.fillMaxSize().padding(horizontal = tokens.spacing.xl),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
         CircularProgressIndicator(color = tokens.colors.accent, strokeWidth = 3.dp, modifier = Modifier.size(44.dp))
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(tokens.spacing.lg))
         Text(label, style = AppTheme.type.bodyStrong, color = tokens.colors.text)
     }
 }
@@ -112,9 +112,9 @@ private fun LoadingState(label: String) {
 @Composable
 private fun ReviewState(viewModel: LibraryTransferViewModel, onBack: () -> Unit) {
     val tokens = AppTheme.tokens
-    Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
-        Spacer(Modifier.height(16.dp))
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(Modifier.fillMaxSize().padding(horizontal = tokens.spacing.lg)) {
+        Spacer(Modifier.height(tokens.spacing.md))
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm)) {
             BackButton(onBack)
             Column {
                 Text(stringResource(Res.string.transfer_title), style = AppTheme.type.brand.copy(fontSize = 16.sp), color = tokens.colors.text)
@@ -125,14 +125,14 @@ private fun ReviewState(viewModel: LibraryTransferViewModel, onBack: () -> Unit)
                 )
             }
         }
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(tokens.spacing.xs))
 
-        LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(tokens.spacing.sm)) {
             items(viewModel.candidates) { candidate -> CandidateRow(candidate) }
-            item { Spacer(Modifier.height(4.dp)) }
+            item { Spacer(Modifier.height(tokens.spacing.micro)) }
         }
 
-        Column(Modifier.fillMaxWidth().padding(top = 10.dp, bottom = 18.dp)) {
+        Column(Modifier.fillMaxWidth().padding(top = tokens.spacing.sm, bottom = tokens.spacing.lg)) {
             PrimaryButton(
                 text = if (viewModel.importing) stringResource(Res.string.import_adding) else stringResource(Res.string.import_add_button, viewModel.checkedCount),
                 onClick = viewModel::confirm,
@@ -147,19 +147,20 @@ private fun ReviewState(viewModel: LibraryTransferViewModel, onBack: () -> Unit)
 @Composable
 private fun CandidateRow(candidate: LibraryImportCandidate) {
     val tokens = AppTheme.tokens
-    val shape = RoundedCornerShape(16.dp)
+    val shape = RoundedCornerShape(tokens.radii.lg)
+    val coverShape = RoundedCornerShape(tokens.radii.sm)
     val game = candidate.row.game
     Column(
         Modifier.fillMaxWidth().clip(shape).background(tokens.colors.surface)
             .border(1.dp, if (candidate.checked) tokens.colors.accent.copy(alpha = 0.40f) else tokens.colors.border, shape)
-            .padding(12.dp),
+            .padding(tokens.spacing.sm),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm)) {
             if (game.igdbId != null) {
-                CoverArt(game.name, game.coverImageId, Modifier.size(width = 44.dp, height = 58.dp), RoundedCornerShape(9.dp))
+                CoverArt(game.name, game.coverImageId, Modifier.size(width = 44.dp, height = 58.dp), coverShape)
             } else {
                 Box(
-                    Modifier.size(width = 44.dp, height = 58.dp).clip(RoundedCornerShape(9.dp)).background(tokens.colors.bg2),
+                    Modifier.size(width = 44.dp, height = 58.dp).clip(coverShape).background(tokens.colors.bg2),
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(AppIcons.Plus, null, Modifier.size(18.dp), tint = tokens.colors.muted)
@@ -167,7 +168,7 @@ private fun CandidateRow(candidate: LibraryImportCandidate) {
             }
             Column(Modifier.weight(1f)) {
                 KindTag(candidate.row.kind)
-                Spacer(Modifier.height(4.dp))
+                Spacer(Modifier.height(tokens.spacing.micro))
                 Text(game.name, style = AppTheme.type.bodyStrong, color = tokens.colors.text, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 val meta = if (game.igdbId != null) gameMeta(game.firstReleaseDate, game.developer) else null
                 val stores = game.ownerships.joinToString(" · ") { it.store }.ifBlank { null }
@@ -178,7 +179,7 @@ private fun CandidateRow(candidate: LibraryImportCandidate) {
             CheckBox(candidate.checked) { candidate.checked = !candidate.checked }
         }
         if (candidate.row.kind == ImportRowKind.TitleCollision) {
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(tokens.spacing.sm))
             CollisionChoice(candidate)
         }
     }
@@ -192,8 +193,8 @@ private fun CollisionChoice(candidate: LibraryImportCandidate) {
         style = AppTheme.type.caption,
         color = tokens.colors.muted,
     )
-    Spacer(Modifier.height(7.dp))
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    Spacer(Modifier.height(tokens.spacing.xs))
+    Row(horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs)) {
         ChoiceChip(stringResource(Res.string.transfer_merge), selected = candidate.mergeByTitle) { candidate.mergeByTitle = true }
         ChoiceChip(stringResource(Res.string.transfer_add_new), selected = !candidate.mergeByTitle) { candidate.mergeByTitle = false }
     }
@@ -202,7 +203,7 @@ private fun CollisionChoice(candidate: LibraryImportCandidate) {
 @Composable
 private fun ChoiceChip(label: String, selected: Boolean, onClick: () -> Unit) {
     val tokens = AppTheme.tokens
-    val shape = RoundedCornerShape(10.dp)
+    val shape = RoundedCornerShape(tokens.radii.md)
     Text(
         label,
         style = AppTheme.type.caption.copy(fontSize = 12.sp),
@@ -211,7 +212,7 @@ private fun ChoiceChip(label: String, selected: Boolean, onClick: () -> Unit) {
             .background(if (selected) tokens.colors.accent.copy(alpha = 0.14f) else tokens.colors.surface)
             .border(1.dp, if (selected) tokens.colors.accent.copy(alpha = 0.55f) else tokens.colors.border, shape)
             .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 7.dp),
+            .padding(horizontal = tokens.spacing.sm, vertical = tokens.spacing.xs),
     )
 }
 
@@ -230,7 +231,7 @@ private fun KindTag(kind: ImportRowKind) {
 private fun DoneState(summary: ImportSummary, onDone: () -> Unit) {
     val tokens = AppTheme.tokens
     Column(
-        Modifier.fillMaxSize().padding(horizontal = 28.dp),
+        Modifier.fillMaxSize().padding(horizontal = tokens.spacing.xl),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
@@ -240,15 +241,15 @@ private fun DoneState(summary: ImportSummary, onDone: () -> Unit) {
         ) {
             Icon(AppIcons.Check, null, Modifier.size(30.dp), tint = Ok)
         }
-        Spacer(Modifier.height(18.dp))
+        Spacer(Modifier.height(tokens.spacing.lg))
         Text(pluralStringResource(Res.plurals.import_done_title, summary.total, summary.total), style = AppTheme.type.display.copy(fontSize = 22.sp), color = tokens.colors.text)
-        Spacer(Modifier.height(6.dp))
+        Spacer(Modifier.height(tokens.spacing.xs))
         Text(
             stringResource(Res.string.transfer_done_subtitle, summary.added, summary.attached),
             style = AppTheme.type.body,
             color = tokens.colors.faint,
         )
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(tokens.spacing.xl))
         PrimaryButton(stringResource(Res.string.common_done), onDone, leadingIcon = AppIcons.Check)
     }
 }
@@ -257,7 +258,7 @@ private fun DoneState(summary: ImportSummary, onDone: () -> Unit) {
 private fun FailedState(message: String, onRetry: () -> Unit, onBack: () -> Unit) {
     val tokens = AppTheme.tokens
     Column(
-        Modifier.fillMaxSize().padding(horizontal = 28.dp),
+        Modifier.fillMaxSize().padding(horizontal = tokens.spacing.xl),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
@@ -267,18 +268,18 @@ private fun FailedState(message: String, onRetry: () -> Unit, onBack: () -> Unit
         ) {
             Icon(AppIcons.Close, null, Modifier.size(28.dp), tint = ErrorRed)
         }
-        Spacer(Modifier.height(18.dp))
+        Spacer(Modifier.height(tokens.spacing.lg))
         Text(stringResource(Res.string.transfer_failed_title), style = AppTheme.type.display.copy(fontSize = 20.sp), color = tokens.colors.text)
-        Spacer(Modifier.height(6.dp))
+        Spacer(Modifier.height(tokens.spacing.xs))
         Text(message, style = AppTheme.type.body, color = tokens.colors.faint)
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(tokens.spacing.xl))
         PrimaryButton(stringResource(Res.string.transfer_choose_another), onRetry, leadingIcon = AppIcons.ImportFile)
-        Spacer(Modifier.height(10.dp))
+        Spacer(Modifier.height(tokens.spacing.sm))
         Text(
             stringResource(Res.string.action_back),
             style = AppTheme.type.bodyStrong.copy(fontSize = 13.sp),
             color = tokens.colors.muted,
-            modifier = Modifier.clip(RoundedCornerShape(10.dp)).clickable(onClick = onBack).padding(horizontal = 14.dp, vertical = 8.dp),
+            modifier = Modifier.clip(RoundedCornerShape(tokens.radii.md)).clickable(onClick = onBack).padding(horizontal = tokens.spacing.md, vertical = tokens.spacing.xs),
         )
     }
 }
@@ -286,9 +287,10 @@ private fun FailedState(message: String, onRetry: () -> Unit, onBack: () -> Unit
 @Composable
 private fun BackButton(onClick: () -> Unit) {
     val tokens = AppTheme.tokens
+    val shape = RoundedCornerShape(tokens.radii.md)
     Box(
-        Modifier.size(36.dp).clip(RoundedCornerShape(11.dp)).background(tokens.colors.surface)
-            .border(1.dp, tokens.colors.border, RoundedCornerShape(11.dp)).clickable(onClick = onClick),
+        Modifier.size(36.dp).clip(shape).background(tokens.colors.surface)
+            .border(1.dp, tokens.colors.border, shape).clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Icon(AppIcons.ChevronLeft, stringResource(Res.string.cd_back), Modifier.size(18.dp), tint = tokens.colors.muted)
@@ -298,7 +300,7 @@ private fun BackButton(onClick: () -> Unit) {
 @Composable
 private fun CheckBox(checked: Boolean, onToggle: () -> Unit) {
     val tokens = AppTheme.tokens
-    val shape = RoundedCornerShape(8.dp)
+    val shape = RoundedCornerShape(tokens.radii.sm)
     Box(
         Modifier.size(26.dp).clip(shape)
             .background(if (checked) tokens.colors.accent.copy(alpha = 0.18f) else tokens.colors.surface)

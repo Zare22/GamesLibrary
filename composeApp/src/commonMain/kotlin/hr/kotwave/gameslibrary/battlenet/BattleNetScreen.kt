@@ -76,18 +76,18 @@ private fun CatalogPhase(viewModel: ImportViewModel, onBack: () -> Unit, modifie
     val checked = remember { mutableStateMapOf<String, Boolean>() }
     val selectedCount = checked.count { it.value }
 
-    Column(modifier.fillMaxSize().padding(horizontal = 20.dp)) {
-        Spacer(Modifier.height(16.dp))
+    Column(modifier.fillMaxSize().padding(horizontal = tokens.spacing.lg)) {
+        Spacer(Modifier.height(tokens.spacing.md))
         Header(onBack)
-        Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.height(tokens.spacing.micro))
         Text(stringResource(Res.string.battlenet_intro), style = AppTheme.type.body, color = tokens.colors.faint)
 
         if (viewModel.failed) {
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(tokens.spacing.sm))
             IgdbUnreachableNotice()
         }
 
-        LazyColumn(Modifier.weight(1f).padding(top = 14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        LazyColumn(Modifier.weight(1f).padding(top = tokens.spacing.md), verticalArrangement = Arrangement.spacedBy(tokens.spacing.xs)) {
             BattleNetCatalog.sections.forEach { section ->
                 item(key = "section:${section.label}") { SectionHeader(section.label) }
                 items(section.titles, key = { it }) { title ->
@@ -99,10 +99,10 @@ private fun CatalogPhase(viewModel: ImportViewModel, onBack: () -> Unit, modifie
                     )
                 }
             }
-            item { Spacer(Modifier.height(4.dp)) }
+            item { Spacer(Modifier.height(tokens.spacing.micro)) }
         }
 
-        Column(Modifier.fillMaxWidth().padding(top = 10.dp, bottom = 18.dp)) {
+        Column(Modifier.fillMaxWidth().padding(top = tokens.spacing.sm, bottom = tokens.spacing.lg)) {
             PrimaryButton(
                 text = stringResource(Res.string.import_add_button, selectedCount),
                 onClick = { viewModel.startFromTitles(Store.BATTLE_NET, BattleNetCatalog.titles.filter { checked[it] == true }) },
@@ -117,10 +117,11 @@ private fun CatalogPhase(viewModel: ImportViewModel, onBack: () -> Unit, modifie
 @Composable
 private fun Header(onBack: () -> Unit) {
     val tokens = AppTheme.tokens
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+    val shape = RoundedCornerShape(tokens.radii.md)
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm)) {
         Box(
-            Modifier.size(36.dp).clip(RoundedCornerShape(11.dp))
-                .background(tokens.colors.surface).border(1.dp, tokens.colors.border, RoundedCornerShape(11.dp))
+            Modifier.size(36.dp).clip(shape)
+                .background(tokens.colors.surface).border(1.dp, tokens.colors.border, shape)
                 .clickable(onClick = onBack),
             contentAlignment = Alignment.Center,
         ) {
@@ -132,18 +133,19 @@ private fun Header(onBack: () -> Unit) {
 
 @Composable
 private fun SectionHeader(label: String) {
+    val tokens = AppTheme.tokens
     Text(
         label.uppercase(),
         style = AppTheme.type.section.copy(fontSize = 11.sp),
-        color = AppTheme.tokens.colors.accent,
-        modifier = Modifier.padding(top = 8.dp, start = 4.dp, bottom = 2.dp),
+        color = tokens.colors.accent,
+        modifier = Modifier.padding(top = tokens.spacing.xs, start = tokens.spacing.micro, bottom = tokens.spacing.micro),
     )
 }
 
 @Composable
 private fun CatalogRow(title: String, checked: Boolean, accent: Color, onToggle: () -> Unit) {
     val tokens = AppTheme.tokens
-    val shape = RoundedCornerShape(14.dp)
+    val shape = RoundedCornerShape(tokens.radii.tile)
     Row(
         Modifier
             .fillMaxWidth()
@@ -151,9 +153,9 @@ private fun CatalogRow(title: String, checked: Boolean, accent: Color, onToggle:
             .background(tokens.colors.surface)
             .border(1.dp, if (checked) accent.copy(alpha = 0.45f) else tokens.colors.border, shape)
             .clickable(onClick = onToggle)
-            .padding(horizontal = 13.dp, vertical = 12.dp),
+            .padding(horizontal = tokens.spacing.sm, vertical = tokens.spacing.sm),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm),
     ) {
         Text(title, style = AppTheme.type.bodyStrong.copy(fontSize = 14.sp), color = tokens.colors.text, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
         CheckBox(checked, accent)
@@ -163,7 +165,7 @@ private fun CatalogRow(title: String, checked: Boolean, accent: Color, onToggle:
 @Composable
 private fun CheckBox(checked: Boolean, accent: Color) {
     val tokens = AppTheme.tokens
-    val shape = RoundedCornerShape(8.dp)
+    val shape = RoundedCornerShape(tokens.radii.sm)
     Box(
         Modifier.size(26.dp).clip(shape)
             .background(if (checked) accent.copy(alpha = 0.18f) else tokens.colors.surface)
@@ -176,13 +178,15 @@ private fun CheckBox(checked: Boolean, accent: Color) {
 
 @Composable
 private fun IgdbUnreachableNotice() {
+    val tokens = AppTheme.tokens
+    val shape = RoundedCornerShape(tokens.radii.md)
     Row(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(ErrorRed.copy(alpha = 0.10f))
-            .border(1.dp, ErrorRed.copy(alpha = 0.35f), RoundedCornerShape(12.dp)).padding(horizontal = 13.dp, vertical = 11.dp),
+        Modifier.fillMaxWidth().clip(shape).background(ErrorRed.copy(alpha = 0.10f))
+            .border(1.dp, ErrorRed.copy(alpha = 0.35f), shape).padding(horizontal = tokens.spacing.sm, vertical = tokens.spacing.sm),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(9.dp),
+        horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs),
     ) {
         Icon(AppIcons.Close, null, Modifier.size(14.dp), tint = ErrorRed)
-        Text(stringResource(Res.string.error_igdb_unreachable), style = AppTheme.type.caption, color = AppTheme.tokens.colors.muted)
+        Text(stringResource(Res.string.error_igdb_unreachable), style = AppTheme.type.caption, color = tokens.colors.muted)
     }
 }

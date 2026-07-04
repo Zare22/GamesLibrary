@@ -63,8 +63,8 @@ fun LibraryScreen(
     val compact = LocalIsCompact.current
     val tokens = AppTheme.tokens
 
-    Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
-        Spacer(Modifier.height(20.dp))
+    Column(Modifier.fillMaxSize().padding(horizontal = tokens.spacing.lg)) {
+        Spacer(Modifier.height(tokens.spacing.lg))
         if (compact) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 BrandWordmark()
@@ -76,10 +76,10 @@ fun LibraryScreen(
                     onSetSort = viewModel::setSort,
                     onReset = viewModel::resetFilters,
                 )
-                Spacer(Modifier.size(10.dp))
+                Spacer(Modifier.size(tokens.spacing.sm))
                 AppIconButton(AppIcons.Plus, onClick = onAdd, contentDescription = stringResource(Res.string.action_add_game), accent = true)
             }
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(tokens.spacing.sm))
         } else {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(stringResource(Res.string.library_title), style = AppTheme.type.display, color = tokens.colors.text)
@@ -92,19 +92,19 @@ fun LibraryScreen(
                     onReset = viewModel::resetFilters,
                 )
             }
-            Spacer(Modifier.height(14.dp))
+            Spacer(Modifier.height(tokens.spacing.md))
         }
         SearchField(query = filter.query, onQueryChange = viewModel::setQuery)
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(tokens.spacing.md))
 
         when {
             libraryEmpty -> EmptyLibrary()
             games.isEmpty() -> NoMatches(onClear = viewModel::clearAll)
             else -> LazyVerticalGrid(
                 columns = if (compact) GridCells.Fixed(3) else GridCells.Adaptive(minSize = 150.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(bottom = 24.dp),
+                horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm),
+                verticalArrangement = Arrangement.spacedBy(tokens.spacing.sm),
+                contentPadding = PaddingValues(bottom = tokens.spacing.xl),
                 modifier = Modifier.fillMaxSize(),
             ) {
                 items(games, key = { it.game.id }) { owned ->
@@ -127,7 +127,7 @@ private fun EmptyLibrary() {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(stringResource(Res.string.library_empty_title), style = AppTheme.type.display, color = tokens.colors.text)
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(tokens.spacing.xs))
             Text(
                 stringResource(Res.string.library_empty_body),
                 style = AppTheme.type.body,
@@ -144,14 +144,14 @@ private fun NoMatches(onClear: () -> Unit) {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(stringResource(Res.string.no_matches), style = AppTheme.type.display, color = tokens.colors.text)
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(tokens.spacing.xs))
             Text(
                 stringResource(Res.string.library_no_matches_body),
                 style = AppTheme.type.body,
                 color = tokens.colors.faint,
                 textAlign = TextAlign.Center,
             )
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(tokens.spacing.md))
             SecondaryButton(stringResource(Res.string.library_clear), onClick = onClear)
         }
     }
@@ -164,12 +164,12 @@ private fun SearchField(query: String, onQueryChange: (String) -> Unit) {
     val compact = LocalIsCompact.current
     GlassSurface(
         modifier = Modifier.fillMaxWidth().height(44.dp),
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(tokens.radii.tile),
     ) {
         Row(
-            Modifier.fillMaxSize().padding(horizontal = 14.dp),
+            Modifier.fillMaxSize().padding(horizontal = tokens.spacing.md),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm),
         ) {
             Icon(AppIcons.Search, null, Modifier.size(17.dp), tint = tokens.colors.faint)
             Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
@@ -193,12 +193,12 @@ private fun SearchField(query: String, onQueryChange: (String) -> Unit) {
                     tint = tokens.colors.faint,
                 )
             } else if (!compact) {
-                GlassSurface(shape = RoundedCornerShape(6.dp)) {
+                GlassSurface(shape = RoundedCornerShape(tokens.radii.sm)) {
                     Text(
                         "/",
                         style = AppTheme.type.caption,
                         color = tokens.colors.faint,
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                        modifier = Modifier.padding(horizontal = tokens.spacing.xs, vertical = tokens.spacing.micro),
                     )
                 }
             }

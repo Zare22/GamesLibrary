@@ -89,17 +89,17 @@ fun AddGameScreen(onClose: () -> Unit, modifier: Modifier = Modifier) {
         modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 22.dp),
+            .padding(horizontal = tokens.spacing.lg),
     ) {
-        Spacer(Modifier.height(18.dp))
+        Spacer(Modifier.height(tokens.spacing.lg))
         CloseButton(onClick = onClose)
-        Spacer(Modifier.height(14.dp))
+        Spacer(Modifier.height(tokens.spacing.md))
         Text(stringResource(Res.string.add_title), style = AppTheme.type.display, color = tokens.colors.text)
-        Spacer(Modifier.height(3.dp))
+        Spacer(Modifier.height(tokens.spacing.micro))
         Text(stringResource(Res.string.add_subtitle), style = AppTheme.type.body, color = tokens.colors.faint)
-        Spacer(Modifier.height(18.dp))
+        Spacer(Modifier.height(tokens.spacing.lg))
         AddGameContent(onDismiss = onClose, modifier = Modifier.fillMaxWidth())
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(tokens.spacing.xl))
     }
 }
 
@@ -121,22 +121,22 @@ fun AddGameModal(onDismiss: () -> Unit) {
                 .width(560.dp)
                 .heightIn(max = 760.dp)
                 .clickable(interactionSource = cardInteraction, indication = null, onClick = {}),
-            shape = RoundedCornerShape(22.dp),
+            shape = RoundedCornerShape(tokens.radii.xl),
             fill = tokens.colors.bg2,
             borderColor = tokens.colors.borderStrong,
         ) {
             Column(Modifier.fillMaxWidth()) {
                 Row(
-                    Modifier.fillMaxWidth().padding(start = 22.dp, end = 18.dp, top = 20.dp, bottom = 14.dp),
+                    Modifier.fillMaxWidth().padding(start = tokens.spacing.lg, end = tokens.spacing.lg, top = tokens.spacing.lg, bottom = tokens.spacing.md),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.Top,
                 ) {
                     Column(Modifier.weight(1f)) {
                         Text(stringResource(Res.string.add_title), style = AppTheme.type.display, color = tokens.colors.text)
-                        Spacer(Modifier.height(3.dp))
+                        Spacer(Modifier.height(tokens.spacing.micro))
                         Text(stringResource(Res.string.add_subtitle_desktop), style = AppTheme.type.body, color = tokens.colors.faint)
                     }
-                    Spacer(Modifier.width(12.dp))
+                    Spacer(Modifier.width(tokens.spacing.sm))
                     CloseButton(onClick = onDismiss)
                 }
                 HorizontalDivider(color = tokens.colors.border)
@@ -145,7 +145,7 @@ fun AddGameModal(onDismiss: () -> Unit) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .verticalScroll(rememberScrollState())
-                        .padding(horizontal = 22.dp, vertical = 18.dp),
+                        .padding(horizontal = tokens.spacing.lg, vertical = tokens.spacing.lg),
                 )
             }
         }
@@ -159,13 +159,14 @@ fun AddGameContent(
     modifier: Modifier = Modifier,
     state: AddGameState = rememberAddGameState(),
 ) {
+    val tokens = AppTheme.tokens
     Column(modifier) {
         IgdbSearchField(value = state.query, onValueChange = state::updateQuery)
 
         if (state.query.isNotBlank() && !state.collapsed) {
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(tokens.spacing.sm))
             IgdbSearchStatus(searching = state.searching, count = state.results.size, failed = state.searchFailed)
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(tokens.spacing.xs))
             state.results.forEach { result ->
                 IgdbResultRow(
                     result = result,
@@ -174,7 +175,7 @@ fun AddGameContent(
                 )
             }
             if (!state.searching && state.results.isEmpty() && !state.searchFailed) {
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(tokens.spacing.xs))
                 ManualLink(text = stringResource(Res.string.add_manual_query, state.query.trim()), onClick = state::addManually)
             }
         } else if (state.query.isBlank() && !state.configuring) {
@@ -182,16 +183,16 @@ fun AddGameContent(
         }
 
         if (state.loadingSelection) {
-            Spacer(Modifier.height(12.dp))
-            Text(stringResource(Res.string.add_loading_details), style = AppTheme.type.caption, color = AppTheme.tokens.colors.faint)
+            Spacer(Modifier.height(tokens.spacing.sm))
+            Text(stringResource(Res.string.add_loading_details), style = AppTheme.type.caption, color = tokens.colors.faint)
         }
 
         if (state.collapsed) {
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(tokens.spacing.md))
             SectionDivider(stringResource(Res.string.add_section_adding))
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(tokens.spacing.sm))
             BackToSearchLink(onClick = state::clearSelection)
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(tokens.spacing.sm))
             AddingCard(state = state, onDismiss = onDismiss)
         }
     }
@@ -203,7 +204,7 @@ private fun AddingCard(state: AddGameState, onDismiss: () -> Unit) {
     val tokens = AppTheme.tokens
     val wishlist = state.mode == AddMode.WISHLIST
     val game = state.selected
-    val shape = RoundedCornerShape(20.dp)
+    val shape = RoundedCornerShape(tokens.radii.xl)
     Column(
         Modifier
             .fillMaxWidth()
@@ -217,39 +218,39 @@ private fun AddingCard(state: AddGameState, onDismiss: () -> Unit) {
                 ),
             )
             .border(1.dp, tokens.colors.accent.copy(alpha = 0.30f), shape)
-            .padding(16.dp),
+            .padding(tokens.spacing.md),
     ) {
         if (game != null) {
             MatchedHeader(game = game, onChange = state::changeSelection)
         } else {
             TitleField(value = state.title, onValueChange = state::updateTitle)
             state.similarTitle?.let { existing ->
-                Spacer(Modifier.height(10.dp))
+                Spacer(Modifier.height(tokens.spacing.sm))
                 SimilarTitleWarning(existing)
             }
         }
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(tokens.spacing.md))
 
         OwnWishlistSegment(mode = state.mode, onSelect = state::selectMode)
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(tokens.spacing.xs))
         if (wishlist) {
             WishlistHint()
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(tokens.spacing.xs))
         } else {
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(tokens.spacing.xs))
             StepLabel(1, stringResource(Res.string.add_step_own))
-            Spacer(Modifier.height(9.dp))
+            Spacer(Modifier.height(tokens.spacing.xs))
             StorePicker(selected = state.selectedStores, onToggle = state::toggleStore)
-            Spacer(Modifier.height(18.dp))
+            Spacer(Modifier.height(tokens.spacing.lg))
             StepLabel(2, stringResource(Res.string.add_step_status))
-            Spacer(Modifier.height(9.dp))
+            Spacer(Modifier.height(tokens.spacing.xs))
             StatusSelector(selected = state.status, onSelect = state::selectStatus)
-            Spacer(Modifier.height(18.dp))
+            Spacer(Modifier.height(tokens.spacing.lg))
         }
 
         if (state.alreadyInLibrary) {
             AlreadyInLibraryBanner(wishlist = wishlist, stores = state.selectedStores)
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(tokens.spacing.sm))
             PrimaryButton(text = stringResource(Res.string.common_done), onClick = onDismiss, leadingIcon = AppIcons.Check, modifier = Modifier.fillMaxWidth())
         } else {
             PrimaryButton(
@@ -266,12 +267,12 @@ private fun AddingCard(state: AddGameState, onDismiss: () -> Unit) {
 @Composable
 private fun MatchedHeader(game: IgdbGame, onChange: () -> Unit) {
     val tokens = AppTheme.tokens
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(13.dp)) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm)) {
         CoverArt(
             title = game.name,
             coverImageId = game.coverImageId,
             modifier = Modifier.size(width = 54.dp, height = 72.dp),
-            shape = RoundedCornerShape(10.dp),
+            shape = RoundedCornerShape(tokens.radii.md),
         )
         Column(Modifier.weight(1f)) {
             Text(
@@ -282,7 +283,7 @@ private fun MatchedHeader(game: IgdbGame, onChange: () -> Unit) {
                 overflow = TextOverflow.Ellipsis,
             )
             gameMeta(game.firstReleaseDate, game.developer)?.let {
-                Spacer(Modifier.height(3.dp))
+                Spacer(Modifier.height(tokens.spacing.micro))
                 Text(it, style = AppTheme.type.caption, color = tokens.colors.muted)
             }
         }
@@ -290,7 +291,7 @@ private fun MatchedHeader(game: IgdbGame, onChange: () -> Unit) {
             stringResource(Res.string.add_change),
             style = AppTheme.type.bodyStrong.copy(fontSize = 13.sp),
             color = tokens.colors.accent,
-            modifier = Modifier.clip(RoundedCornerShape(9.dp)).clickable(onClick = onChange).padding(horizontal = 10.dp, vertical = 6.dp),
+            modifier = Modifier.clip(RoundedCornerShape(tokens.radii.sm)).clickable(onClick = onChange).padding(horizontal = tokens.spacing.sm, vertical = tokens.spacing.xs),
         )
     }
 }
@@ -298,7 +299,7 @@ private fun MatchedHeader(game: IgdbGame, onChange: () -> Unit) {
 @Composable
 private fun SectionDivider(label: String) {
     val tokens = AppTheme.tokens
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm)) {
         HorizontalDivider(Modifier.weight(1f), color = tokens.colors.border)
         Text(label.uppercase(), style = AppTheme.type.section.copy(fontSize = 11.sp), color = tokens.colors.faint)
         HorizontalDivider(Modifier.weight(1f), color = tokens.colors.border)
@@ -309,11 +310,11 @@ private fun SectionDivider(label: String) {
 private fun SearchPrompt(onAddManually: () -> Unit) {
     val tokens = AppTheme.tokens
     Column(
-        Modifier.fillMaxWidth().padding(vertical = 24.dp),
+        Modifier.fillMaxWidth().padding(vertical = tokens.spacing.xl),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(stringResource(Res.string.add_search_prompt), style = AppTheme.type.body, color = tokens.colors.faint)
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(tokens.spacing.xs))
         ManualLink(text = stringResource(Res.string.add_manual_link), onClick = onAddManually)
     }
 }
@@ -323,9 +324,9 @@ private fun SearchPrompt(onAddManually: () -> Unit) {
 private fun BackToSearchLink(onClick: () -> Unit) {
     val tokens = AppTheme.tokens
     Row(
-        Modifier.clip(RoundedCornerShape(10.dp)).clickable(onClick = onClick).padding(end = 10.dp, top = 4.dp, bottom = 4.dp),
+        Modifier.clip(RoundedCornerShape(tokens.radii.md)).clickable(onClick = onClick).padding(end = tokens.spacing.sm, top = tokens.spacing.micro, bottom = tokens.spacing.micro),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(tokens.spacing.micro),
     ) {
         Icon(AppIcons.ChevronLeft, null, Modifier.size(16.dp), tint = tokens.colors.accent)
         Text(stringResource(Res.string.add_back_to_search), style = AppTheme.type.bodyStrong.copy(fontSize = 13.sp), color = tokens.colors.accent)
@@ -336,9 +337,9 @@ private fun BackToSearchLink(onClick: () -> Unit) {
 private fun ManualLink(text: String, onClick: () -> Unit) {
     val tokens = AppTheme.tokens
     Row(
-        Modifier.clip(RoundedCornerShape(10.dp)).clickable(onClick = onClick).padding(horizontal = 10.dp, vertical = 8.dp),
+        Modifier.clip(RoundedCornerShape(tokens.radii.md)).clickable(onClick = onClick).padding(horizontal = tokens.spacing.sm, vertical = tokens.spacing.xs),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(7.dp),
+        horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs),
     ) {
         Icon(AppIcons.Edit, null, Modifier.size(14.dp), tint = tokens.colors.accent)
         Text(text, style = AppTheme.type.bodyStrong.copy(fontSize = 13.sp), color = tokens.colors.accent)
@@ -348,6 +349,7 @@ private fun ManualLink(text: String, onClick: () -> Unit) {
 @Composable
 private fun AlreadyInLibraryBanner(wishlist: Boolean, stores: Set<Store>) {
     val tokens = AppTheme.tokens
+    val shape = RoundedCornerShape(tokens.radii.md)
     val message = if (wishlist || stores.isEmpty()) {
         stringResource(Res.string.add_already)
     } else {
@@ -356,12 +358,12 @@ private fun AlreadyInLibraryBanner(wishlist: Boolean, stores: Set<Store>) {
     Row(
         Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
+            .clip(shape)
             .background(tokens.colors.accent.copy(alpha = 0.10f))
-            .border(1.dp, tokens.colors.accent.copy(alpha = 0.35f), RoundedCornerShape(12.dp))
-            .padding(horizontal = 13.dp, vertical = 11.dp),
+            .border(1.dp, tokens.colors.accent.copy(alpha = 0.35f), shape)
+            .padding(horizontal = tokens.spacing.sm, vertical = tokens.spacing.sm),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(9.dp),
+        horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs),
     ) {
         Icon(AppIcons.Check, null, Modifier.size(14.dp), tint = tokens.colors.accent)
         Text(message, style = AppTheme.type.caption, color = tokens.colors.muted)
@@ -373,13 +375,13 @@ private fun TitleField(value: String, onValueChange: (String) -> Unit) {
     val tokens = AppTheme.tokens
     GlassSurface(
         modifier = Modifier.fillMaxWidth().height(50.dp),
-        shape = RoundedCornerShape(15.dp),
+        shape = RoundedCornerShape(tokens.radii.lg),
         borderColor = tokens.colors.borderStrong,
     ) {
         Row(
-            Modifier.fillMaxSize().padding(horizontal = 15.dp),
+            Modifier.fillMaxSize().padding(horizontal = tokens.spacing.md),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(11.dp),
+            horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm),
         ) {
             Icon(AppIcons.Edit, null, Modifier.size(18.dp), tint = tokens.colors.accent)
             Box(Modifier.weight(1f)) {
@@ -401,21 +403,23 @@ private fun TitleField(value: String, onValueChange: (String) -> Unit) {
 
 @Composable
 private fun SimilarTitleWarning(existing: String) {
+    val tokens = AppTheme.tokens
+    val shape = RoundedCornerShape(tokens.radii.md)
     Row(
         Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
+            .clip(shape)
             .background(Amber.copy(alpha = 0.08f))
-            .border(1.dp, Amber.copy(alpha = 0.30f), RoundedCornerShape(12.dp))
-            .padding(horizontal = 13.dp, vertical = 11.dp),
+            .border(1.dp, Amber.copy(alpha = 0.30f), shape)
+            .padding(horizontal = tokens.spacing.sm, vertical = tokens.spacing.sm),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(9.dp),
+        horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs),
     ) {
         Icon(AppIcons.Heart, null, Modifier.size(14.dp), tint = Amber)
         Text(
             stringResource(Res.string.similar_title_warning, existing),
             style = AppTheme.type.caption,
-            color = AppTheme.tokens.colors.muted,
+            color = tokens.colors.muted,
         )
     }
 }
@@ -423,14 +427,15 @@ private fun SimilarTitleWarning(existing: String) {
 @Composable
 private fun OwnWishlistSegment(mode: AddMode, onSelect: (AddMode) -> Unit) {
     val tokens = AppTheme.tokens
+    val shape = RoundedCornerShape(tokens.radii.tile)
     Row(
         Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
+            .clip(shape)
             .background(Color(0x40000000))
-            .border(1.dp, tokens.colors.border, RoundedCornerShape(14.dp))
-            .padding(4.dp),
-        horizontalArrangement = Arrangement.spacedBy(7.dp),
+            .border(1.dp, tokens.colors.border, shape)
+            .padding(tokens.spacing.micro),
+        horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs),
     ) {
         SegmentCell(Modifier.weight(1f), selected = mode == AddMode.OWN, icon = AppIcons.Check, label = stringResource(Res.string.add_own)) {
             onSelect(AddMode.OWN)
@@ -451,7 +456,7 @@ private fun SegmentCell(
 ) {
     val tokens = AppTheme.tokens
     val accent = tokens.colors.accent
-    val shape = RoundedCornerShape(11.dp)
+    val shape = RoundedCornerShape(tokens.radii.md)
     val color = if (selected) tokens.colors.text else tokens.colors.muted
     Row(
         modifier
@@ -466,9 +471,9 @@ private fun SegmentCell(
                 },
             )
             .clickable(onClick = onClick)
-            .padding(vertical = 11.dp, horizontal = 6.dp),
+            .padding(vertical = tokens.spacing.sm, horizontal = tokens.spacing.xs),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+        horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs, Alignment.CenterHorizontally),
     ) {
         Icon(icon, null, Modifier.size(15.dp), tint = color)
         Text(label, style = AppTheme.type.bodyStrong.copy(fontSize = 13.sp), color = color)
@@ -477,16 +482,17 @@ private fun SegmentCell(
 
 @Composable
 private fun WishlistHint() {
+    val tokens = AppTheme.tokens
     Row(
         Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(7.dp),
+        horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs),
     ) {
         Icon(AppIcons.HeartFilled, null, Modifier.size(13.dp), tint = Amber)
         Text(
             stringResource(Res.string.add_wishlist_hint),
             style = AppTheme.type.caption,
-            color = AppTheme.tokens.colors.faint,
+            color = tokens.colors.faint,
         )
     }
 }
@@ -494,10 +500,11 @@ private fun WishlistHint() {
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun StorePicker(selected: Set<Store>, onToggle: (Store) -> Unit) {
+    val tokens = AppTheme.tokens
     FlowRow(
         Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(9.dp),
-        verticalArrangement = Arrangement.spacedBy(9.dp),
+        horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs),
+        verticalArrangement = Arrangement.spacedBy(tokens.spacing.xs),
     ) {
         Store.entries.forEach { store ->
             StoreChip(store = store, selected = store in selected) { onToggle(store) }
@@ -509,7 +516,7 @@ private fun StorePicker(selected: Set<Store>, onToggle: (Store) -> Unit) {
 private fun StoreChip(store: Store, selected: Boolean, onClick: () -> Unit) {
     val tokens = AppTheme.tokens
     val accent = tokens.store.accent(store)
-    val shape = RoundedCornerShape(12.dp)
+    val shape = RoundedCornerShape(tokens.radii.md)
     GlowBox(
         glow = if (selected && tokens.store.glows(store)) accent else null,
         shape = shape,
@@ -522,9 +529,9 @@ private fun StoreChip(store: Store, selected: Boolean, onClick: () -> Unit) {
                 .background(if (selected) accent.copy(alpha = 0.10f) else tokens.colors.surface)
                 .border(1.dp, if (selected) accent.copy(alpha = 0.55f) else tokens.colors.border, shape)
                 .clickable(onClick = onClick)
-                .padding(horizontal = 13.dp, vertical = 9.dp),
+                .padding(horizontal = tokens.spacing.sm, vertical = tokens.spacing.xs),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(7.dp),
+            horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs),
         ) {
             Box(Modifier.size(20.dp), contentAlignment = Alignment.Center) {
                 Text(store.glyph, style = AppTheme.type.brand.copy(fontSize = 10.sp), color = tokens.store.glyph(store))
@@ -543,7 +550,8 @@ private fun StoreChip(store: Store, selected: Boolean, onClick: () -> Unit) {
 
 @Composable
 private fun StatusSelector(selected: Status, onSelect: (Status) -> Unit) {
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    val tokens = AppTheme.tokens
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs)) {
         Status.entries.forEach { status ->
             StatusCell(Modifier.weight(1f), status = status, selected = selected == status) { onSelect(status) }
         }
@@ -553,16 +561,16 @@ private fun StatusSelector(selected: Status, onSelect: (Status) -> Unit) {
 @Composable
 private fun StatusCell(modifier: Modifier, status: Status, selected: Boolean, onClick: () -> Unit) {
     val tokens = AppTheme.tokens
-    val shape = RoundedCornerShape(12.dp)
+    val shape = RoundedCornerShape(tokens.radii.md)
     Column(
         modifier
             .clip(shape)
             .background(if (selected) Color(0x297C8696) else tokens.colors.surface)
             .border(1.dp, if (selected) Color(0x997C8696) else tokens.colors.border, shape)
             .clickable(onClick = onClick)
-            .padding(vertical = 11.dp, horizontal = 4.dp),
+            .padding(vertical = tokens.spacing.sm, horizontal = tokens.spacing.micro),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(6.dp),
+        verticalArrangement = Arrangement.spacedBy(tokens.spacing.xs),
     ) {
         StatusDot(status = status, size = 8.dp, bordered = false)
         Text(
@@ -577,7 +585,7 @@ private fun StatusCell(modifier: Modifier, status: Status, selected: Boolean, on
 private fun StepLabel(number: Int, text: String) {
     val tokens = AppTheme.tokens
     val accent = tokens.colors.accent
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs)) {
         Box(
             Modifier
                 .size(18.dp)

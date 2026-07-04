@@ -21,7 +21,6 @@ import hr.kotwave.gameslibrary.ui.model.glyph
 import hr.kotwave.gameslibrary.ui.theme.AppTheme
 
 private val BadgeFill = Color(0x8C080A10) // rgba(8,10,16,.55)
-private val BadgeShape = RoundedCornerShape(7.dp)
 
 /** Glyph badge in the store's accent color, with its glow. */
 @Composable
@@ -31,15 +30,16 @@ fun StoreBadge(
     size: Dp = 22.dp,
 ) {
     val tokens = AppTheme.tokens
+    val shape = RoundedCornerShape(tokens.radii.sm)
     val accent = tokens.store.accent(store)
     val glow = if (tokens.store.glows(store)) accent else null
-    GlowBox(glow = glow, shape = BadgeShape, modifier = modifier, glowRadius = 8.dp, glowAlpha = 0.7f) {
+    GlowBox(glow = glow, shape = shape, modifier = modifier, glowRadius = 8.dp, glowAlpha = 0.7f) {
         Box(
             Modifier
                 .size(size)
-                .clip(BadgeShape)
+                .clip(shape)
                 .background(BadgeFill)
-                .border(1.dp, accent.copy(alpha = 0.45f), BadgeShape),
+                .border(1.dp, accent.copy(alpha = 0.45f), shape),
             contentAlignment = Alignment.Center,
         ) {
             Text(store.glyph, style = AppTheme.type.brand.copy(fontSize = 10.sp), color = tokens.store.glyph(store))
@@ -55,12 +55,13 @@ fun MoreBadge(
     size: Dp = 22.dp,
 ) {
     val tokens = AppTheme.tokens
+    val shape = RoundedCornerShape(tokens.radii.sm)
     Box(
         modifier
             .size(size)
-            .clip(BadgeShape)
+            .clip(shape)
             .background(BadgeFill)
-            .border(1.dp, tokens.colors.border, BadgeShape),
+            .border(1.dp, tokens.colors.border, shape),
         contentAlignment = Alignment.Center,
     ) {
         Text("+$count", style = AppTheme.type.brand.copy(fontSize = 9.sp), color = tokens.colors.muted)
@@ -74,7 +75,7 @@ fun StoreBadgeRow(
     modifier: Modifier = Modifier,
     max: Int = 2,
 ) {
-    Row(modifier, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+    Row(modifier, horizontalArrangement = Arrangement.spacedBy(AppTheme.tokens.spacing.micro)) {
         val shown = stores.take(max)
         shown.forEach { StoreBadge(it) }
         val overflow = stores.size - shown.size

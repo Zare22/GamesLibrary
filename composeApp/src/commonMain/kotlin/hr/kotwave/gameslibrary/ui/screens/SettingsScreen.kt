@@ -119,17 +119,17 @@ fun SettingsScreen(
     }
 
     Column(
-        modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 24.dp),
+        modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = tokens.spacing.lg, vertical = tokens.spacing.xl),
     ) {
         Text(stringResource(Res.string.settings_title), style = AppTheme.type.display, color = tokens.colors.text)
 
         exportNote?.let { note ->
-            Spacer(Modifier.height(14.dp))
+            Spacer(Modifier.height(tokens.spacing.md))
             ExportNotice(note) { exportNote = null }
         }
 
         if (orphaned.isNotEmpty()) {
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(tokens.spacing.lg))
             SectionLabel(stringResource(Res.string.settings_section_maintenance))
             OrphanedSection(
                 games = orphaned,
@@ -139,7 +139,7 @@ fun SettingsScreen(
             )
         }
 
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(tokens.spacing.lg))
         SectionLabel(stringResource(Res.string.settings_section_connections))
         SettingsCard {
             SettingsItem(
@@ -167,7 +167,7 @@ fun SettingsScreen(
             }
         }
 
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(tokens.spacing.lg))
         SectionLabel(stringResource(Res.string.settings_section_library))
         SettingsCard {
             SettingsItem(
@@ -195,7 +195,7 @@ fun SettingsScreen(
             )
         }
 
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(tokens.spacing.lg))
         SectionLabel(stringResource(Res.string.settings_section_about))
         SettingsCard {
             StaticItem(
@@ -211,7 +211,7 @@ fun SettingsScreen(
             )
         }
 
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(tokens.spacing.lg))
         SectionLabel(stringResource(Res.string.settings_section_developer))
         SettingsCard {
             SettingsItem(
@@ -227,11 +227,12 @@ fun SettingsScreen(
 
 @Composable
 private fun SectionLabel(text: String) {
+    val tokens = AppTheme.tokens
     Text(
         text,
         style = AppTheme.type.section,
-        color = AppTheme.tokens.colors.faint,
-        modifier = Modifier.padding(start = 4.dp, bottom = 10.dp),
+        color = tokens.colors.faint,
+        modifier = Modifier.padding(start = tokens.spacing.micro, bottom = tokens.spacing.sm),
     )
 }
 
@@ -239,7 +240,7 @@ private fun SectionLabel(text: String) {
 @Composable
 private fun SettingsCard(content: @Composable () -> Unit) {
     val tokens = AppTheme.tokens
-    val shape = RoundedCornerShape(16.dp)
+    val shape = RoundedCornerShape(tokens.radii.lg)
     Column(
         Modifier.fillMaxWidth().clip(shape).background(tokens.colors.surface).border(1.dp, tokens.colors.border, shape),
     ) {
@@ -260,26 +261,28 @@ private fun SettingsItem(
     subtitle: String,
     onClick: () -> Unit,
 ) {
+    val tokens = AppTheme.tokens
     Row(
-        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(15.dp),
+        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(tokens.spacing.md),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(13.dp),
+        horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm),
     ) {
         ItemIcon(icon, iconTint)
         ItemText(title, subtitle, Modifier.weight(1f))
-        Icon(AppIcons.ChevronRight, null, Modifier.size(17.dp), tint = AppTheme.tokens.colors.faint)
+        Icon(AppIcons.ChevronRight, null, Modifier.size(17.dp), tint = tokens.colors.faint)
     }
 }
 
 /** A non-navigating info row (no chevron) — the About section. */
 @Composable
 private fun StaticItem(icon: ImageVector, title: String, subtitle: String) {
+    val tokens = AppTheme.tokens
     Row(
-        Modifier.fillMaxWidth().padding(15.dp),
+        Modifier.fillMaxWidth().padding(tokens.spacing.md),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(13.dp),
+        horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm),
     ) {
-        ItemIcon(icon, AppTheme.tokens.colors.muted)
+        ItemIcon(icon, tokens.colors.muted)
         ItemText(title, subtitle, Modifier.weight(1f))
     }
 }
@@ -287,14 +290,15 @@ private fun StaticItem(icon: ImageVector, title: String, subtitle: String) {
 /** A navigating connection row badged with the store's glyph (for stores without a brand icon). */
 @Composable
 private fun StoreConnectionItem(store: Store, subtitle: String, onClick: () -> Unit) {
+    val tokens = AppTheme.tokens
     Row(
-        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(15.dp),
+        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(tokens.spacing.md),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(13.dp),
+        horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm),
     ) {
         GlyphIcon(store)
         ItemText(store.label, subtitle, Modifier.weight(1f))
-        Icon(AppIcons.ChevronRight, null, Modifier.size(17.dp), tint = AppTheme.tokens.colors.faint)
+        Icon(AppIcons.ChevronRight, null, Modifier.size(17.dp), tint = tokens.colors.faint)
     }
 }
 
@@ -302,10 +306,11 @@ private fun StoreConnectionItem(store: Store, subtitle: String, onClick: () -> U
 @Composable
 private fun ComingSoonItem(store: Store) {
     val tokens = AppTheme.tokens
+    val pillShape = RoundedCornerShape(tokens.radii.sm)
     Row(
-        Modifier.fillMaxWidth().padding(15.dp),
+        Modifier.fillMaxWidth().padding(tokens.spacing.md),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(13.dp),
+        horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm),
     ) {
         GlyphIcon(store)
         ItemText(store.label, stringResource(Res.string.settings_account_sync), Modifier.weight(1f))
@@ -313,8 +318,8 @@ private fun ComingSoonItem(store: Store) {
             stringResource(Res.string.settings_coming_soon),
             style = AppTheme.type.caption.copy(fontSize = 10.5.sp),
             color = tokens.colors.faint,
-            modifier = Modifier.clip(RoundedCornerShape(7.dp)).background(tokens.colors.surfaceRaised)
-                .border(1.dp, tokens.colors.border, RoundedCornerShape(7.dp)).padding(horizontal = 9.dp, vertical = 4.dp),
+            modifier = Modifier.clip(pillShape).background(tokens.colors.surfaceRaised)
+                .border(1.dp, tokens.colors.border, pillShape).padding(horizontal = tokens.spacing.xs, vertical = tokens.spacing.micro),
         )
     }
 }
@@ -322,9 +327,10 @@ private fun ComingSoonItem(store: Store) {
 @Composable
 private fun ItemIcon(icon: ImageVector, tint: Color) {
     val tokens = AppTheme.tokens
+    val shape = RoundedCornerShape(tokens.radii.md)
     Box(
-        Modifier.size(36.dp).clip(RoundedCornerShape(11.dp)).background(tokens.colors.surfaceRaised)
-            .border(1.dp, tokens.colors.border, RoundedCornerShape(11.dp)),
+        Modifier.size(36.dp).clip(shape).background(tokens.colors.surfaceRaised)
+            .border(1.dp, tokens.colors.border, shape),
         contentAlignment = Alignment.Center,
     ) {
         Icon(icon, null, Modifier.size(18.dp), tint = tint)
@@ -334,9 +340,10 @@ private fun ItemIcon(icon: ImageVector, tint: Color) {
 @Composable
 private fun GlyphIcon(store: Store) {
     val tokens = AppTheme.tokens
+    val shape = RoundedCornerShape(tokens.radii.md)
     Box(
-        Modifier.size(36.dp).clip(RoundedCornerShape(11.dp)).background(tokens.colors.surfaceRaised)
-            .border(1.dp, tokens.colors.border, RoundedCornerShape(11.dp)),
+        Modifier.size(36.dp).clip(shape).background(tokens.colors.surfaceRaised)
+            .border(1.dp, tokens.colors.border, shape),
         contentAlignment = Alignment.Center,
     ) {
         Text(store.glyph, style = AppTheme.type.brand.copy(fontSize = 14.sp), color = tokens.store.glyph(store))
@@ -355,12 +362,13 @@ private fun ItemText(title: String, subtitle: String, modifier: Modifier = Modif
 @Composable
 private fun ExportNotice(text: String, onDismiss: () -> Unit) {
     val tokens = AppTheme.tokens
+    val shape = RoundedCornerShape(tokens.radii.md)
     Row(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(ExportGreen.copy(alpha = 0.08f))
-            .border(1.dp, ExportGreen.copy(alpha = 0.30f), RoundedCornerShape(12.dp))
-            .clickable(onClick = onDismiss).padding(horizontal = 13.dp, vertical = 11.dp),
+        Modifier.fillMaxWidth().clip(shape).background(ExportGreen.copy(alpha = 0.08f))
+            .border(1.dp, ExportGreen.copy(alpha = 0.30f), shape)
+            .clickable(onClick = onDismiss).padding(horizontal = tokens.spacing.sm, vertical = tokens.spacing.sm),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(9.dp),
+        horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs),
     ) {
         Icon(AppIcons.Check, null, Modifier.size(14.dp), tint = ExportGreen)
         Text(text, style = AppTheme.type.caption, color = tokens.colors.muted, modifier = Modifier.weight(1f))
@@ -376,17 +384,19 @@ private fun OrphanedSection(
     onOpenGame: (Long) -> Unit,
 ) {
     val tokens = AppTheme.tokens
+    val shape = RoundedCornerShape(tokens.radii.lg)
+    val rowShape = RoundedCornerShape(tokens.radii.md)
     Column(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
+        Modifier.fillMaxWidth().clip(shape)
             .background(OrphanRed.copy(alpha = 0.06f))
-            .border(1.dp, OrphanRed.copy(alpha = 0.30f), RoundedCornerShape(16.dp))
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+            .border(1.dp, OrphanRed.copy(alpha = 0.30f), shape)
+            .padding(tokens.spacing.md),
+        verticalArrangement = Arrangement.spacedBy(tokens.spacing.sm),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(11.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm)) {
             Box(
-                Modifier.size(36.dp).clip(RoundedCornerShape(11.dp))
-                    .background(OrphanRed.copy(alpha = 0.14f)).border(1.dp, OrphanRed.copy(alpha = 0.40f), RoundedCornerShape(11.dp)),
+                Modifier.size(36.dp).clip(rowShape)
+                    .background(OrphanRed.copy(alpha = 0.14f)).border(1.dp, OrphanRed.copy(alpha = 0.40f), rowShape),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(AppIcons.Sync, null, Modifier.size(18.dp), tint = OrphanRed)
@@ -402,11 +412,11 @@ private fun OrphanedSection(
         }
         games.forEach { game ->
             Row(
-                Modifier.fillMaxWidth().clip(RoundedCornerShape(11.dp))
-                    .background(tokens.colors.surface).border(1.dp, tokens.colors.border, RoundedCornerShape(11.dp))
-                    .clickable { onOpenGame(game.id) }.padding(horizontal = 12.dp, vertical = 10.dp),
+                Modifier.fillMaxWidth().clip(rowShape)
+                    .background(tokens.colors.surface).border(1.dp, tokens.colors.border, rowShape)
+                    .clickable { onOpenGame(game.id) }.padding(horizontal = tokens.spacing.sm, vertical = tokens.spacing.sm),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm),
             ) {
                 Text(game.name, style = AppTheme.type.bodyStrong.copy(fontSize = 13.sp), color = tokens.colors.text, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
                 Icon(AppIcons.ChevronRight, null, Modifier.size(16.dp), tint = tokens.colors.faint)

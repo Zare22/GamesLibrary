@@ -45,10 +45,10 @@ fun GameTile(
         Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0.38f to Color.Transparent, 1f to CoverScrim)))
 
         if (stores.isNotEmpty()) {
-            StoreBadgeRow(stores = stores, modifier = Modifier.align(Alignment.TopStart).padding(8.dp))
+            StoreBadgeRow(stores = stores, modifier = Modifier.align(Alignment.TopStart).padding(tokens.spacing.xs))
         }
         if (status != null) {
-            StatusDot(status = status, modifier = Modifier.align(Alignment.TopEnd).padding(9.dp))
+            StatusDot(status = status, modifier = Modifier.align(Alignment.TopEnd).padding(tokens.spacing.xs))
         }
         Text(
             title,
@@ -56,7 +56,7 @@ fun GameTile(
             color = tokens.colors.text,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.align(Alignment.BottomStart).padding(9.dp),
+            modifier = Modifier.align(Alignment.BottomStart).padding(tokens.spacing.xs),
         )
     }
 }
