@@ -160,7 +160,7 @@
     <string name="settings_reset_title">Delete local data</string>
     <string name="settings_reset_subtitle">Erase all games and disconnect all services</string>
     <string name="settings_reset_confirm_title">Delete local data?</string>
-    <string name="settings_reset_confirm_body">This permanently erases every game in your library and disconnects all services. This can\'t be undone.</string>
+    <string name="settings_reset_confirm_body">This permanently erases every game in your library and disconnects all services. This can't be undone.</string>
 
     <!-- ==== Store connection (shared Steam / GOG) ==== -->
     <string name="store_connected">Connected</string>
