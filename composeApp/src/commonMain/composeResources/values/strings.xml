@@ -178,6 +178,7 @@
     <string name="steam_hero_connected_body">GamesLibrary auto-imports the games you own and keeps your Steam library in sync.</string>
     <string name="steam_hero_connect_body">Sign in to auto-import the games you own. Steam shares only your public game list — no password, no purchases.</string>
     <string name="steam_connect_note">We never see your password — Steam returns only your public profile, which GamesLibrary verifies.</string>
+    <string name="steam_ip_note">Steam's page will show 127.0.0.1 — that's this app on your device, not a website.</string>
     <string name="steam_sign_in">Sign in through Steam</string>
     <string name="steam_fail_verification">Steam couldn\'t verify that sign-in. Try again.</string>
     <string name="steam_fail_network">Couldn\'t reach Steam — check your connection and try again.</string>

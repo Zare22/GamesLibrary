@@ -43,6 +43,7 @@ import hr.kotwave.gameslibrary.resources.steam_hero_connect_body
 import hr.kotwave.gameslibrary.resources.steam_hero_connect_title
 import hr.kotwave.gameslibrary.resources.steam_hero_connected_body
 import hr.kotwave.gameslibrary.resources.steam_hero_connected_title
+import hr.kotwave.gameslibrary.resources.steam_ip_note
 import hr.kotwave.gameslibrary.resources.steam_owned_count
 import hr.kotwave.gameslibrary.resources.steam_privacy_open
 import hr.kotwave.gameslibrary.resources.steam_privacy_step1
@@ -176,6 +177,12 @@ private fun ConnectSection(viewModel: SteamViewModel, steam: Color) {
         Column(Modifier.fillMaxWidth().padding(tokens.spacing.md)) {
             Text(
                 stringResource(Res.string.steam_connect_note),
+                style = AppTheme.type.caption.copy(fontSize = 11.5.sp),
+                color = tokens.colors.faint,
+            )
+            Spacer(Modifier.height(tokens.spacing.xs))
+            Text(
+                stringResource(Res.string.steam_ip_note),
                 style = AppTheme.type.caption.copy(fontSize = 11.5.sp),
                 color = tokens.colors.faint,
             )
