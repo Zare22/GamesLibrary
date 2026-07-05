@@ -7,8 +7,8 @@
     <string name="action_delete">Delete</string>
     <string name="action_add_game">Add game</string>
     <string name="no_matches">No matches</string>
-    <string name="igdb_unreachable_short">Couldn\'t reach IGDB — check your connection.</string>
-    <string name="error_igdb_unreachable">Couldn\'t reach IGDB — check your connection and try again.</string>
+    <string name="igdb_unreachable_short">Couldn't reach IGDB — check your connection.</string>
+    <string name="error_igdb_unreachable">Couldn't reach IGDB — check your connection and try again.</string>
 
     <!-- ==== Content descriptions (accessibility) ==== -->
     <string name="cd_back">Back</string>
@@ -74,7 +74,7 @@
     <string name="import_progress">%1$d of %2$d</string>
     <string name="import_review_title">Review games</string>
     <string name="import_review_count">%1$d found · %2$d selected</string>
-    <string name="import_review_error">Couldn\'t reach IGDB — your selections are kept. Try Confirm again.</string>
+    <string name="import_review_error">Couldn't reach IGDB — your selections are kept. Try Confirm again.</string>
     <string name="import_add_button">Add %1$d to library</string>
     <string name="import_adding">Adding…</string>
     <string name="import_tag_matched">Matched</string>
@@ -99,7 +99,7 @@
     <string name="add_title_hint">Game title</string>
     <string name="add_own">I own it</string>
     <string name="add_wishlist">Wishlist</string>
-    <string name="add_wishlist_hint">Wishlist hides store &amp; status — you don\'t own it yet.</string>
+    <string name="add_wishlist_hint">Wishlist hides store &amp; status — you don't own it yet.</string>
     <string name="add_step_own">Where do you own it?</string>
     <string name="add_step_status">Initial status</string>
     <string name="add_to_wishlist">Add to wishlist</string>
@@ -120,13 +120,13 @@
     <string name="detail_not_owned_body">Add it to a store after you buy, and your status &amp; rating unlock.</string>
     <string name="detail_platforms">Platforms</string>
     <string name="detail_orphan_title">IGDB link broke</string>
-    <string name="detail_orphan_body">This game\'s IGDB entry no longer resolves. Its data is kept — re-match to a new entry to refresh.</string>
+    <string name="detail_orphan_body">This game's IGDB entry no longer resolves. Its data is kept — re-match to a new entry to refresh.</string>
     <string name="detail_rematch">Re-match</string>
     <string name="detail_rematch_title">Re-match game</string>
     <string name="detail_rematch_body">Pick the correct IGDB entry — its metadata replaces the broken one.</string>
     <string name="detail_rematch_conflict">That game is already in your library — pick a different entry.</string>
     <string name="detail_delete_title">Delete this game?</string>
-    <string name="detail_delete_body">“%1$s” will be removed from your library, along with its ownerships. This can\'t be undone.</string>
+    <string name="detail_delete_body">“%1$s” will be removed from your library, along with its ownerships. This can't be undone.</string>
 
     <!-- ==== Settings ==== -->
     <string name="settings_title">Settings</string>
@@ -180,11 +180,11 @@
     <string name="steam_connect_note">We never see your password — Steam returns only your public profile, which GamesLibrary verifies.</string>
     <string name="steam_ip_note">Steam's page will show 127.0.0.1 — that's this app on your device, not a website.</string>
     <string name="steam_sign_in">Sign in through Steam</string>
-    <string name="steam_fail_verification">Steam couldn\'t verify that sign-in. Try again.</string>
-    <string name="steam_fail_network">Couldn\'t reach Steam — check your connection and try again.</string>
+    <string name="steam_fail_verification">Steam couldn't verify that sign-in. Try again.</string>
+    <string name="steam_fail_network">Couldn't reach Steam — check your connection and try again.</string>
     <string name="steam_connecting">Waiting for Steam — finish signing in, in your browser.</string>
     <string name="steam_signed_in">Signed in through Steam</string>
-    <string name="steam_sync_failed">Can\'t sync from Steam — check your connection and try again.</string>
+    <string name="steam_sync_failed">Can't sync from Steam — check your connection and try again.</string>
     <string name="steam_privacy_title">Set your privacy right</string>
     <string name="steam_privacy_subtitle">Steam only shares games when these match</string>
     <string name="steam_privacy_step1">Open Steam → Profile → Edit Profile → Privacy Settings.</string>
@@ -201,10 +201,10 @@
     <string name="gog_finishing">Finishing GOG sign-in…</string>
     <string name="gog_connect_note">GamesLibrary opens GOG in a browser and only reads the list of games you own.</string>
     <string name="gog_connect">Connect GOG</string>
-    <string name="gog_fail_auth">That sign-in didn\'t return a GOG code. Try connecting again.</string>
-    <string name="gog_fail_network">Couldn\'t reach GOG — check your connection and try again.</string>
+    <string name="gog_fail_auth">That sign-in didn't return a GOG code. Try connecting again.</string>
+    <string name="gog_fail_network">Couldn't reach GOG — check your connection and try again.</string>
     <string name="gog_account">GOG account</string>
-    <string name="gog_sync_failed">Couldn\'t reach GOG or IGDB — check your connection and try again.</string>
+    <string name="gog_sync_failed">Couldn't reach GOG or IGDB — check your connection and try again.</string>
 
     <!-- ==== Battle.net picker ==== -->
     <string name="battlenet_intro">Tick the games you own — they’re matched against IGDB before anything is added.</string>
@@ -223,9 +223,9 @@
     <string name="transfer_kind_collision">Title exists</string>
     <string name="transfer_kind_manual">New · manual</string>
     <string name="transfer_done_subtitle">%1$d added · %2$d merged into existing.</string>
-    <string name="transfer_failed_title">Couldn\'t import</string>
+    <string name="transfer_failed_title">Couldn't import</string>
     <string name="transfer_choose_another">Choose another file</string>
-    <string name="transfer_fail_invalid">That doesn\'t look like a GamesLibrary export file.</string>
+    <string name="transfer_fail_invalid">That doesn't look like a GamesLibrary export file.</string>
     <string name="transfer_fail_empty">The file has no games to import.</string>
     <string name="transfer_fail_import">Import failed — your library is unchanged.</string>
 
