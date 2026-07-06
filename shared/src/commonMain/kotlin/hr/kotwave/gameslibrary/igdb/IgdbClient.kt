@@ -3,6 +3,9 @@ package hr.kotwave.gameslibrary.igdb
 import hr.kotwave.gameslibrary.data.IgdbGame
 import hr.kotwave.gameslibrary.data.IgdbSearchResult
 import io.ktor.client.HttpClient
+import io.ktor.client.network.sockets.ConnectTimeoutException
+import io.ktor.client.network.sockets.SocketTimeoutException
+import io.ktor.client.plugins.HttpRequestTimeoutException
 import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
@@ -13,6 +16,8 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
+import kotlinx.coroutines.delay
+import kotlin.time.Duration.Companion.milliseconds
 
 /** The IGDB search engine: lightweight name search, plus full metadata fetch on add. */
 class IgdbClient internal constructor(
@@ -64,7 +69,10 @@ class IgdbClient internal constructor(
         }
     }
 
-    /** POSTs an APICalypse query, refreshing the token once on a 401. */
+    /**
+     * POSTs an APICalypse query, refreshing the token once on a 401. Transient failures — request
+     * timeouts and 429/5xx responses — are retried with a short backoff; other failures fail fast.
+     */
     private suspend fun post(endpoint: String, body: String): String {
         suspend fun attempt(token: String): HttpResponse =
             httpClient.post("${config.baseUrl}/$endpoint") {
@@ -74,19 +82,48 @@ class IgdbClient internal constructor(
                 setBody(body)
             }
 
-        var response = attempt(tokenProvider.token())
-        if (response.status == HttpStatusCode.Unauthorized) {
+        suspend fun requestWithAuth(): HttpResponse {
+            val response = attempt(tokenProvider.token())
+            if (response.status != HttpStatusCode.Unauthorized) return response
             tokenProvider.invalidate()
-            response = attempt(tokenProvider.token())
+            return attempt(tokenProvider.token())
         }
-        if (!response.status.isSuccess()) {
-            throw IgdbException("IGDB request to /$endpoint failed: ${response.status}")
+
+        var lastError: Exception = IgdbException("IGDB request to /$endpoint did not complete")
+        for (attemptIndex in 0 until MAX_ATTEMPTS) {
+            val response = try {
+                requestWithAuth()
+            } catch (e: SocketTimeoutException) {
+                lastError = e; null
+            } catch (e: ConnectTimeoutException) {
+                lastError = e; null
+            } catch (e: HttpRequestTimeoutException) {
+                lastError = e; null
+            }
+            if (response != null) {
+                if (response.status.isSuccess()) return response.bodyAsText()
+                if (!response.status.isTransient()) {
+                    throw IgdbException("IGDB request to /$endpoint failed: ${response.status}")
+                }
+                lastError = IgdbException("IGDB request to /$endpoint failed: ${response.status}")
+            }
+            if (attemptIndex < RETRY_BACKOFFS.size) delay(RETRY_BACKOFFS[attemptIndex])
         }
-        return response.bodyAsText()
+        throw lastError
     }
 
     private fun escape(query: String): String = query.replace("\\", "\\\\").replace("\"", "\\\"")
 }
+
+/** IGDB responses worth retrying: rate-limit (429) and server errors (5xx). */
+private fun HttpStatusCode.isTransient(): Boolean =
+    this == HttpStatusCode.TooManyRequests || value in 500..599
+
+/** Backoff before each retry; index i is the wait after attempt i failed. Its length sets the retry count. */
+private val RETRY_BACKOFFS = listOf(500.milliseconds, 1_500.milliseconds)
+
+/** IGDB request attempts before giving up: 1 initial + one per backoff entry. */
+private val MAX_ATTEMPTS = RETRY_BACKOFFS.size + 1
 
 class IgdbException(message: String) : Exception(message)
 

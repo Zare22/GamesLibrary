@@ -4,6 +4,8 @@ import hr.kotwave.gameslibrary.data.ExternalRef
 import hr.kotwave.gameslibrary.data.Platform
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
+import io.ktor.client.network.sockets.ConnectTimeoutException
+import io.ktor.client.plugins.HttpTimeoutConfig
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.TextContent
@@ -11,6 +13,7 @@ import io.ktor.http.headersOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -21,7 +24,13 @@ class IgdbClientTest {
     private val tokenJson = """{"access_token":"tok_abc","expires_in":5000000,"token_type":"bearer"}"""
 
     private fun clientWith(engine: MockEngine): IgdbClient {
-        val http = buildIgdbHttpClient(engine)
+        // No timeout under runTest's virtual clock — the scheduler would jump to the pending timeout delay.
+        val http = buildIgdbHttpClient(
+            engine,
+            requestTimeoutMillis = HttpTimeoutConfig.INFINITE_TIMEOUT_MS,
+            socketTimeoutMillis = HttpTimeoutConfig.INFINITE_TIMEOUT_MS,
+            connectTimeoutMillis = HttpTimeoutConfig.INFINITE_TIMEOUT_MS,
+        )
         return IgdbClient(http, TwitchTokenProvider(http, config), config)
     }
 
@@ -252,6 +261,79 @@ class IgdbClientTest {
 
         assertTrue(client.matchByGogIds(emptyList()).isEmpty())
         assertEquals(0, calls)
+    }
+
+    private val gogMatchJson = """[{
+        "id":1942,"name":"The Witcher 3",
+        "external_games":[{"uid":"1207658691","external_game_source":5}]
+    }]"""
+
+    @Test
+    fun matchRetriesTransientServerErrorThenSucceeds() = runTest {
+        var gameCalls = 0
+        val client = clientWith(
+            MockEngine { request ->
+                if (isTwitch(request.url.host)) respond(tokenJson, HttpStatusCode.OK, jsonHeaders)
+                else {
+                    gameCalls++
+                    if (gameCalls == 1) respond("", HttpStatusCode.ServiceUnavailable, jsonHeaders)
+                    else respond(gogMatchJson, HttpStatusCode.OK, jsonHeaders)
+                }
+            },
+        )
+
+        val result = client.matchByGogIds(listOf("1207658691"))
+
+        assertEquals(2, gameCalls)
+        assertEquals(1942L, result.single().igdbId)
+    }
+
+    @Test
+    fun matchRetriesRequestTimeoutThenSucceeds() = runTest {
+        var gameCalls = 0
+        val client = clientWith(
+            MockEngine { request ->
+                if (isTwitch(request.url.host)) respond(tokenJson, HttpStatusCode.OK, jsonHeaders)
+                else {
+                    gameCalls++
+                    if (gameCalls == 1) throw ConnectTimeoutException("Connect timed out to ${config.baseUrl}/games")
+                    else respond(gogMatchJson, HttpStatusCode.OK, jsonHeaders)
+                }
+            },
+        )
+
+        val result = client.matchByGogIds(listOf("1207658691"))
+
+        assertEquals(2, gameCalls)
+        assertEquals(1942L, result.single().igdbId)
+    }
+
+    @Test
+    fun matchGivesUpAfterMaxAttemptsOnPersistentServerError() = runTest {
+        var gameCalls = 0
+        val client = clientWith(
+            MockEngine { request ->
+                if (isTwitch(request.url.host)) respond(tokenJson, HttpStatusCode.OK, jsonHeaders)
+                else { gameCalls++; respond("", HttpStatusCode.ServiceUnavailable, jsonHeaders) }
+            },
+        )
+
+        assertFailsWith<IgdbException> { client.matchByGogIds(listOf("1207658691")) }
+        assertEquals(3, gameCalls)
+    }
+
+    @Test
+    fun matchFailsFastOnClientError() = runTest {
+        var gameCalls = 0
+        val client = clientWith(
+            MockEngine { request ->
+                if (isTwitch(request.url.host)) respond(tokenJson, HttpStatusCode.OK, jsonHeaders)
+                else { gameCalls++; respond("", HttpStatusCode.BadRequest, jsonHeaders) }
+            },
+        )
+
+        assertFailsWith<IgdbException> { client.matchByGogIds(listOf("1207658691")) }
+        assertEquals(1, gameCalls)
     }
 
     @Test

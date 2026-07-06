@@ -28,6 +28,9 @@ sealed interface GogConnectState {
 
 enum class GogConnectFailure { Auth, Network }
 
+/** Which stage of a GOG sync threw; drives a stage-accurate error message. */
+enum class GogSyncStage { TokenRefresh, GogFetch, IgdbMatch, Merge }
+
 /**
  * GOG screen state: "Connect GOG" opens the OAuth2 login ([GogConnectCapture] + [GogAuth]), persists the
  * resulting token through [SecureStorage], then the additive sync does the GOG + IGDB networking and
@@ -58,8 +61,8 @@ class GogViewModel(
     var lastSummary by mutableStateOf<GogSyncSummary?>(null)
         private set
 
-    /** The last sync couldn't reach GOG or IGDB (or the token couldn't refresh). */
-    var syncFailed by mutableStateOf(false)
+    /** Which stage of the last sync failed, or null if it succeeded or hasn't run. */
+    var syncFailure by mutableStateOf<GogSyncStage?>(null)
         private set
 
     init {
@@ -104,7 +107,7 @@ class GogViewModel(
             token = null
             ownedCount = null
             lastSummary = null
-            syncFailed = false
+            syncFailure = null
             connectState = GogConnectState.Idle
         }
     }
@@ -117,20 +120,19 @@ class GogViewModel(
         if (syncing) return
         val current = token ?: return
         syncing = true
-        syncFailed = false
+        syncFailure = null
         viewModelScope.launch {
+            var stage = GogSyncStage.TokenRefresh
             try {
                 val fresh = ensureFreshToken(current)
-                if (fresh == null) {
-                    syncFailed = true
-                    return@launch
-                }
+                stage = GogSyncStage.GogFetch
                 val owned = gogClient.getOwnedProducts(fresh.accessToken)
                 ownedCount = owned.size
                 if (owned.isEmpty()) {
                     lastSummary = GogSyncSummary(added = 0, updated = 0)
                     return@launch
                 }
+                stage = GogSyncStage.IgdbMatch
                 val matched = igdbClient.matchByGogIds(owned.map { it.id.toString() })
                 val matchedIds = matched
                     .flatMap { game -> game.externalGames.filter { it.category == GOG_EXTERNAL_CATEGORY }.map { it.uid } }
@@ -140,24 +142,21 @@ class GogViewModel(
                     owned.filter { it.id.toString() !in matchedIds }
                         .forEach { add(GogSyncEntry.Unmatched(it.id.toString(), it.title)) }
                 }
+                stage = GogSyncStage.Merge
                 lastSummary = repository.syncGogGames(entries)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                syncFailed = true
+                syncFailure = stage
             } finally {
                 syncing = false
             }
         }
     }
 
-    private suspend fun ensureFreshToken(current: GogToken): GogToken? {
+    private suspend fun ensureFreshToken(current: GogToken): GogToken {
         if (!current.isExpired(Clock.System.now().epochSeconds)) return current
-        return try {
-            gogAuth.refresh(current.refreshToken).also { persist(it) }
-        } catch (e: Exception) {
-            null
-        }
+        return gogAuth.refresh(current.refreshToken).also { persist(it) }
     }
 
     private suspend fun persist(newToken: GogToken) {

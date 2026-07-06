@@ -43,7 +43,10 @@ import hr.kotwave.gameslibrary.resources.gog_hero_connect_title
 import hr.kotwave.gameslibrary.resources.gog_hero_connected_body
 import hr.kotwave.gameslibrary.resources.gog_hero_connected_title
 import hr.kotwave.gameslibrary.resources.gog_owned_count
-import hr.kotwave.gameslibrary.resources.gog_sync_failed
+import hr.kotwave.gameslibrary.resources.gog_sync_fail_gog
+import hr.kotwave.gameslibrary.resources.gog_sync_fail_igdb
+import hr.kotwave.gameslibrary.resources.gog_sync_fail_merge
+import hr.kotwave.gameslibrary.resources.gog_sync_fail_token
 import hr.kotwave.gameslibrary.resources.store_connected
 import hr.kotwave.gameslibrary.resources.store_disconnect
 import hr.kotwave.gameslibrary.resources.store_sync_now
@@ -210,6 +213,14 @@ private fun GogConnectFailure.message(): String = when (this) {
 }
 
 @Composable
+private fun GogSyncStage.message(): String = when (this) {
+    GogSyncStage.TokenRefresh -> stringResource(Res.string.gog_sync_fail_token)
+    GogSyncStage.GogFetch -> stringResource(Res.string.gog_sync_fail_gog)
+    GogSyncStage.IgdbMatch -> stringResource(Res.string.gog_sync_fail_igdb)
+    GogSyncStage.Merge -> stringResource(Res.string.gog_sync_fail_merge)
+}
+
+@Composable
 private fun ConnectedCard(viewModel: GogViewModel, gog: Color) {
     val tokens = AppTheme.tokens
     val ok = tokens.status.playing
@@ -258,10 +269,10 @@ private fun ConnectedCard(viewModel: GogViewModel, gog: Color) {
                 }
             }
 
-            if (viewModel.syncFailed) {
+            viewModel.syncFailure?.let { stage ->
                 Spacer(Modifier.height(tokens.spacing.sm))
                 Text(
-                    stringResource(Res.string.gog_sync_failed),
+                    stage.message(),
                     style = AppTheme.type.caption,
                     color = GogError,
                 )

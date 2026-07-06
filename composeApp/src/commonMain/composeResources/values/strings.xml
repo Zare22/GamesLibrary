@@ -204,7 +204,10 @@
     <string name="gog_fail_auth">That sign-in didn't return a GOG code. Try connecting again.</string>
     <string name="gog_fail_network">Couldn't reach GOG — check your connection and try again.</string>
     <string name="gog_account">GOG account</string>
-    <string name="gog_sync_failed">Couldn't reach GOG or IGDB — check your connection and try again.</string>
+    <string name="gog_sync_fail_token">Couldn't refresh your GOG sign-in — reconnect GOG and try again.</string>
+    <string name="gog_sync_fail_gog">Couldn't reach GOG — check your connection and try again.</string>
+    <string name="gog_sync_fail_igdb">Couldn't reach the game database (IGDB) — try again in a moment.</string>
+    <string name="gog_sync_fail_merge">Couldn't save the synced games — please try again.</string>
 
     <!-- ==== Battle.net picker ==== -->
     <string name="battlenet_intro">Tick the games you own — they’re matched against IGDB before anything is added.</string>
