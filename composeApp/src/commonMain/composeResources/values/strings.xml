@@ -184,7 +184,9 @@
     <string name="steam_fail_network">Couldn't reach Steam — check your connection and try again.</string>
     <string name="steam_connecting">Waiting for Steam — finish signing in, in your browser.</string>
     <string name="steam_signed_in">Signed in through Steam</string>
-    <string name="steam_sync_failed">Can't sync from Steam — check your connection and try again.</string>
+    <string name="steam_sync_fail_steam">Couldn't reach Steam — check your connection and try again.</string>
+    <string name="steam_sync_fail_igdb">Couldn't reach the game database (IGDB) — try again in a moment.</string>
+    <string name="steam_sync_fail_merge">Couldn't save the synced games — please try again.</string>
     <string name="steam_privacy_title">Set your privacy right</string>
     <string name="steam_privacy_subtitle">Steam only shares games when these match</string>
     <string name="steam_privacy_step1">Open Steam → Profile → Edit Profile → Privacy Settings.</string>

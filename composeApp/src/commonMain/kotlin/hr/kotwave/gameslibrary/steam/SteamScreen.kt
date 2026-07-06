@@ -54,7 +54,9 @@ import hr.kotwave.gameslibrary.resources.steam_privacy_title
 import hr.kotwave.gameslibrary.resources.steam_privacy_zero
 import hr.kotwave.gameslibrary.resources.steam_sign_in
 import hr.kotwave.gameslibrary.resources.steam_signed_in
-import hr.kotwave.gameslibrary.resources.steam_sync_failed
+import hr.kotwave.gameslibrary.resources.steam_sync_fail_igdb
+import hr.kotwave.gameslibrary.resources.steam_sync_fail_merge
+import hr.kotwave.gameslibrary.resources.steam_sync_fail_steam
 import hr.kotwave.gameslibrary.resources.store_connected
 import hr.kotwave.gameslibrary.resources.store_disconnect
 import hr.kotwave.gameslibrary.resources.store_sync_now
@@ -233,6 +235,13 @@ private fun SteamConnectFailure.message(): String = when (this) {
 }
 
 @Composable
+internal fun SteamSyncStage.message(): String = when (this) {
+    SteamSyncStage.SteamFetch -> stringResource(Res.string.steam_sync_fail_steam)
+    SteamSyncStage.IgdbMatch -> stringResource(Res.string.steam_sync_fail_igdb)
+    SteamSyncStage.Merge -> stringResource(Res.string.steam_sync_fail_merge)
+}
+
+@Composable
 private fun ConnectedCard(viewModel: SteamViewModel, steam: Color) {
     val tokens = AppTheme.tokens
     val ok = tokens.status.playing
@@ -299,10 +308,10 @@ private fun ConnectedCard(viewModel: SteamViewModel, steam: Color) {
                 }
             }
 
-            if (viewModel.syncFailed) {
+            viewModel.syncFailure?.let { stage ->
                 Spacer(Modifier.height(tokens.spacing.sm))
                 Text(
-                    stringResource(Res.string.steam_sync_failed),
+                    stage.message(),
                     style = AppTheme.type.caption,
                     color = SteamError,
                 )

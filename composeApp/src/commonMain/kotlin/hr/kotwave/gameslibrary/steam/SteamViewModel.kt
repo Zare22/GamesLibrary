@@ -27,6 +27,9 @@ sealed interface SteamConnectState {
 
 enum class SteamConnectFailure { Verification, Network }
 
+/** Which stage of a Steam sync threw; drives a stage-accurate error message. */
+enum class SteamSyncStage { SteamFetch, IgdbMatch, Merge }
+
 /**
  * Steam screen state: "Sign in through Steam" (OpenID, [SteamAuthFlow] + [SteamOpenId]) persists a
  * verified SteamID64 through [SecureStorage], then the additive sync does the Steam + IGDB networking
@@ -63,8 +66,8 @@ class SteamViewModel(
     var lastSummary by mutableStateOf<SteamSyncSummary?>(null)
         private set
 
-    /** The last sync couldn't reach Steam or IGDB (network) — distinct from a private-profile result. */
-    var syncFailed by mutableStateOf(false)
+    /** Which stage of the last sync failed, or null if it succeeded or hasn't run. */
+    var syncFailure by mutableStateOf<SteamSyncStage?>(null)
         private set
 
     private var connectJob: Job? = null
@@ -122,7 +125,7 @@ class SteamViewModel(
             persona = null
             ownedCount = null
             lastSummary = null
-            syncFailed = false
+            syncFailure = null
             connectState = SteamConnectState.Idle
         }
     }
@@ -135,8 +138,9 @@ class SteamViewModel(
         if (syncing) return
         val id = steamId ?: return
         syncing = true
-        syncFailed = false
+        syncFailure = null
         viewModelScope.launch {
+            var stage = SteamSyncStage.SteamFetch
             try {
                 val owned = steamClient.getOwnedGames(id)
                 ownedCount = owned.size
@@ -144,6 +148,7 @@ class SteamViewModel(
                     lastSummary = SteamSyncSummary(added = 0, updated = 0)
                     return@launch
                 }
+                stage = SteamSyncStage.IgdbMatch
                 val matched = igdbClient.matchBySteamAppids(owned.map { it.appid.toString() })
                 val matchedAppids = matched
                     .flatMap { game -> game.externalGames.filter { it.category == STEAM_EXTERNAL_CATEGORY }.map { it.uid } }
@@ -153,11 +158,12 @@ class SteamViewModel(
                     owned.filter { it.appid.toString() !in matchedAppids }
                         .forEach { add(SteamSyncEntry.Unmatched(it.appid.toString(), it.name)) }
                 }
+                stage = SteamSyncStage.Merge
                 lastSummary = repository.syncSteamGames(entries)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                syncFailed = true
+                syncFailure = stage
             } finally {
                 syncing = false
             }
