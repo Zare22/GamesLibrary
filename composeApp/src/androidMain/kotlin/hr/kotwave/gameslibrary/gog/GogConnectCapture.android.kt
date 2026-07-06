@@ -1,6 +1,5 @@
 package hr.kotwave.gameslibrary.gog
 
-import android.net.Uri
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -17,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.net.toUri
 import hr.kotwave.gameslibrary.ui.components.PrimaryButton
 import hr.kotwave.gameslibrary.ui.theme.AppTheme
 
@@ -30,7 +30,7 @@ actual fun GogConnectCapture(authUrl: String, onRedirect: (String) -> Unit) {
     val tokens = AppTheme.tokens
     val context = LocalContext.current
     LaunchedEffect(authUrl) {
-        CustomTabsIntent.Builder().build().launchUrl(context, Uri.parse(authUrl))
+        CustomTabsIntent.Builder().build().launchUrl(context, authUrl.toUri())
     }
     var pasted by remember { mutableStateOf("") }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
