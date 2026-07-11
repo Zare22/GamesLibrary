@@ -18,6 +18,12 @@ private const val STEAM_EXTERNAL_CATEGORY = 1
 /** IGDB's integer external-game category for GOG; the GOG product id is its `uid`. */
 private const val GOG_EXTERNAL_CATEGORY = 5
 
+/** IGDB's integer external-game category for the Playstation Store; the PSN conceptId is its `uid`. */
+private const val PSN_EXTERNAL_CATEGORY = 36
+
+/** Uids per `externalUidsWithIgdbMatch` query — under SQLite's 999 bound-parameter limit. */
+private const val UID_QUERY_CHUNK = 500
+
 class GameRepository(
     private val gameDao: GameDao,
     private val clock: Clock = Clock.System,
@@ -262,6 +268,88 @@ class GameRepository(
         }
         gameDao.insertOwnership(Ownership(gameId = game.id, store = Store.GOG, source = Source.GOG_SYNC))
         gameDao.setOwnershipSource(game.id, Store.GOG, Source.GOG_SYNC)
+    }
+
+    /**
+     * Additively syncs the PSN library from already-resolved [entries] (the ViewModel does the PSN +
+     * IGDB networking). Adds Games it hasn't seen, ensures a PSN Ownership tagged `PSN_SYNC` on ones it
+     * has, and never removes anything or overwrites cached metadata or local state (Status/userRating/
+     * Wishlist). Entries dedup by `igdbId` and by every PSN uid in `external_game`; a Matched entry
+     * landing on an `igdbId`-null Game from an earlier sync upgrades its metadata in place (the
+     * re-match rule: IGDB-sourced fields only, local state untouched).
+     */
+    suspend fun syncPsnGames(entries: List<PsnSyncEntry>): PsnSyncSummary {
+        var added = 0
+        var updated = 0
+        entries.forEach { entry ->
+            val existing = when (entry) {
+                is PsnSyncEntry.Matched -> gameDao.getGameByIgdbId(entry.igdb.igdbId)
+                    ?: entry.psnUids.firstNotNullOfOrNull { gameDao.getGameByExternalUid(PSN_EXTERNAL_CATEGORY, it) }
+                is PsnSyncEntry.Unmatched ->
+                    entry.psnUids.firstNotNullOfOrNull { gameDao.getGameByExternalUid(PSN_EXTERNAL_CATEGORY, it) }
+            }
+            if (existing != null) {
+                ensurePsnOwnership(existing)
+                if (entry is PsnSyncEntry.Matched && existing.igdbId == null) {
+                    val current = gameDao.getGame(existing.id) ?: return@forEach
+                    gameDao.replaceMetadata(
+                        current.withMetadataFrom(entry.igdb),
+                        psnExternals(entry.igdb, entry.psnUids),
+                    )
+                }
+                updated++
+                return@forEach
+            }
+            when (entry) {
+                is PsnSyncEntry.Matched -> insertStampedMatchedGame(
+                    game = entry.igdb.toGame(wishlist = false, status = Status.BACKLOG),
+                    stores = setOf(Store.PSN),
+                    externals = psnExternals(entry.igdb, entry.psnUids),
+                    source = Source.PSN_SYNC,
+                )
+                is PsnSyncEntry.Unmatched -> insertStampedMatchedGame(
+                    game = Game(name = entry.name, igdbId = null, wishlist = false, status = Status.BACKLOG),
+                    stores = setOf(Store.PSN),
+                    externals = entry.psnUids.map { ExternalGame(gameId = 0, category = PSN_EXTERNAL_CATEGORY, uid = it) },
+                    source = Source.PSN_SYNC,
+                )
+            }
+            added++
+        }
+        return PsnSyncSummary(added = added, updated = updated)
+    }
+
+    /**
+     * The IGDB external references plus a PSN reference for every [psnUids] entry IGDB didn't already
+     * carry — so re-syncs can dedup (and skip concept resolution) by titleId as well as conceptId.
+     */
+    private fun psnExternals(igdb: IgdbGame, psnUids: List<String>): List<ExternalGame> {
+        val fromIgdb = igdb.externalGames.map { it.toEntity() }
+        val known = fromIgdb.filter { it.category == PSN_EXTERNAL_CATEGORY }.map { it.uid }.toSet()
+        return fromIgdb + psnUids.filter { it !in known }
+            .map { ExternalGame(gameId = 0, category = PSN_EXTERNAL_CATEGORY, uid = it) }
+    }
+
+    /**
+     * Which of these PSN [uids] already belong to an IGDB-matched Game — their rows need no concept
+     * resolution on a re-sync. Chunked to respect SQLite's bound-parameter limit.
+     */
+    suspend fun psnUidsAlreadyMatched(uids: List<String>): Set<String> =
+        uids.distinct().chunked(UID_QUERY_CHUNK)
+            .flatMap { gameDao.externalUidsWithIgdbMatch(PSN_EXTERNAL_CATEGORY, it) }
+            .toSet()
+
+    /**
+     * Guarantees a PSN Ownership tagged `PSN_SYNC` on an existing Game, clearing Wishlist if set. A
+     * pre-existing (Game, PSN) Ownership is left in place by the IGNORE insert, then re-tagged `PSN_SYNC`
+     * — PSN is the authority on PSN ownership. Never touches Status/userRating.
+     */
+    private suspend fun ensurePsnOwnership(game: Game) {
+        if (game.wishlist) {
+            gameDao.updateGame(game.copy(wishlist = false, status = game.status ?: Status.BACKLOG))
+        }
+        gameDao.insertOwnership(Ownership(gameId = game.id, store = Store.PSN, source = Source.PSN_SYNC))
+        gameDao.setOwnershipSource(game.id, Store.PSN, Source.PSN_SYNC)
     }
 
     /**

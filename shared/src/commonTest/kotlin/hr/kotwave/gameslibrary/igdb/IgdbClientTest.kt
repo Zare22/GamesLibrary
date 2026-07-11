@@ -263,6 +263,42 @@ class IgdbClientTest {
         assertEquals(0, calls)
     }
 
+    @Test
+    fun matchByPsnConceptIdsMapsResultsAndQueriesByExternalGames() = runTest {
+        var body: String? = null
+        val games = """[{
+            "id":27134,"name":"Deep Rock Galactic",
+            "external_games":[{"uid":"233449","external_game_source":36,"url":"https://store.playstation.com/en-us/concept/233449"}]
+        }]"""
+        val client = clientWith(
+            MockEngine { request ->
+                if (isTwitch(request.url.host)) {
+                    respond(tokenJson, HttpStatusCode.OK, jsonHeaders)
+                } else {
+                    body = (request.body as TextContent).text
+                    respond(games, HttpStatusCode.OK, jsonHeaders)
+                }
+            },
+        )
+
+        val result = client.matchByPsnConceptIds(listOf("233449")).single()
+
+        assertEquals(27134L, result.igdbId)
+        assertEquals("233449", result.externalGames.single { it.category == 36 }.uid)
+        val sent = body!!
+        assertTrue(sent.contains("external_games.external_game_source = 36"))
+        assertTrue(sent.contains("""external_games.uid = ("233449")"""))
+    }
+
+    @Test
+    fun matchByPsnConceptIdsEmptySkipsTheNetwork() = runTest {
+        var calls = 0
+        val client = clientWith(MockEngine { calls++; respond("[]", HttpStatusCode.OK, jsonHeaders) })
+
+        assertTrue(client.matchByPsnConceptIds(emptyList()).isEmpty())
+        assertEquals(0, calls)
+    }
+
     private val gogMatchJson = """[{
         "id":1942,"name":"The Witcher 3",
         "external_games":[{"uid":"1207658691","external_game_source":5}]

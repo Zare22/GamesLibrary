@@ -12,3 +12,6 @@ const val STEAM_ID_KEY = "steam.id64"
 
 /** The GOG session (bearer + refresh token + expiry), serialized as one JSON blob. A real secret. */
 const val GOG_TOKEN_KEY = "gog.token"
+
+/** The PSN session (bearer + refresh token + expiry), serialized as one JSON blob. A real secret. */
+const val PSN_TOKEN_KEY = "psn.token"

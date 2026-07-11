@@ -162,7 +162,7 @@
     <string name="settings_reset_confirm_title">Delete local data?</string>
     <string name="settings_reset_confirm_body">This permanently erases every game in your library and disconnects all services. This can't be undone.</string>
 
-    <!-- ==== Store connection (shared Steam / GOG) ==== -->
+    <!-- ==== Store connection (shared Steam / GOG / PSN) ==== -->
     <string name="store_connected">Connected</string>
     <string name="store_disconnect">Disconnect</string>
     <string name="store_sync_prompt">Sync to pull your owned games</string>
@@ -210,6 +210,26 @@
     <string name="gog_sync_fail_gog">Couldn't reach GOG — check your connection and try again.</string>
     <string name="gog_sync_fail_igdb">Couldn't reach the game database (IGDB) — try again in a moment.</string>
     <string name="gog_sync_fail_merge">Couldn't save the synced games — please try again.</string>
+
+    <!-- ==== PSN ==== -->
+    <string name="psn_hero_connected_title">Connected to PlayStation</string>
+    <string name="psn_hero_connect_title">Connect PlayStation</string>
+    <string name="psn_hero_connected_body">GamesLibrary auto-imports your purchased and played games and keeps your PlayStation library in sync.</string>
+    <string name="psn_hero_connect_body">Sign in to auto-import your purchased and played games. GamesLibrary only reads your game list — no purchases.</string>
+    <string name="psn_finishing">Finishing PlayStation sign-in…</string>
+    <string name="psn_connect_note">GamesLibrary opens PlayStation in a browser and only reads the list of games you own.</string>
+    <string name="psn_connect">Connect PlayStation</string>
+    <string name="psn_capture_intro">A browser opened for PlayStation sign-in. Sign in there first, then open the npsso page — it shows a short line like {"npsso":"…"} — and paste that line (or just the value) below.</string>
+    <string name="psn_capture_open_npsso">Open the npsso page</string>
+    <string name="psn_fail_paste">That paste didn't contain an npsso value. Copy the whole line from the npsso page and try again.</string>
+    <string name="psn_fail_rejected">PlayStation didn't accept that sign-in — open the npsso page again for a fresh value.</string>
+    <string name="psn_fail_network">Couldn't reach PlayStation — check your connection and try again.</string>
+    <string name="psn_account">PlayStation account</string>
+    <string name="psn_sync_fail_token">Couldn't refresh your PlayStation sign-in — reconnect PlayStation and try again.</string>
+    <string name="psn_sync_fail_psn">Couldn't reach PlayStation — check your connection and try again.</string>
+    <string name="psn_sync_fail_query">PlayStation changed its library interface — check for a GamesLibrary update, then try again.</string>
+    <string name="psn_sync_fail_igdb">Couldn't reach the game database (IGDB) — try again in a moment.</string>
+    <string name="psn_sync_fail_merge">Couldn't save the synced games — please try again.</string>
 
     <!-- ==== Battle.net picker ==== -->
     <string name="battlenet_intro">Tick the games you own — they’re matched against IGDB before anything is added.</string>
@@ -287,6 +307,10 @@
     <plurals name="gog_owned_count">
         <item quantity="one">%1$d game owned on GOG</item>
         <item quantity="other">%1$d games owned on GOG</item>
+    </plurals>
+    <plurals name="psn_owned_count">
+        <item quantity="one">%1$d game on PlayStation</item>
+        <item quantity="other">%1$d games on PlayStation</item>
     </plurals>
     <plurals name="settings_orphaned_title">
         <item quantity="one">Orphaned games · %1$d</item>

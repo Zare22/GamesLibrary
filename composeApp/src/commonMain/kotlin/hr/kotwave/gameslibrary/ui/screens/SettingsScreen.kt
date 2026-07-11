@@ -94,7 +94,7 @@ private val OrphanRed = Color(0xFFF4707A)
 private val ExportGreen = Color(0xFF7DF0B6)
 
 /** Stores with no sync yet — shown as disabled "Coming soon" connections (06-settings.html). */
-private val COMING_SOON_STORES = listOf(Store.PSN, Store.XBOX, Store.NINTENDO)
+private val COMING_SOON_STORES = listOf(Store.XBOX, Store.NINTENDO)
 
 /** Settings: connections, library export/import, about, plus Orphaned maintenance and the dev gallery. */
 @Composable
@@ -103,6 +103,7 @@ fun SettingsScreen(
     onOpenGame: (Long) -> Unit,
     onOpenSteam: () -> Unit,
     onOpenGog: () -> Unit,
+    onOpenPsn: () -> Unit,
     onOpenBattleNet: () -> Unit,
     onOpenImport: () -> Unit,
     onOpenPasteImport: () -> Unit,
@@ -166,6 +167,12 @@ fun SettingsScreen(
                 store = Store.GOG,
                 subtitle = stringResource(Res.string.settings_connect_subtitle),
                 onClick = onOpenGog,
+            )
+            HairlineDivider()
+            StoreConnectionItem(
+                store = Store.PSN,
+                subtitle = stringResource(Res.string.settings_connect_subtitle),
+                onClick = onOpenPsn,
             )
             HairlineDivider()
             StoreConnectionItem(

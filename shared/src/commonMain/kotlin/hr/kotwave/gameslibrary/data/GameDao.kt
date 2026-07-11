@@ -51,6 +51,13 @@ interface GameDao {
     )
     suspend fun getGameByExternalUid(category: Int, uid: String): Game?
 
+    /** Of these external uids, the ones already attached to an IGDB-matched Game. */
+    @Query(
+        "SELECT external_game.uid FROM external_game JOIN game ON external_game.gameId = game.id " +
+            "WHERE external_game.category = :category AND external_game.uid IN (:uids) AND game.igdbId IS NOT NULL",
+    )
+    suspend fun externalUidsWithIgdbMatch(category: Int, uids: List<String>): List<String>
+
     /** Case-insensitive title equality, for the soft "similar title exists" warning. */
     @Query("SELECT * FROM game WHERE name = :name COLLATE NOCASE")
     suspend fun gamesByTitle(name: String): List<Game>

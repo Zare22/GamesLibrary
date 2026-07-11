@@ -6,4 +6,5 @@ enum class Source {
     STEAM_SYNC,
     PASTE_IMPORT,
     GOG_SYNC,
+    PSN_SYNC,
 }

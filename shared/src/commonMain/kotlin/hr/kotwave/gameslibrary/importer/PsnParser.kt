@@ -19,6 +19,10 @@ object PsnParser : StoreParser {
     private val trademarks = Regex("[®™©]")
     private val whitespace = Regex("\\s+")
 
+    /** Strips `®`/`™`/`©` and collapses whitespace runs. */
+    internal fun cleanTitle(title: String): String =
+        title.replace(trademarks, "").replace(whitespace, " ").trim()
+
     override fun parse(raw: String): List<ParsedLine> {
         val lines = raw.lineSequence().map { it.trim() }.filter { it.isNotEmpty() }.toList()
 
@@ -29,7 +33,7 @@ object PsnParser : StoreParser {
             if (isPlatformTag(line)) continue
             if (!isPlatformTag(lines.getOrNull(i + 1))) continue
             if (isPlatformTag(lines.getOrNull(i + 2))) continue
-            val title = clean(line)
+            val title = cleanTitle(line)
             if (title.isNotEmpty() && seen.add(normalizeTitle(title))) {
                 parsed.add(ParsedLine(title = title, raw = line))
             }
@@ -39,7 +43,4 @@ object PsnParser : StoreParser {
     }
 
     private fun isPlatformTag(line: String?): Boolean = line != null && platformTag.matches(line)
-
-    private fun clean(title: String): String =
-        title.replace(trademarks, "").replace(whitespace, " ").trim()
 }

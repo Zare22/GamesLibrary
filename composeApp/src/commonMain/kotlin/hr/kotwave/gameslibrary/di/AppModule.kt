@@ -5,6 +5,7 @@ import hr.kotwave.gameslibrary.gog.GogViewModel
 import hr.kotwave.gameslibrary.importer.ImportViewModel
 import hr.kotwave.gameslibrary.importer.SharedTextInbox
 import hr.kotwave.gameslibrary.library.LibraryViewModel
+import hr.kotwave.gameslibrary.psn.PsnViewModel
 import hr.kotwave.gameslibrary.settings.SettingsViewModel
 import hr.kotwave.gameslibrary.steam.SteamViewModel
 import hr.kotwave.gameslibrary.transfer.LibraryTransferViewModel
@@ -20,6 +21,7 @@ val appModule: Module = module {
     viewModelOf(::SettingsViewModel)
     viewModelOf(::SteamViewModel)
     viewModelOf(::GogViewModel)
+    viewModelOf(::PsnViewModel)
     viewModelOf(::ImportViewModel)
     viewModelOf(::WishlistViewModel)
     viewModelOf(::LibraryTransferViewModel)

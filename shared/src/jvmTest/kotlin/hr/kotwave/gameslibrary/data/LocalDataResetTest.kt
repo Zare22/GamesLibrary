@@ -2,6 +2,7 @@ package hr.kotwave.gameslibrary.data
 
 import androidx.room.Room
 import hr.kotwave.gameslibrary.secure.GOG_TOKEN_KEY
+import hr.kotwave.gameslibrary.secure.PSN_TOKEN_KEY
 import hr.kotwave.gameslibrary.secure.STEAM_ID_KEY
 import hr.kotwave.gameslibrary.secure.SecureStorage
 import kotlinx.coroutines.flow.first
@@ -47,6 +48,7 @@ class LocalDataResetTest {
         val secure = RecordingSecureStorage().apply {
             put(STEAM_ID_KEY, "76561190000000000")
             put(GOG_TOKEN_KEY, "{\"access\":\"x\"}")
+            put(PSN_TOKEN_KEY, "{\"access\":\"y\"}")
         }
 
         LocalDataReset(repository, secure).reset()
@@ -57,7 +59,8 @@ class LocalDataResetTest {
         assertTrue(repository.wishlistGames.first().isEmpty())
         assertNull(secure.get(STEAM_ID_KEY))
         assertNull(secure.get(GOG_TOKEN_KEY))
-        assertEquals(listOf(STEAM_ID_KEY, GOG_TOKEN_KEY), secure.removed)
+        assertNull(secure.get(PSN_TOKEN_KEY))
+        assertEquals(listOf(STEAM_ID_KEY, GOG_TOKEN_KEY, PSN_TOKEN_KEY), secure.removed)
     }
 }
 
