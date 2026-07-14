@@ -7,4 +7,5 @@ enum class Source {
     PASTE_IMPORT,
     GOG_SYNC,
     PSN_SYNC,
+    EPIC_SYNC,
 }

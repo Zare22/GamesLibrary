@@ -230,6 +230,24 @@
     <string name="psn_sync_fail_query">PlayStation changed its library interface — check for a GamesLibrary update, then try again.</string>
     <string name="psn_sync_fail_igdb">Couldn't reach the game database (IGDB) — try again in a moment.</string>
     <string name="psn_sync_fail_merge">Couldn't save the synced games — please try again.</string>
+    <string name="epic_hero_connected_title">Connected to Epic Games</string>
+    <string name="epic_hero_connect_title">Connect Epic Games</string>
+    <string name="epic_hero_connected_body">GamesLibrary auto-imports your Epic library — including free-claimed games — and keeps it in sync.</string>
+    <string name="epic_hero_connect_body">Sign in to auto-import your Epic library, including free-claimed games. GamesLibrary only reads your game list — no purchases.</string>
+    <string name="epic_finishing">Finishing Epic sign-in…</string>
+    <string name="epic_connect_note">GamesLibrary opens Epic Games in a browser and only reads the list of games you own.</string>
+    <string name="epic_connect">Connect Epic Games</string>
+    <string name="epic_capture_intro">A browser opened for Epic sign-in. Sign in there — the page then shows a short line like {"authorizationCode":"…"} — and paste that line (or just the value) below. Codes expire after a few minutes, so paste it right away.</string>
+    <string name="epic_capture_reopen">Open the code page again</string>
+    <string name="epic_fail_paste">That paste didn't contain an authorization code. Copy the whole line from the code page and try again.</string>
+    <string name="epic_fail_rejected">Epic didn't accept that code — codes are single-use and short-lived. Open the code page again for a fresh one.</string>
+    <string name="epic_fail_network">Couldn't reach Epic Games — check your connection and try again.</string>
+    <string name="epic_account">Epic Games account</string>
+    <string name="epic_sync_fail_token">Couldn't refresh your Epic sign-in — reconnect Epic Games and try again.</string>
+    <string name="epic_sync_fail_epic">Couldn't reach Epic Games — check your connection and try again.</string>
+    <string name="epic_sync_fail_catalog">Couldn't resolve your Epic games against the store catalog — try again in a moment.</string>
+    <string name="epic_sync_fail_igdb">Couldn't reach the game database (IGDB) — try again in a moment.</string>
+    <string name="epic_sync_fail_merge">Couldn't save the synced games — please try again.</string>
 
     <!-- ==== Battle.net picker ==== -->
     <string name="battlenet_intro">Tick the games you own — they’re matched against IGDB before anything is added.</string>
@@ -311,6 +329,10 @@
     <plurals name="psn_owned_count">
         <item quantity="one">%1$d game on PlayStation</item>
         <item quantity="other">%1$d games on PlayStation</item>
+    </plurals>
+    <plurals name="epic_owned_count">
+        <item quantity="one">%1$d game on Epic</item>
+        <item quantity="other">%1$d games on Epic</item>
     </plurals>
     <plurals name="settings_orphaned_title">
         <item quantity="one">Orphaned games · %1$d</item>

@@ -1,6 +1,7 @@
 package hr.kotwave.gameslibrary.data
 
 import androidx.room.Room
+import hr.kotwave.gameslibrary.secure.EPIC_TOKEN_KEY
 import hr.kotwave.gameslibrary.secure.GOG_TOKEN_KEY
 import hr.kotwave.gameslibrary.secure.PSN_TOKEN_KEY
 import hr.kotwave.gameslibrary.secure.STEAM_ID_KEY
@@ -38,7 +39,7 @@ class LocalDataResetTest {
     }
 
     @Test
-    fun resetEmptiesEveryTableAndRemovesBothSecrets() = runTest {
+    fun resetEmptiesEveryTableAndRemovesEverySecret() = runTest {
         // A synced-unmatched game seeds all three tables: Game + Ownership + external reference.
         repository.syncSteamGames(listOf(SteamSyncEntry.Unmatched(appid = "999", name = "Some Indie")))
         repository.addWishlistGame(name = "Hollow Knight: Silksong")
@@ -49,6 +50,7 @@ class LocalDataResetTest {
             put(STEAM_ID_KEY, "76561190000000000")
             put(GOG_TOKEN_KEY, "{\"access\":\"x\"}")
             put(PSN_TOKEN_KEY, "{\"access\":\"y\"}")
+            put(EPIC_TOKEN_KEY, "{\"access\":\"z\"}")
         }
 
         LocalDataReset(repository, secure).reset()
@@ -60,7 +62,8 @@ class LocalDataResetTest {
         assertNull(secure.get(STEAM_ID_KEY))
         assertNull(secure.get(GOG_TOKEN_KEY))
         assertNull(secure.get(PSN_TOKEN_KEY))
-        assertEquals(listOf(STEAM_ID_KEY, GOG_TOKEN_KEY, PSN_TOKEN_KEY), secure.removed)
+        assertNull(secure.get(EPIC_TOKEN_KEY))
+        assertEquals(listOf(STEAM_ID_KEY, GOG_TOKEN_KEY, PSN_TOKEN_KEY, EPIC_TOKEN_KEY), secure.removed)
     }
 }
 

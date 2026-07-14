@@ -35,6 +35,7 @@ import hr.kotwave.gameslibrary.importer.SharedTextInbox
 import hr.kotwave.gameslibrary.gog.GogScreen
 import hr.kotwave.gameslibrary.library.LibraryScreen
 import hr.kotwave.gameslibrary.navigation.Route
+import hr.kotwave.gameslibrary.epic.EpicScreen
 import hr.kotwave.gameslibrary.psn.PsnScreen
 import hr.kotwave.gameslibrary.steam.SteamScreen
 import hr.kotwave.gameslibrary.transfer.LibraryImportScreen
@@ -134,6 +135,7 @@ private fun AppNavHost(navController: NavHostController, modifier: Modifier = Mo
                     onOpenSteam = { navController.navigate(Route.Steam) },
                     onOpenGog = { navController.navigate(Route.Gog) },
                     onOpenPsn = { navController.navigate(Route.Psn) },
+                    onOpenEpic = { navController.navigate(Route.Epic) },
                     onOpenBattleNet = { navController.navigate(Route.BattleNet) },
                     onOpenImport = { navController.navigate(Route.LibraryImport) },
                     onOpenPasteImport = { navController.navigate(Route.Import) },
@@ -154,6 +156,9 @@ private fun AppNavHost(navController: NavHostController, modifier: Modifier = Mo
         }
         composable<Route.Psn> {
             ContentColumn { PsnScreen(onBack = { navController.popBackStack() }) }
+        }
+        composable<Route.Epic> {
+            ContentColumn { EpicScreen(onBack = { navController.popBackStack() }) }
         }
         composable<Route.BattleNet> {
             ContentColumn { BattleNetScreen(onBack = { navController.popBackStack() }) }

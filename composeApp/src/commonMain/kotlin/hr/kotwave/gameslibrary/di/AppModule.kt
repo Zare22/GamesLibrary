@@ -1,6 +1,7 @@
 package hr.kotwave.gameslibrary.di
 
 import hr.kotwave.gameslibrary.detail.DetailViewModel
+import hr.kotwave.gameslibrary.epic.EpicViewModel
 import hr.kotwave.gameslibrary.gog.GogViewModel
 import hr.kotwave.gameslibrary.importer.ImportViewModel
 import hr.kotwave.gameslibrary.importer.SharedTextInbox
@@ -22,6 +23,7 @@ val appModule: Module = module {
     viewModelOf(::SteamViewModel)
     viewModelOf(::GogViewModel)
     viewModelOf(::PsnViewModel)
+    viewModelOf(::EpicViewModel)
     viewModelOf(::ImportViewModel)
     viewModelOf(::WishlistViewModel)
     viewModelOf(::LibraryTransferViewModel)

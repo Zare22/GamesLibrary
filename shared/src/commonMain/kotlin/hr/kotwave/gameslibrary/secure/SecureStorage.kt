@@ -15,3 +15,6 @@ const val GOG_TOKEN_KEY = "gog.token"
 
 /** The PSN session (bearer + refresh token + expiry), serialized as one JSON blob. A real secret. */
 const val PSN_TOKEN_KEY = "psn.token"
+
+/** The Epic session (bearer + refresh token + expiry), serialized as one JSON blob. A real secret. */
+const val EPIC_TOKEN_KEY = "epic.token"

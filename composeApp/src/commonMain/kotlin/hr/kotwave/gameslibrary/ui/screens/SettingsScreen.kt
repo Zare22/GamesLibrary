@@ -104,6 +104,7 @@ fun SettingsScreen(
     onOpenSteam: () -> Unit,
     onOpenGog: () -> Unit,
     onOpenPsn: () -> Unit,
+    onOpenEpic: () -> Unit,
     onOpenBattleNet: () -> Unit,
     onOpenImport: () -> Unit,
     onOpenPasteImport: () -> Unit,
@@ -173,6 +174,12 @@ fun SettingsScreen(
                 store = Store.PSN,
                 subtitle = stringResource(Res.string.settings_connect_subtitle),
                 onClick = onOpenPsn,
+            )
+            HairlineDivider()
+            StoreConnectionItem(
+                store = Store.EPIC,
+                subtitle = stringResource(Res.string.settings_connect_subtitle),
+                onClick = onOpenEpic,
             )
             HairlineDivider()
             StoreConnectionItem(

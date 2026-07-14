@@ -21,6 +21,9 @@ private const val GOG_EXTERNAL_CATEGORY = 5
 /** IGDB's integer external-game category for the Playstation Store; the PSN conceptId is its `uid`. */
 private const val PSN_EXTERNAL_CATEGORY = 36
 
+/** IGDB's integer external-game category for the Epic Games Store; the Epic store offerId is its `uid`. */
+private const val EPIC_EXTERNAL_CATEGORY = 26
+
 /** Uids per `externalUidsWithIgdbMatch` query — under SQLite's 999 bound-parameter limit. */
 private const val UID_QUERY_CHUNK = 500
 
@@ -350,6 +353,88 @@ class GameRepository(
         }
         gameDao.insertOwnership(Ownership(gameId = game.id, store = Store.PSN, source = Source.PSN_SYNC))
         gameDao.setOwnershipSource(game.id, Store.PSN, Source.PSN_SYNC)
+    }
+
+    /**
+     * Additively syncs the Epic library from already-resolved [entries] (the ViewModel does the Epic +
+     * IGDB networking). Adds Games it hasn't seen, ensures an Epic Ownership tagged `EPIC_SYNC` on ones
+     * it has, and never removes anything or overwrites cached metadata or local state (Status/userRating/
+     * Wishlist). Entries dedup by `igdbId` and by every Epic uid in `external_game`; a Matched entry
+     * landing on an `igdbId`-null Game from an earlier sync upgrades its metadata in place (the
+     * re-match rule: IGDB-sourced fields only, local state untouched).
+     */
+    suspend fun syncEpicGames(entries: List<EpicSyncEntry>): EpicSyncSummary {
+        var added = 0
+        var updated = 0
+        entries.forEach { entry ->
+            val existing = when (entry) {
+                is EpicSyncEntry.Matched -> gameDao.getGameByIgdbId(entry.igdb.igdbId)
+                    ?: entry.epicUids.firstNotNullOfOrNull { gameDao.getGameByExternalUid(EPIC_EXTERNAL_CATEGORY, it) }
+                is EpicSyncEntry.Unmatched ->
+                    entry.epicUids.firstNotNullOfOrNull { gameDao.getGameByExternalUid(EPIC_EXTERNAL_CATEGORY, it) }
+            }
+            if (existing != null) {
+                ensureEpicOwnership(existing)
+                if (entry is EpicSyncEntry.Matched && existing.igdbId == null) {
+                    val current = gameDao.getGame(existing.id) ?: return@forEach
+                    gameDao.replaceMetadata(
+                        current.withMetadataFrom(entry.igdb),
+                        epicExternals(entry.igdb, entry.epicUids),
+                    )
+                }
+                updated++
+                return@forEach
+            }
+            when (entry) {
+                is EpicSyncEntry.Matched -> insertStampedMatchedGame(
+                    game = entry.igdb.toGame(wishlist = false, status = Status.BACKLOG),
+                    stores = setOf(Store.EPIC),
+                    externals = epicExternals(entry.igdb, entry.epicUids),
+                    source = Source.EPIC_SYNC,
+                )
+                is EpicSyncEntry.Unmatched -> insertStampedMatchedGame(
+                    game = Game(name = entry.name, igdbId = null, wishlist = false, status = Status.BACKLOG),
+                    stores = setOf(Store.EPIC),
+                    externals = entry.epicUids.map { ExternalGame(gameId = 0, category = EPIC_EXTERNAL_CATEGORY, uid = it) },
+                    source = Source.EPIC_SYNC,
+                )
+            }
+            added++
+        }
+        return EpicSyncSummary(added = added, updated = updated)
+    }
+
+    /**
+     * The IGDB external references plus an Epic reference for every [epicUids] entry IGDB didn't already
+     * carry — so re-syncs can dedup (and skip offer resolution) by catalogItemId as well as offerId.
+     */
+    private fun epicExternals(igdb: IgdbGame, epicUids: List<String>): List<ExternalGame> {
+        val fromIgdb = igdb.externalGames.map { it.toEntity() }
+        val known = fromIgdb.filter { it.category == EPIC_EXTERNAL_CATEGORY }.map { it.uid }.toSet()
+        return fromIgdb + epicUids.filter { it !in known }
+            .map { ExternalGame(gameId = 0, category = EPIC_EXTERNAL_CATEGORY, uid = it) }
+    }
+
+    /**
+     * Which of these Epic [uids] already belong to an IGDB-matched Game — their namespaces need no
+     * offer resolution on a re-sync. Chunked to respect SQLite's bound-parameter limit.
+     */
+    suspend fun epicUidsAlreadyMatched(uids: List<String>): Set<String> =
+        uids.distinct().chunked(UID_QUERY_CHUNK)
+            .flatMap { gameDao.externalUidsWithIgdbMatch(EPIC_EXTERNAL_CATEGORY, it) }
+            .toSet()
+
+    /**
+     * Guarantees an Epic Ownership tagged `EPIC_SYNC` on an existing Game, clearing Wishlist if set. A
+     * pre-existing (Game, Epic) Ownership is left in place by the IGNORE insert, then re-tagged `EPIC_SYNC`
+     * — Epic is the authority on Epic ownership. Never touches Status/userRating.
+     */
+    private suspend fun ensureEpicOwnership(game: Game) {
+        if (game.wishlist) {
+            gameDao.updateGame(game.copy(wishlist = false, status = game.status ?: Status.BACKLOG))
+        }
+        gameDao.insertOwnership(Ownership(gameId = game.id, store = Store.EPIC, source = Source.EPIC_SYNC))
+        gameDao.setOwnershipSource(game.id, Store.EPIC, Source.EPIC_SYNC)
     }
 
     /**

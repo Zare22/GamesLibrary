@@ -85,6 +85,21 @@ class IgdbClient internal constructor(
     }
 
     /**
+     * Resolves Epic offer [ids] to IGDB Games via their `external_games` entry (category 26 = Epic
+     * Games Store, whose `uid` is the store offerId), folding the full metadata set into the same
+     * query. Chunked like [matchBySteamAppids]; ids with no IGDB entry simply don't appear in the result.
+     */
+    suspend fun matchByEpicOfferIds(ids: List<String>): List<IgdbGame> {
+        if (ids.isEmpty()) return emptyList()
+        return ids.distinct().chunked(EPIC_MATCH_CHUNK).flatMap { chunk ->
+            val uids = chunk.joinToString(",") { "\"${escape(it)}\"" }
+            val body = "fields $FULL_FIELDS; " +
+                "where external_games.external_game_source = $EPIC_EXTERNAL_CATEGORY & external_games.uid = ($uids); limit 500;"
+            IgdbJson.decodeFromString<List<GameDto>>(post("games", body)).map { it.toIgdbGame() }
+        }
+    }
+
+    /**
      * POSTs an APICalypse query, refreshing the token once on a 401. Transient failures — request
      * timeouts and 429/5xx responses — are retried with a short backoff; other failures fail fast.
      */
@@ -159,6 +174,12 @@ private const val PSN_EXTERNAL_CATEGORY = 36
 
 /** PSN concept ids per `matchByPsnConceptIds` query — same budget as the Steam chunk. */
 private const val PSN_MATCH_CHUNK = 100
+
+/** IGDB's external_game_source id for the Epic Games Store (26); its `uid` is the store offerId. */
+private const val EPIC_EXTERNAL_CATEGORY = 26
+
+/** Epic offer ids per `matchByEpicOfferIds` query — same budget as the Steam chunk. */
+private const val EPIC_MATCH_CHUNK = 100
 
 private const val FULL_FIELDS =
     "name,slug,first_release_date,cover.image_id," +
