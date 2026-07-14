@@ -8,7 +8,10 @@ import androidx.lifecycle.viewModelScope
 import hr.kotwave.gameslibrary.data.GameRepository
 import hr.kotwave.gameslibrary.data.PsnSyncEntry
 import hr.kotwave.gameslibrary.data.PsnSyncSummary
+import hr.kotwave.gameslibrary.data.Store
+import hr.kotwave.gameslibrary.data.SyncTailRow
 import hr.kotwave.gameslibrary.igdb.IgdbClient
+import hr.kotwave.gameslibrary.importer.SyncReviewResult
 import hr.kotwave.gameslibrary.secure.PSN_TOKEN_KEY
 import hr.kotwave.gameslibrary.secure.SecureStorage
 import kotlinx.coroutines.CancellationException
@@ -65,6 +68,10 @@ class PsnViewModel(
     var lastSummary by mutableStateOf<PsnSyncSummary?>(null)
         private set
 
+    /** The last sync's needs-review tail: id-unmatched rows the Review picker can settle. */
+    var reviewTail by mutableStateOf<List<SyncTailRow>>(emptyList())
+        private set
+
     /** What the last sync failed on, or null if it succeeded or hasn't run. */
     var syncFailure by mutableStateOf<PsnSyncFailure?>(null)
         private set
@@ -113,9 +120,19 @@ class PsnViewModel(
             token = null
             ownedCount = null
             lastSummary = null
+            reviewTail = emptyList()
             syncFailure = null
             connectState = PsnConnectState.Idle
         }
+    }
+
+    /** Folds a confirmed Review's merge counts into the last summary and drops its settled rows from the tail. */
+    fun absorbReview(result: SyncReviewResult) {
+        lastSummary = PsnSyncSummary(
+            added = (lastSummary?.added ?: 0) + result.added,
+            updated = (lastSummary?.updated ?: 0) + result.updated,
+        )
+        reviewTail = reviewTail.filterNot { row -> row.uids.any { it in result.handledUids } }
     }
 
     /**
@@ -128,6 +145,7 @@ class PsnViewModel(
         val current = token ?: return
         syncing = true
         syncFailure = null
+        reviewTail = emptyList()
         viewModelScope.launch {
             var stage = PsnSyncFailure.TokenRefresh
             try {
@@ -157,15 +175,20 @@ class PsnViewModel(
                         .filter { it.category == PSN_EXTERNAL_CATEGORY }.map { it.uid }.toSet()
                     library.filter { it.conceptId in uids }
                 }
+                stage = PsnSyncFailure.Merge
+                val split = repository.splitSyncTail(
+                    Store.PSN,
+                    library.filter { it.conceptId !in matchedIds }
+                        .map { SyncTailRow(name = it.name, uids = listOfNotNull(it.titleId, it.conceptId)) },
+                )
                 val entries = buildList {
                     rowsByGame.forEach { (game, rows) ->
                         add(PsnSyncEntry.Matched(game, rows.flatMap { listOfNotNull(it.titleId, it.conceptId) }.distinct()))
                     }
-                    library.filter { it.conceptId !in matchedIds }
-                        .forEach { add(PsnSyncEntry.Unmatched(listOfNotNull(it.titleId, it.conceptId), it.name)) }
+                    split.known.forEach { add(PsnSyncEntry.Unmatched(psnUids = it.uids, name = it.name)) }
                 }
-                stage = PsnSyncFailure.Merge
                 lastSummary = repository.syncPsnGames(entries)
+                reviewTail = split.needsReview
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {

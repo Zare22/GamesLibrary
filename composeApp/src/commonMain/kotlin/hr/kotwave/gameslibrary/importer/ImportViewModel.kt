@@ -9,6 +9,8 @@ import hr.kotwave.gameslibrary.data.GameRepository
 import hr.kotwave.gameslibrary.data.ImportEntry
 import hr.kotwave.gameslibrary.data.ImportSummary
 import hr.kotwave.gameslibrary.data.Store
+import hr.kotwave.gameslibrary.data.SyncReviewPick
+import hr.kotwave.gameslibrary.data.SyncTailRow
 import hr.kotwave.gameslibrary.igdb.IgdbClient
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -27,6 +29,15 @@ sealed interface ImportPhase {
     data class Done(val summary: ImportSummary) : ImportPhase
 }
 
+/** What a confirmed Review merges into: the paste Import, or a store sync's unmatched tail. */
+sealed interface ImportTarget {
+    data object Paste : ImportTarget
+    data class SyncTail(val store: Store) : ImportTarget
+}
+
+/** A confirmed sync-tail Review's merge counts plus the uids it settled (added, attached, or dismissed). */
+data class SyncReviewResult(val added: Int, val updated: Int, val handledUids: Set<String>)
+
 /**
  * Drives the paste Import funnel: Intake (paste + Store) → Matching (name-search each line against
  * IGDB, classify) → Review (every Candidate, confident ones pre-checked) → Confirm. The VM does the
@@ -38,6 +49,13 @@ class ImportViewModel(
 ) : ViewModel() {
 
     var phase by mutableStateOf<ImportPhase>(ImportPhase.Intake)
+        private set
+
+    var target by mutableStateOf<ImportTarget>(ImportTarget.Paste)
+        private set
+
+    /** The last confirmed sync-tail Review's outcome, for the hosting store screen to absorb. */
+    var syncOutcome by mutableStateOf<SyncReviewResult?>(null)
         private set
 
     var pasteText by mutableStateOf("")
@@ -72,6 +90,8 @@ class ImportViewModel(
 
     val checkedCount: Int get() = candidates.count { it.checked }
 
+    val dismissedCount: Int get() = candidates.count { it.dismissed }
+
     fun updateText(value: String) {
         pasteText = value
     }
@@ -98,6 +118,7 @@ class ImportViewModel(
      */
     fun parse() {
         val selected = store ?: return
+        target = ImportTarget.Paste
         val lines = parserFor(selected).parse(pasteText)
         runMatching(lines)
     }
@@ -108,14 +129,26 @@ class ImportViewModel(
      */
     fun startFromTitles(selected: Store, titles: List<String>) {
         store = selected
+        target = ImportTarget.Paste
         runMatching(titles.map { ParsedLine(title = it, raw = it) })
     }
 
     /**
-     * Name-searches each [lines] title against IGDB and classifies it, advancing to Review. Throttled
-     * and cancelable; an IGDB failure returns to Intake flagged. A no-op on empty input.
+     * Sync-tail intake: matches a sync's needs-review [rows] for [selected] through the same funnel,
+     * carrying each row's store uids so Confirm can merge through the store's sync (`*_SYNC`).
      */
-    private fun runMatching(lines: List<ParsedLine>) {
+    fun startFromSyncTail(selected: Store, rows: List<SyncTailRow>) {
+        store = selected
+        target = ImportTarget.SyncTail(selected)
+        runMatching(rows.map { ParsedLine(title = it.name, raw = it.name) }, rows.map { it.uids })
+    }
+
+    /**
+     * Name-searches each [lines] title against IGDB and classifies it, advancing to Review. Throttled
+     * and cancelable; an IGDB failure returns to Intake flagged. A no-op on empty input. [uidsPerLine]
+     * is index-aligned with [lines] on a sync-tail run; empty for a paste.
+     */
+    private fun runMatching(lines: List<ParsedLine>, uidsPerLine: List<List<String>> = emptyList()) {
         if (lines.isEmpty()) return
         matchJob?.cancel()
         failed = false
@@ -130,14 +163,14 @@ class ImportViewModel(
                     val classification = classifyMatch(line.title, igdbClient.searchGames(line.title))
                     val alreadyInLibrary = classification is MatchClassification.Unmatched &&
                         repository.similarTitles(line.title).isNotEmpty()
-                    built += ImportCandidate(line.raw, classification, alreadyInLibrary)
+                    built += ImportCandidate(line.raw, classification, alreadyInLibrary, uidsPerLine.getOrElse(index) { emptyList() })
                     matchProgress = index + 1
                 }
                 candidates = built
                 phase = ImportPhase.Review
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 failed = true
                 phase = ImportPhase.Intake
             }
@@ -146,10 +179,19 @@ class ImportViewModel(
 
     /**
      * Confirms the checked Candidates: hydrates each matched/picked line to its full IGDB metadata
-     * ([IgdbClient.fetchGame]) and hands them, plus the unmatched ones, to [GameRepository.confirmImport].
-     * Additive only. An IGDB failure leaves Review intact so the user can retry.
+     * ([IgdbClient.fetchGame]) and hands them, plus the unmatched ones, to the [target]'s merge —
+     * [GameRepository.confirmImport] for a paste, [GameRepository.confirmSyncReview] (with the
+     * dismissed rows) for a sync tail. Additive only. An IGDB failure leaves Review intact so the
+     * user can retry.
      */
     fun confirm() {
+        when (val current = target) {
+            ImportTarget.Paste -> confirmPaste()
+            is ImportTarget.SyncTail -> confirmSyncTail(current.store)
+        }
+    }
+
+    private fun confirmPaste() {
         if (importing) return
         val selected = store ?: return
         val checked = candidates.filter { it.checked }
@@ -173,12 +215,55 @@ class ImportViewModel(
                 phase = ImportPhase.Done(repository.confirmImport(entries))
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 failed = true
             } finally {
                 importing = false
             }
         }
+    }
+
+    private fun confirmSyncTail(selected: Store) {
+        if (importing) return
+        val checked = candidates.filter { it.checked }
+        val dismissed = candidates.filter { it.dismissed }
+        if (checked.isEmpty() && dismissed.isEmpty()) return
+        confirmJob?.cancel()
+        failed = false
+        importing = true
+        confirmJob = viewModelScope.launch {
+            try {
+                val picks = ArrayList<SyncReviewPick>(checked.size)
+                val bare = ArrayList<SyncTailRow>()
+                checked.forEachIndexed { index, candidate ->
+                    val result = candidate.resolved
+                    if (result != null) {
+                        if (index > 0) delay(IGDB_THROTTLE)
+                        val full = igdbClient.fetchGame(result.igdbId) ?: return@forEachIndexed
+                        picks += SyncReviewPick(full, candidate.uids)
+                    } else {
+                        bare += SyncTailRow(candidate.rawTitle, candidate.uids)
+                    }
+                }
+                val dismissedRows = dismissed.map { SyncTailRow(it.rawTitle, it.uids) }
+                val outcome = repository.confirmSyncReview(selected, picks, bare, dismissedRows)
+                val handled = (picks.flatMap { it.uids } + bare.flatMap { it.uids } + dismissedRows.flatMap { it.uids }).toSet()
+                syncOutcome = SyncReviewResult(outcome.added, outcome.updated, handled)
+                candidates = emptyList()
+                phase = ImportPhase.Intake
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                failed = true
+            } finally {
+                importing = false
+            }
+        }
+    }
+
+    /** Marks the last sync-tail outcome absorbed by the hosting store screen. */
+    fun consumeSyncOutcome() {
+        syncOutcome = null
     }
 
     /** Returns from Matching/Review to Intake (cancelling any in-flight matching), keeping the paste. */
@@ -195,6 +280,7 @@ class ImportViewModel(
         confirmJob?.cancel()
         pasteText = ""
         store = null
+        target = ImportTarget.Paste
         candidates = emptyList()
         matchProgress = 0
         matchTotal = 0

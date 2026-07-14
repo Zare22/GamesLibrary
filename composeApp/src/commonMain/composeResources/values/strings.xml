@@ -171,6 +171,10 @@
     <string name="sync_stat_added">ADDED</string>
     <string name="sync_stat_already">ALREADY HAD</string>
     <string name="sync_stat_synced">SYNCED</string>
+    <string name="sync_stat_review">NEEDS REVIEW</string>
+    <string name="sync_review_confirm">Apply review</string>
+    <string name="sync_review_dismiss">Don't ask again</string>
+    <string name="sync_review_dismissed">Won't be offered again</string>
 
     <!-- ==== Steam ==== -->
     <string name="steam_hero_connected_title">Connected to Steam</string>
@@ -191,7 +195,7 @@
     <string name="steam_privacy_subtitle">Steam only shares games when these match</string>
     <string name="steam_privacy_step1">Open Steam → Profile → Edit Profile → Privacy Settings.</string>
     <string name="steam_privacy_step2">Set Game details to Public — not Friends Only.</string>
-    <string name="steam_privacy_step3">Leave \"Always keep my total playtime private\" unchecked.</string>
+    <string name="steam_privacy_step3">Leave "Always keep my total playtime private" unchecked.</string>
     <string name="steam_privacy_zero">Steam returned 0 games — your Game details are likely private.</string>
     <string name="steam_privacy_open">Open Steam privacy settings</string>
 

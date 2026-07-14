@@ -21,6 +21,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -32,9 +33,15 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import hr.kotwave.gameslibrary.data.Store
+import hr.kotwave.gameslibrary.importer.ImportPhase
+import hr.kotwave.gameslibrary.importer.ImportViewModel
+import hr.kotwave.gameslibrary.importer.MatchingPhase
+import hr.kotwave.gameslibrary.importer.ReviewPhase
 import hr.kotwave.gameslibrary.resources.Res
 import hr.kotwave.gameslibrary.resources.cd_back
 import hr.kotwave.gameslibrary.resources.common_cancel
+import hr.kotwave.gameslibrary.resources.error_igdb_unreachable
 import hr.kotwave.gameslibrary.resources.steam_connect_note
 import hr.kotwave.gameslibrary.resources.steam_connecting
 import hr.kotwave.gameslibrary.resources.steam_fail_network
@@ -64,6 +71,7 @@ import hr.kotwave.gameslibrary.resources.store_sync_prompt
 import hr.kotwave.gameslibrary.resources.store_syncing
 import hr.kotwave.gameslibrary.resources.sync_stat_added
 import hr.kotwave.gameslibrary.resources.sync_stat_already
+import hr.kotwave.gameslibrary.resources.sync_stat_review
 import hr.kotwave.gameslibrary.resources.sync_stat_synced
 import hr.kotwave.gameslibrary.ui.components.GlassSurface
 import hr.kotwave.gameslibrary.ui.components.PrimaryButton
@@ -79,15 +87,35 @@ private val SteamError = Color(0xFFF4707A)
 private const val STEAM_PRIVACY_URL = "https://steamcommunity.com/my/edit/settings"
 
 /**
- * The Steam screen: sign in through Steam (OpenID), then additively sync the owned library. A private
- * profile returns zero games — the privacy helper explains how to fix it.
+ * The Steam screen: sign in through Steam (OpenID), then additively sync the owned library. The
+ * sync's id-unmatched tail goes through the Import funnel's Matching → Review legs in place (its own
+ * [ImportViewModel], the Battle.net pattern). A private profile returns zero games — the privacy
+ * helper explains how to fix it.
  */
 @Composable
 fun SteamScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SteamViewModel = koinViewModel(),
+    importViewModel: ImportViewModel = koinViewModel(),
 ) {
+    importViewModel.syncOutcome?.let { outcome ->
+        LaunchedEffect(outcome) {
+            viewModel.absorbReview(outcome)
+            importViewModel.consumeSyncOutcome()
+        }
+    }
+    when (importViewModel.phase) {
+        ImportPhase.Matching -> {
+            MatchingPhase(importViewModel, modifier)
+            return
+        }
+        ImportPhase.Review -> {
+            ReviewPhase(importViewModel, modifier)
+            return
+        }
+        else -> Unit
+    }
     val tokens = AppTheme.tokens
     val steam = tokens.store.steam
     Column(
@@ -102,7 +130,12 @@ fun SteamScreen(
 
         Spacer(Modifier.height(tokens.spacing.md))
         if (viewModel.connected) {
-            ConnectedCard(viewModel = viewModel, steam = steam)
+            ConnectedCard(
+                viewModel = viewModel,
+                steam = steam,
+                reviewFailed = importViewModel.failed,
+                onReview = { importViewModel.startFromSyncTail(Store.STEAM, viewModel.reviewTail) },
+            )
         } else {
             ConnectSection(viewModel = viewModel, steam = steam)
         }
@@ -242,7 +275,7 @@ internal fun SteamSyncStage.message(): String = when (this) {
 }
 
 @Composable
-private fun ConnectedCard(viewModel: SteamViewModel, steam: Color) {
+private fun ConnectedCard(viewModel: SteamViewModel, steam: Color, reviewFailed: Boolean, onReview: () -> Unit) {
     val tokens = AppTheme.tokens
     val ok = tokens.status.playing
     val avatarShape = RoundedCornerShape(tokens.radii.tile)
@@ -305,6 +338,9 @@ private fun ConnectedCard(viewModel: SteamViewModel, steam: Color) {
                     SyncStat(summary.added.toString(), stringResource(Res.string.sync_stat_added), tokens.status.playing)
                     SyncStat(summary.updated.toString(), stringResource(Res.string.sync_stat_already), tokens.colors.text)
                     SyncStat(summary.total.toString(), stringResource(Res.string.sync_stat_synced), tokens.colors.text)
+                    if (viewModel.reviewTail.isNotEmpty()) {
+                        ReviewStat(viewModel.reviewTail.size, enabled = !viewModel.syncing, onClick = onReview)
+                    }
                 }
             }
 
@@ -312,6 +348,15 @@ private fun ConnectedCard(viewModel: SteamViewModel, steam: Color) {
                 Spacer(Modifier.height(tokens.spacing.sm))
                 Text(
                     stage.message(),
+                    style = AppTheme.type.caption,
+                    color = SteamError,
+                )
+            }
+
+            if (reviewFailed) {
+                Spacer(Modifier.height(tokens.spacing.sm))
+                Text(
+                    stringResource(Res.string.error_igdb_unreachable),
                     style = AppTheme.type.caption,
                     color = SteamError,
                 )
@@ -355,6 +400,22 @@ private fun SyncStat(value: String, label: String, color: Color) {
     Column {
         Text(value, style = AppTheme.type.numeric.copy(fontSize = 18.sp), color = color)
         Text(label, style = AppTheme.type.caption.copy(fontSize = 10.sp), color = AppTheme.tokens.colors.faint)
+    }
+}
+
+@Composable
+private fun ReviewStat(count: Int, enabled: Boolean, onClick: () -> Unit) {
+    val tokens = AppTheme.tokens
+    Column(
+        Modifier.clip(RoundedCornerShape(tokens.radii.sm))
+            .clickable(enabled = enabled, onClick = onClick)
+            .padding(horizontal = tokens.spacing.micro),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(tokens.spacing.micro)) {
+            Text("$count", style = AppTheme.type.numeric.copy(fontSize = 18.sp), color = SteamWarn)
+            Icon(AppIcons.ChevronRight, null, Modifier.size(14.dp), tint = SteamWarn)
+        }
+        Text(stringResource(Res.string.sync_stat_review), style = AppTheme.type.caption.copy(fontSize = 10.sp), color = AppTheme.tokens.colors.faint)
     }
 }
 

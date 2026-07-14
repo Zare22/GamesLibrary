@@ -8,7 +8,10 @@ import androidx.lifecycle.viewModelScope
 import hr.kotwave.gameslibrary.data.GameRepository
 import hr.kotwave.gameslibrary.data.GogSyncEntry
 import hr.kotwave.gameslibrary.data.GogSyncSummary
+import hr.kotwave.gameslibrary.data.Store
+import hr.kotwave.gameslibrary.data.SyncTailRow
 import hr.kotwave.gameslibrary.igdb.IgdbClient
+import hr.kotwave.gameslibrary.importer.SyncReviewResult
 import hr.kotwave.gameslibrary.secure.GOG_TOKEN_KEY
 import hr.kotwave.gameslibrary.secure.SecureStorage
 import kotlinx.coroutines.CancellationException
@@ -61,6 +64,10 @@ class GogViewModel(
     var lastSummary by mutableStateOf<GogSyncSummary?>(null)
         private set
 
+    /** The last sync's needs-review tail: id-unmatched rows the Review picker can settle. */
+    var reviewTail by mutableStateOf<List<SyncTailRow>>(emptyList())
+        private set
+
     /** Which stage of the last sync failed, or null if it succeeded or hasn't run. */
     var syncFailure by mutableStateOf<GogSyncStage?>(null)
         private set
@@ -107,9 +114,19 @@ class GogViewModel(
             token = null
             ownedCount = null
             lastSummary = null
+            reviewTail = emptyList()
             syncFailure = null
             connectState = GogConnectState.Idle
         }
+    }
+
+    /** Folds a confirmed Review's merge counts into the last summary and drops its settled rows from the tail. */
+    fun absorbReview(result: SyncReviewResult) {
+        lastSummary = GogSyncSummary(
+            added = (lastSummary?.added ?: 0) + result.added,
+            updated = (lastSummary?.updated ?: 0) + result.updated,
+        )
+        reviewTail = reviewTail.filterNot { row -> row.uids.any { it in result.handledUids } }
     }
 
     /**
@@ -121,6 +138,7 @@ class GogViewModel(
         val current = token ?: return
         syncing = true
         syncFailure = null
+        reviewTail = emptyList()
         viewModelScope.launch {
             var stage = GogSyncStage.TokenRefresh
             try {
@@ -137,13 +155,18 @@ class GogViewModel(
                 val matchedIds = matched
                     .flatMap { game -> game.externalGames.filter { it.category == GOG_EXTERNAL_CATEGORY }.map { it.uid } }
                     .toSet()
+                stage = GogSyncStage.Merge
+                val split = repository.splitSyncTail(
+                    Store.GOG,
+                    owned.filter { it.id.toString() !in matchedIds }
+                        .map { SyncTailRow(name = it.title, uids = listOf(it.id.toString())) },
+                )
                 val entries = buildList {
                     matched.forEach { add(GogSyncEntry.Matched(it)) }
-                    owned.filter { it.id.toString() !in matchedIds }
-                        .forEach { add(GogSyncEntry.Unmatched(it.id.toString(), it.title)) }
+                    split.known.forEach { add(GogSyncEntry.Unmatched(gogId = it.uids.first(), name = it.name)) }
                 }
-                stage = GogSyncStage.Merge
                 lastSummary = repository.syncGogGames(entries)
+                reviewTail = split.needsReview
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {

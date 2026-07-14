@@ -58,6 +58,22 @@ interface GameDao {
     )
     suspend fun externalUidsWithIgdbMatch(category: Int, uids: List<String>): List<String>
 
+    /** Of these external uids, the ones attached to any Game (matched or bare) — the needs-review filter. */
+    @Query("SELECT uid FROM external_game WHERE category = :category AND uid IN (:uids)")
+    suspend fun knownExternalUids(category: Int, uids: List<String>): List<String>
+
+    /** One Game's external uids for a category, for the additive uid backfill on a sync Review pick. */
+    @Query("SELECT uid FROM external_game WHERE gameId = :gameId AND category = :category")
+    suspend fun externalUidsFor(gameId: Long, category: Int): List<String>
+
+    /** Of these external uids, the ones the user dismissed from the sync Review. */
+    @Query("SELECT uid FROM sync_dismissal WHERE category = :category AND uid IN (:uids)")
+    suspend fun dismissedSyncUids(category: Int, uids: List<String>): List<String>
+
+    /** Ignores an already-dismissed (category, uid): dismissal is idempotent. */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertSyncDismissals(dismissals: List<SyncDismissal>)
+
     /** Case-insensitive title equality, for the soft "similar title exists" warning. */
     @Query("SELECT * FROM game WHERE name = :name COLLATE NOCASE")
     suspend fun gamesByTitle(name: String): List<Game>
@@ -105,12 +121,16 @@ interface GameDao {
     @Query("DELETE FROM game")
     suspend fun deleteAllGames()
 
+    @Query("DELETE FROM sync_dismissal")
+    suspend fun deleteAllSyncDismissals()
+
     /** Empties every table (child → parent) in one transaction — the local-data wipe. */
     @Transaction
     suspend fun clearAll() {
         deleteAllExternalGames()
         deleteAllOwnerships()
         deleteAllGames()
+        deleteAllSyncDismissals()
     }
 
     /** Overwrites a Game's row and replaces its external references in one transaction (refresh/re-match). */

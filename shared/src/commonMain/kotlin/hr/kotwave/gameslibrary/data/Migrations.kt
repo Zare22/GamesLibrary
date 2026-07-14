@@ -80,3 +80,18 @@ val MIGRATION_4_5 = object : Migration(4, 5) {
         connection.execSQL("ALTER TABLE `game` ADD COLUMN `addedAt` INTEGER")
     }
 }
+
+/**
+ * v5 -> v6: adds the sync_dismissal table — store uids dismissed from the sync Review, keyed by the
+ * IGDB external-game (category, uid) pair.
+ */
+val MIGRATION_5_6 = object : Migration(5, 6) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL(
+            "CREATE TABLE IF NOT EXISTS `sync_dismissal` (" +
+                "`category` INTEGER NOT NULL, " +
+                "`uid` TEXT NOT NULL, " +
+                "PRIMARY KEY(`category`, `uid`))",
+        )
+    }
+}

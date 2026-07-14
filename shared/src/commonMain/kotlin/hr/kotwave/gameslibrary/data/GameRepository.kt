@@ -172,9 +172,9 @@ class GameRepository(
     /**
      * Additively syncs the Steam library from already-resolved [entries] (the ViewModel does the
      * Steam + IGDB networking). Adds Games it hasn't seen, ensures a Steam Ownership tagged
-     * `STEAM_SYNC` on ones it has, and never removes anything or overwrites cached metadata or local
-     * state (Status/userRating/Wishlist). Matched entries dedup by `igdbId`;
-     * unmatched ones by their Steam appid in `external_game`.
+     * `STEAM_SYNC` on ones it has (recording the entry's appids as external references), and never
+     * removes anything or overwrites cached metadata or local state (Status/userRating/Wishlist).
+     * Matched entries dedup by `igdbId`; unmatched ones by their Steam appid in `external_game`.
      */
     suspend fun syncSteamGames(entries: List<SteamSyncEntry>): SteamSyncSummary {
         var added = 0
@@ -186,6 +186,11 @@ class GameRepository(
             }
             if (existing != null) {
                 ensureSteamOwnership(existing)
+                val uids = when (entry) {
+                    is SteamSyncEntry.Matched -> entry.appids
+                    is SteamSyncEntry.Unmatched -> listOf(entry.appid)
+                }
+                ensureExternalUids(existing.id, STEAM_EXTERNAL_CATEGORY, uids)
                 updated++
                 return@forEach
             }
@@ -193,7 +198,7 @@ class GameRepository(
                 is SteamSyncEntry.Matched -> insertStampedMatchedGame(
                     game = entry.igdb.toGame(wishlist = false, status = Status.BACKLOG),
                     stores = setOf(Store.STEAM),
-                    externals = entry.igdb.externalGames.map { it.toEntity() },
+                    externals = externalsWithStoreUids(entry.igdb, STEAM_EXTERNAL_CATEGORY, entry.appids),
                     source = Source.STEAM_SYNC,
                 )
                 is SteamSyncEntry.Unmatched -> insertStampedMatchedGame(
@@ -224,9 +229,9 @@ class GameRepository(
     /**
      * Additively syncs the GOG library from already-resolved [entries] (the ViewModel does the GOG +
      * IGDB networking). Adds Games it hasn't seen, ensures a GOG Ownership tagged `GOG_SYNC` on ones it
-     * has, and never removes anything or overwrites cached metadata or local state (Status/userRating/
-     * Wishlist). Matched entries dedup by `igdbId`; unmatched ones by their GOG id in
-     * `external_game`.
+     * has (recording the entry's product ids as external references), and never removes anything or
+     * overwrites cached metadata or local state (Status/userRating/Wishlist). Matched entries dedup by
+     * `igdbId`; unmatched ones by their GOG id in `external_game`.
      */
     suspend fun syncGogGames(entries: List<GogSyncEntry>): GogSyncSummary {
         var added = 0
@@ -238,6 +243,11 @@ class GameRepository(
             }
             if (existing != null) {
                 ensureGogOwnership(existing)
+                val uids = when (entry) {
+                    is GogSyncEntry.Matched -> entry.gogIds
+                    is GogSyncEntry.Unmatched -> listOf(entry.gogId)
+                }
+                ensureExternalUids(existing.id, GOG_EXTERNAL_CATEGORY, uids)
                 updated++
                 return@forEach
             }
@@ -245,7 +255,7 @@ class GameRepository(
                 is GogSyncEntry.Matched -> insertStampedMatchedGame(
                     game = entry.igdb.toGame(wishlist = false, status = Status.BACKLOG),
                     stores = setOf(Store.GOG),
-                    externals = entry.igdb.externalGames.map { it.toEntity() },
+                    externals = externalsWithStoreUids(entry.igdb, GOG_EXTERNAL_CATEGORY, entry.gogIds),
                     source = Source.GOG_SYNC,
                 )
                 is GogSyncEntry.Unmatched -> insertStampedMatchedGame(
@@ -297,8 +307,10 @@ class GameRepository(
                     val current = gameDao.getGame(existing.id) ?: return@forEach
                     gameDao.replaceMetadata(
                         current.withMetadataFrom(entry.igdb),
-                        psnExternals(entry.igdb, entry.psnUids),
+                        externalsWithStoreUids(entry.igdb, PSN_EXTERNAL_CATEGORY, entry.psnUids),
                     )
+                } else {
+                    ensureExternalUids(existing.id, PSN_EXTERNAL_CATEGORY, entry.psnUids)
                 }
                 updated++
                 return@forEach
@@ -307,7 +319,7 @@ class GameRepository(
                 is PsnSyncEntry.Matched -> insertStampedMatchedGame(
                     game = entry.igdb.toGame(wishlist = false, status = Status.BACKLOG),
                     stores = setOf(Store.PSN),
-                    externals = psnExternals(entry.igdb, entry.psnUids),
+                    externals = externalsWithStoreUids(entry.igdb, PSN_EXTERNAL_CATEGORY, entry.psnUids),
                     source = Source.PSN_SYNC,
                 )
                 is PsnSyncEntry.Unmatched -> insertStampedMatchedGame(
@@ -320,17 +332,6 @@ class GameRepository(
             added++
         }
         return PsnSyncSummary(added = added, updated = updated)
-    }
-
-    /**
-     * The IGDB external references plus a PSN reference for every [psnUids] entry IGDB didn't already
-     * carry — so re-syncs can dedup (and skip concept resolution) by titleId as well as conceptId.
-     */
-    private fun psnExternals(igdb: IgdbGame, psnUids: List<String>): List<ExternalGame> {
-        val fromIgdb = igdb.externalGames.map { it.toEntity() }
-        val known = fromIgdb.filter { it.category == PSN_EXTERNAL_CATEGORY }.map { it.uid }.toSet()
-        return fromIgdb + psnUids.filter { it !in known }
-            .map { ExternalGame(gameId = 0, category = PSN_EXTERNAL_CATEGORY, uid = it) }
     }
 
     /**
@@ -379,8 +380,10 @@ class GameRepository(
                     val current = gameDao.getGame(existing.id) ?: return@forEach
                     gameDao.replaceMetadata(
                         current.withMetadataFrom(entry.igdb),
-                        epicExternals(entry.igdb, entry.epicUids),
+                        externalsWithStoreUids(entry.igdb, EPIC_EXTERNAL_CATEGORY, entry.epicUids),
                     )
+                } else {
+                    ensureExternalUids(existing.id, EPIC_EXTERNAL_CATEGORY, entry.epicUids)
                 }
                 updated++
                 return@forEach
@@ -389,7 +392,7 @@ class GameRepository(
                 is EpicSyncEntry.Matched -> insertStampedMatchedGame(
                     game = entry.igdb.toGame(wishlist = false, status = Status.BACKLOG),
                     stores = setOf(Store.EPIC),
-                    externals = epicExternals(entry.igdb, entry.epicUids),
+                    externals = externalsWithStoreUids(entry.igdb, EPIC_EXTERNAL_CATEGORY, entry.epicUids),
                     source = Source.EPIC_SYNC,
                 )
                 is EpicSyncEntry.Unmatched -> insertStampedMatchedGame(
@@ -405,14 +408,25 @@ class GameRepository(
     }
 
     /**
-     * The IGDB external references plus an Epic reference for every [epicUids] entry IGDB didn't already
-     * carry — so re-syncs can dedup (and skip offer resolution) by catalogItemId as well as offerId.
+     * The IGDB external references plus a [category] reference for every [uids] entry IGDB didn't
+     * already carry — so re-syncs can dedup (and skip resolution legs) by every store uid behind the
+     * entry, even ones IGDB doesn't know.
      */
-    private fun epicExternals(igdb: IgdbGame, epicUids: List<String>): List<ExternalGame> {
+    private fun externalsWithStoreUids(igdb: IgdbGame, category: Int, uids: List<String>): List<ExternalGame> {
         val fromIgdb = igdb.externalGames.map { it.toEntity() }
-        val known = fromIgdb.filter { it.category == EPIC_EXTERNAL_CATEGORY }.map { it.uid }.toSet()
-        return fromIgdb + epicUids.filter { it !in known }
-            .map { ExternalGame(gameId = 0, category = EPIC_EXTERNAL_CATEGORY, uid = it) }
+        val known = fromIgdb.filter { it.category == category }.map { it.uid }.toSet()
+        return fromIgdb + uids.filter { it !in known }
+            .map { ExternalGame(gameId = 0, category = category, uid = it) }
+    }
+
+    /** Adds the [uids] a Game doesn't hold yet as [category] external references. Additive only. */
+    private suspend fun ensureExternalUids(gameId: Long, category: Int, uids: List<String>) {
+        if (uids.isEmpty()) return
+        val known = gameDao.externalUidsFor(gameId, category).toSet()
+        val missing = uids.distinct().filterNot { it in known }
+        if (missing.isNotEmpty()) {
+            gameDao.insertExternalGames(missing.map { ExternalGame(gameId = gameId, category = category, uid = it) })
+        }
     }
 
     /**
@@ -435,6 +449,76 @@ class GameRepository(
         }
         gameDao.insertOwnership(Ownership(gameId = game.id, store = Store.EPIC, source = Source.EPIC_SYNC))
         gameDao.setOwnershipSource(game.id, Store.EPIC, Source.EPIC_SYNC)
+    }
+
+    /**
+     * Partitions a sync's id-unmatched tail for the Review picker: rows with any uid already on a Game
+     * (matched or bare — the user gave a verdict once) are [SyncTailSplit.known] and only need their
+     * ownership ensured; rows with any uid dismissed from an earlier Review are dropped; the rest are
+     * [SyncTailSplit.needsReview]. Chunked to respect SQLite's bound-parameter limit.
+     */
+    suspend fun splitSyncTail(store: Store, rows: List<SyncTailRow>): SyncTailSplit {
+        val category = syncCategoryFor(store)
+        val uids = rows.flatMap { it.uids }.distinct()
+        val known = uids.chunked(UID_QUERY_CHUNK).flatMap { gameDao.knownExternalUids(category, it) }.toSet()
+        val dismissed = uids.chunked(UID_QUERY_CHUNK).flatMap { gameDao.dismissedSyncUids(category, it) }.toSet()
+        val knownRows = ArrayList<SyncTailRow>()
+        val needsReview = ArrayList<SyncTailRow>()
+        rows.forEach { row ->
+            when {
+                row.uids.any { it in known } -> knownRows += row
+                row.uids.any { it in dismissed } -> Unit
+                else -> needsReview += row
+            }
+        }
+        return SyncTailSplit(known = knownRows, needsReview = needsReview)
+    }
+
+    /**
+     * Applies a confirmed sync Review: records [dismissed] rows' uids in `sync_dismissal`, then merges
+     * the [picks] (user-chosen IGDB matches, carrying their store uids) and [bare] rows (added as
+     * `igdbId`-null Games) through the store's sync merge — same `*_SYNC` tagging, dedup, and
+     * uid recording as the sync itself.
+     */
+    suspend fun confirmSyncReview(
+        store: Store,
+        picks: List<SyncReviewPick>,
+        bare: List<SyncTailRow>,
+        dismissed: List<SyncTailRow>,
+    ): SyncReviewOutcome {
+        val category = syncCategoryFor(store)
+        dismissed.flatMap { it.uids }.distinct()
+            .takeIf { it.isNotEmpty() }
+            ?.let { uids -> gameDao.insertSyncDismissals(uids.map { SyncDismissal(category = category, uid = it) }) }
+        if (picks.isEmpty() && bare.isEmpty()) return SyncReviewOutcome(added = 0, updated = 0)
+        return when (store) {
+            Store.STEAM -> syncSteamGames(
+                picks.map { SteamSyncEntry.Matched(it.igdb, it.uids) } +
+                    bare.map { SteamSyncEntry.Unmatched(appid = it.uids.first(), name = it.name) },
+            ).let { SyncReviewOutcome(it.added, it.updated) }
+            Store.GOG -> syncGogGames(
+                picks.map { GogSyncEntry.Matched(it.igdb, it.uids) } +
+                    bare.map { GogSyncEntry.Unmatched(gogId = it.uids.first(), name = it.name) },
+            ).let { SyncReviewOutcome(it.added, it.updated) }
+            Store.PSN -> syncPsnGames(
+                picks.map { PsnSyncEntry.Matched(it.igdb, it.uids) } +
+                    bare.map { PsnSyncEntry.Unmatched(psnUids = it.uids, name = it.name) },
+            ).let { SyncReviewOutcome(it.added, it.updated) }
+            Store.EPIC -> syncEpicGames(
+                picks.map { EpicSyncEntry.Matched(it.igdb, it.uids) } +
+                    bare.map { EpicSyncEntry.Unmatched(epicUids = it.uids, name = it.name) },
+            ).let { SyncReviewOutcome(it.added, it.updated) }
+            else -> error("Store $store has no sync")
+        }
+    }
+
+    /** The IGDB external-game category a store's sync keys uids by. Only the four synced stores have one. */
+    private fun syncCategoryFor(store: Store): Int = when (store) {
+        Store.STEAM -> STEAM_EXTERNAL_CATEGORY
+        Store.GOG -> GOG_EXTERNAL_CATEGORY
+        Store.PSN -> PSN_EXTERNAL_CATEGORY
+        Store.EPIC -> EPIC_EXTERNAL_CATEGORY
+        else -> error("Store $store has no sync")
     }
 
     /**

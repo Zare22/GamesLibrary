@@ -8,7 +8,10 @@ import androidx.lifecycle.viewModelScope
 import hr.kotwave.gameslibrary.data.GameRepository
 import hr.kotwave.gameslibrary.data.SteamSyncEntry
 import hr.kotwave.gameslibrary.data.SteamSyncSummary
+import hr.kotwave.gameslibrary.data.Store
+import hr.kotwave.gameslibrary.data.SyncTailRow
 import hr.kotwave.gameslibrary.igdb.IgdbClient
+import hr.kotwave.gameslibrary.importer.SyncReviewResult
 import hr.kotwave.gameslibrary.secure.STEAM_ID_KEY
 import hr.kotwave.gameslibrary.secure.SecureStorage
 import kotlinx.coroutines.CancellationException
@@ -64,6 +67,10 @@ class SteamViewModel(
         private set
 
     var lastSummary by mutableStateOf<SteamSyncSummary?>(null)
+        private set
+
+    /** The last sync's needs-review tail: id-unmatched rows the Review picker can settle. */
+    var reviewTail by mutableStateOf<List<SyncTailRow>>(emptyList())
         private set
 
     /** Which stage of the last sync failed, or null if it succeeded or hasn't run. */
@@ -125,9 +132,19 @@ class SteamViewModel(
             persona = null
             ownedCount = null
             lastSummary = null
+            reviewTail = emptyList()
             syncFailure = null
             connectState = SteamConnectState.Idle
         }
+    }
+
+    /** Folds a confirmed Review's merge counts into the last summary and drops its settled rows from the tail. */
+    fun absorbReview(result: SyncReviewResult) {
+        lastSummary = SteamSyncSummary(
+            added = (lastSummary?.added ?: 0) + result.added,
+            updated = (lastSummary?.updated ?: 0) + result.updated,
+        )
+        reviewTail = reviewTail.filterNot { row -> row.uids.any { it in result.handledUids } }
     }
 
     /**
@@ -139,6 +156,7 @@ class SteamViewModel(
         val id = steamId ?: return
         syncing = true
         syncFailure = null
+        reviewTail = emptyList()
         viewModelScope.launch {
             var stage = SteamSyncStage.SteamFetch
             try {
@@ -153,13 +171,18 @@ class SteamViewModel(
                 val matchedAppids = matched
                     .flatMap { game -> game.externalGames.filter { it.category == STEAM_EXTERNAL_CATEGORY }.map { it.uid } }
                     .toSet()
+                stage = SteamSyncStage.Merge
+                val split = repository.splitSyncTail(
+                    Store.STEAM,
+                    owned.filter { it.appid.toString() !in matchedAppids }
+                        .map { SyncTailRow(name = it.name, uids = listOf(it.appid.toString())) },
+                )
                 val entries = buildList {
                     matched.forEach { add(SteamSyncEntry.Matched(it)) }
-                    owned.filter { it.appid.toString() !in matchedAppids }
-                        .forEach { add(SteamSyncEntry.Unmatched(it.appid.toString(), it.name)) }
+                    split.known.forEach { add(SteamSyncEntry.Unmatched(appid = it.uids.first(), name = it.name)) }
                 }
-                stage = SteamSyncStage.Merge
                 lastSummary = repository.syncSteamGames(entries)
+                reviewTail = split.needsReview
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {

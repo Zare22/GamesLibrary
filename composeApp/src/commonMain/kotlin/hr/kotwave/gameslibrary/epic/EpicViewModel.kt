@@ -8,7 +8,10 @@ import androidx.lifecycle.viewModelScope
 import hr.kotwave.gameslibrary.data.EpicSyncEntry
 import hr.kotwave.gameslibrary.data.EpicSyncSummary
 import hr.kotwave.gameslibrary.data.GameRepository
+import hr.kotwave.gameslibrary.data.Store
+import hr.kotwave.gameslibrary.data.SyncTailRow
 import hr.kotwave.gameslibrary.igdb.IgdbClient
+import hr.kotwave.gameslibrary.importer.SyncReviewResult
 import hr.kotwave.gameslibrary.secure.EPIC_TOKEN_KEY
 import hr.kotwave.gameslibrary.secure.SecureStorage
 import kotlinx.coroutines.CancellationException
@@ -65,6 +68,10 @@ class EpicViewModel(
     var lastSummary by mutableStateOf<EpicSyncSummary?>(null)
         private set
 
+    /** The last sync's needs-review tail: id-unmatched rows the Review picker can settle. */
+    var reviewTail by mutableStateOf<List<SyncTailRow>>(emptyList())
+        private set
+
     /** What the last sync failed on, or null if it succeeded or hasn't run. */
     var syncFailure by mutableStateOf<EpicSyncFailure?>(null)
         private set
@@ -113,9 +120,19 @@ class EpicViewModel(
             token = null
             ownedCount = null
             lastSummary = null
+            reviewTail = emptyList()
             syncFailure = null
             connectState = EpicConnectState.Idle
         }
+    }
+
+    /** Folds a confirmed Review's merge counts into the last summary and drops its settled rows from the tail. */
+    fun absorbReview(result: SyncReviewResult) {
+        lastSummary = EpicSyncSummary(
+            added = (lastSummary?.added ?: 0) + result.added,
+            updated = (lastSummary?.updated ?: 0) + result.updated,
+        )
+        reviewTail = reviewTail.filterNot { row -> row.uids.any { it in result.handledUids } }
     }
 
     /**
@@ -128,6 +145,7 @@ class EpicViewModel(
         val current = token ?: return
         syncing = true
         syncFailure = null
+        reviewTail = emptyList()
         viewModelScope.launch {
             var stage = EpicSyncFailure.TokenRefresh
             try {
@@ -154,15 +172,20 @@ class EpicViewModel(
                         .filter { it.category == EPIC_EXTERNAL_CATEGORY }.map { it.uid }.toSet()
                     owned.filter { it.offerId in uids }
                 }
+                stage = EpicSyncFailure.Merge
+                val split = repository.splitSyncTail(
+                    Store.EPIC,
+                    owned.filter { it.offerId !in matchedIds }
+                        .map { SyncTailRow(name = it.title, uids = it.uids) },
+                )
                 val entries = buildList {
                     rowsByGame.forEach { (game, rows) ->
                         add(EpicSyncEntry.Matched(game, rows.flatMap { it.uids }.distinct()))
                     }
-                    owned.filter { it.offerId !in matchedIds }
-                        .forEach { add(EpicSyncEntry.Unmatched(it.uids, it.title)) }
+                    split.known.forEach { add(EpicSyncEntry.Unmatched(epicUids = it.uids, name = it.name)) }
                 }
-                stage = EpicSyncFailure.Merge
                 lastSummary = repository.syncEpicGames(entries)
+                reviewTail = split.needsReview
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {

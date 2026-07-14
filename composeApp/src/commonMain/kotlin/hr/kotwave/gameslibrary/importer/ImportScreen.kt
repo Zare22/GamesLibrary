@@ -35,6 +35,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -80,6 +81,9 @@ import hr.kotwave.gameslibrary.resources.import_title
 import hr.kotwave.gameslibrary.resources.import_unmatched_manual
 import hr.kotwave.gameslibrary.resources.line_count
 import hr.kotwave.gameslibrary.resources.similar_title_warning
+import hr.kotwave.gameslibrary.resources.sync_review_confirm
+import hr.kotwave.gameslibrary.resources.sync_review_dismiss
+import hr.kotwave.gameslibrary.resources.sync_review_dismissed
 import hr.kotwave.gameslibrary.search.IgdbResultRow
 import hr.kotwave.gameslibrary.ui.components.CoverArt
 import hr.kotwave.gameslibrary.ui.components.GlowBox
@@ -318,8 +322,9 @@ internal fun ReviewPhase(viewModel: ImportViewModel, modifier: Modifier) {
         }
 
         Box(Modifier.weight(1f)) {
+            val showDismiss = viewModel.target is ImportTarget.SyncTail
             LazyColumn(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(tokens.spacing.sm)) {
-                items(viewModel.candidates) { candidate -> CandidateRow(candidate) }
+                items(viewModel.candidates) { candidate -> CandidateRow(candidate, showDismiss) }
                 item { Spacer(Modifier.height(tokens.spacing.micro)) }
             }
             Box(
@@ -329,11 +334,16 @@ internal fun ReviewPhase(viewModel: ImportViewModel, modifier: Modifier) {
         }
 
         Column(Modifier.fillMaxWidth().padding(top = tokens.spacing.sm, bottom = tokens.spacing.lg)) {
+            val syncTail = viewModel.target is ImportTarget.SyncTail
             PrimaryButton(
-                text = if (viewModel.importing) stringResource(Res.string.import_adding) else stringResource(Res.string.import_add_button, viewModel.checkedCount),
+                text = when {
+                    viewModel.importing -> stringResource(Res.string.import_adding)
+                    syncTail -> stringResource(Res.string.sync_review_confirm)
+                    else -> stringResource(Res.string.import_add_button, viewModel.checkedCount)
+                },
                 onClick = viewModel::confirm,
                 leadingIcon = AppIcons.Check,
-                enabled = viewModel.checkedCount > 0 && !viewModel.importing,
+                enabled = (viewModel.checkedCount > 0 || (syncTail && viewModel.dismissedCount > 0)) && !viewModel.importing,
                 modifier = Modifier.actionWidth(),
             )
         }
@@ -341,7 +351,7 @@ internal fun ReviewPhase(viewModel: ImportViewModel, modifier: Modifier) {
 }
 
 @Composable
-private fun CandidateRow(candidate: ImportCandidate) {
+private fun CandidateRow(candidate: ImportCandidate, showDismiss: Boolean) {
     val tokens = AppTheme.tokens
     val shape = RoundedCornerShape(tokens.radii.lg)
     Column(
@@ -352,11 +362,36 @@ private fun CandidateRow(candidate: ImportCandidate) {
             .border(1.dp, if (candidate.checked) tokens.colors.accent.copy(alpha = 0.40f) else tokens.colors.border, shape)
             .padding(tokens.spacing.sm),
     ) {
-        when (val classification = candidate.classification) {
-            is MatchClassification.Matched -> MatchedHead(candidate, classification.result)
-            is MatchClassification.Ambiguous -> AmbiguousHead(candidate, classification.results)
-            MatchClassification.Unmatched -> UnmatchedHead(candidate)
+        Column(Modifier.alpha(if (candidate.dismissed) 0.45f else 1f)) {
+            when (val classification = candidate.classification) {
+                is MatchClassification.Matched -> MatchedHead(candidate, classification.result)
+                is MatchClassification.Ambiguous -> AmbiguousHead(candidate, classification.results)
+                MatchClassification.Unmatched -> UnmatchedHead(candidate)
+            }
         }
+        if (showDismiss) {
+            Spacer(Modifier.height(tokens.spacing.xs))
+            DismissAction(candidate)
+        }
+    }
+}
+
+@Composable
+private fun DismissAction(candidate: ImportCandidate) {
+    val tokens = AppTheme.tokens
+    val color = if (candidate.dismissed) ErrorRed else tokens.colors.muted
+    Row(
+        Modifier.clip(RoundedCornerShape(tokens.radii.md)).clickable(onClick = candidate::toggleDismissed)
+            .padding(horizontal = tokens.spacing.sm, vertical = tokens.spacing.xs),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs),
+    ) {
+        Icon(AppIcons.Close, null, Modifier.size(14.dp), tint = color)
+        Text(
+            stringResource(if (candidate.dismissed) Res.string.sync_review_dismissed else Res.string.sync_review_dismiss),
+            style = AppTheme.type.bodyStrong.copy(fontSize = 13.sp),
+            color = color,
+        )
     }
 }
 
@@ -373,7 +408,7 @@ private fun MatchedHead(candidate: ImportCandidate, result: IgdbSearchResult) {
                 Text(it, style = AppTheme.type.caption, color = tokens.colors.faint, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
-        CheckBox(candidate.checked) { candidate.checked = !candidate.checked }
+        CheckBox(candidate.checked, candidate::toggleChecked)
     }
 }
 
@@ -425,7 +460,7 @@ private fun UnmatchedHead(candidate: ImportCandidate) {
             Text(candidate.rawTitle, style = AppTheme.type.bodyStrong, color = tokens.colors.text, maxLines = 2, overflow = TextOverflow.Ellipsis)
             Text(stringResource(Res.string.import_unmatched_manual), style = AppTheme.type.caption, color = tokens.colors.faint)
         }
-        CheckBox(candidate.checked) { candidate.checked = !candidate.checked }
+        CheckBox(candidate.checked, candidate::toggleChecked)
     }
     if (candidate.alreadyInLibrary) {
         Spacer(Modifier.height(tokens.spacing.sm))

@@ -21,6 +21,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -29,9 +30,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import hr.kotwave.gameslibrary.data.Store
+import hr.kotwave.gameslibrary.importer.ImportPhase
+import hr.kotwave.gameslibrary.importer.ImportViewModel
+import hr.kotwave.gameslibrary.importer.MatchingPhase
+import hr.kotwave.gameslibrary.importer.ReviewPhase
 import hr.kotwave.gameslibrary.resources.Res
 import hr.kotwave.gameslibrary.resources.cd_back
 import hr.kotwave.gameslibrary.resources.common_cancel
+import hr.kotwave.gameslibrary.resources.error_igdb_unreachable
 import hr.kotwave.gameslibrary.resources.epic_account
 import hr.kotwave.gameslibrary.resources.epic_connect
 import hr.kotwave.gameslibrary.resources.epic_connect_note
@@ -56,6 +62,7 @@ import hr.kotwave.gameslibrary.resources.store_sync_prompt
 import hr.kotwave.gameslibrary.resources.store_syncing
 import hr.kotwave.gameslibrary.resources.sync_stat_added
 import hr.kotwave.gameslibrary.resources.sync_stat_already
+import hr.kotwave.gameslibrary.resources.sync_stat_review
 import hr.kotwave.gameslibrary.resources.sync_stat_synced
 import hr.kotwave.gameslibrary.ui.components.GlassSurface
 import hr.kotwave.gameslibrary.ui.components.PrimaryButton
@@ -68,18 +75,38 @@ import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
 private val EpicError = Color(0xFFF4707A)
+private val ReviewAmber = Color(0xFFFFD24A)
 
 /**
  * The Epic screen: connect an Epic Games account (authorizationCode paste), then additively sync
- * the owned library incl. free claims. The user's own token authorizes the pull; the paste parser
- * stays available as the fallback intake.
+ * the owned library incl. free claims. The sync's id-unmatched tail goes through the Import funnel's
+ * Matching → Review legs in place (its own [ImportViewModel], the Battle.net pattern). The user's own
+ * token authorizes the pull; the paste parser stays available as the fallback intake.
  */
 @Composable
 fun EpicScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: EpicViewModel = koinViewModel(),
+    importViewModel: ImportViewModel = koinViewModel(),
 ) {
+    importViewModel.syncOutcome?.let { outcome ->
+        LaunchedEffect(outcome) {
+            viewModel.absorbReview(outcome)
+            importViewModel.consumeSyncOutcome()
+        }
+    }
+    when (importViewModel.phase) {
+        ImportPhase.Matching -> {
+            MatchingPhase(importViewModel, modifier)
+            return
+        }
+        ImportPhase.Review -> {
+            ReviewPhase(importViewModel, modifier)
+            return
+        }
+        else -> Unit
+    }
     val tokens = AppTheme.tokens
     val epic = tokens.store.epic
     Column(
@@ -94,7 +121,12 @@ fun EpicScreen(
 
         Spacer(Modifier.height(tokens.spacing.md))
         if (viewModel.connected) {
-            ConnectedCard(viewModel = viewModel, epic = epic)
+            ConnectedCard(
+                viewModel = viewModel,
+                epic = epic,
+                reviewFailed = importViewModel.failed,
+                onReview = { importViewModel.startFromSyncTail(Store.EPIC, viewModel.reviewTail) },
+            )
         } else {
             ConnectSection(viewModel = viewModel, epic = epic)
         }
@@ -229,7 +261,7 @@ private fun EpicSyncFailure.message(): String = when (this) {
 }
 
 @Composable
-private fun ConnectedCard(viewModel: EpicViewModel, epic: Color) {
+private fun ConnectedCard(viewModel: EpicViewModel, epic: Color, reviewFailed: Boolean, onReview: () -> Unit) {
     val tokens = AppTheme.tokens
     val ok = tokens.status.playing
     val avatarShape = RoundedCornerShape(tokens.radii.tile)
@@ -274,6 +306,9 @@ private fun ConnectedCard(viewModel: EpicViewModel, epic: Color) {
                     SyncStat(summary.added.toString(), stringResource(Res.string.sync_stat_added), tokens.status.playing)
                     SyncStat(summary.updated.toString(), stringResource(Res.string.sync_stat_already), tokens.colors.text)
                     SyncStat(summary.total.toString(), stringResource(Res.string.sync_stat_synced), tokens.colors.text)
+                    if (viewModel.reviewTail.isNotEmpty()) {
+                        ReviewStat(viewModel.reviewTail.size, enabled = !viewModel.syncing, onClick = onReview)
+                    }
                 }
             }
 
@@ -281,6 +316,15 @@ private fun ConnectedCard(viewModel: EpicViewModel, epic: Color) {
                 Spacer(Modifier.height(tokens.spacing.sm))
                 Text(
                     failure.message(),
+                    style = AppTheme.type.caption,
+                    color = EpicError,
+                )
+            }
+
+            if (reviewFailed) {
+                Spacer(Modifier.height(tokens.spacing.sm))
+                Text(
+                    stringResource(Res.string.error_igdb_unreachable),
                     style = AppTheme.type.caption,
                     color = EpicError,
                 )
@@ -324,6 +368,22 @@ private fun SyncStat(value: String, label: String, color: Color) {
     Column {
         Text(value, style = AppTheme.type.numeric.copy(fontSize = 18.sp), color = color)
         Text(label, style = AppTheme.type.caption.copy(fontSize = 10.sp), color = AppTheme.tokens.colors.faint)
+    }
+}
+
+@Composable
+private fun ReviewStat(count: Int, enabled: Boolean, onClick: () -> Unit) {
+    val tokens = AppTheme.tokens
+    Column(
+        Modifier.clip(RoundedCornerShape(tokens.radii.sm))
+            .clickable(enabled = enabled, onClick = onClick)
+            .padding(horizontal = tokens.spacing.micro),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(tokens.spacing.micro)) {
+            Text("$count", style = AppTheme.type.numeric.copy(fontSize = 18.sp), color = ReviewAmber)
+            Icon(AppIcons.ChevronRight, null, Modifier.size(14.dp), tint = ReviewAmber)
+        }
+        Text(stringResource(Res.string.sync_stat_review), style = AppTheme.type.caption.copy(fontSize = 10.sp), color = AppTheme.tokens.colors.faint)
     }
 }
 

@@ -43,8 +43,15 @@ class LocalDataResetTest {
         // A synced-unmatched game seeds all three tables: Game + Ownership + external reference.
         repository.syncSteamGames(listOf(SteamSyncEntry.Unmatched(appid = "999", name = "Some Indie")))
         repository.addWishlistGame(name = "Hollow Knight: Silksong")
+        repository.confirmSyncReview(
+            Store.STEAM,
+            picks = emptyList(),
+            bare = emptyList(),
+            dismissed = listOf(SyncTailRow("Dismissed App", listOf("111"))),
+        )
         assertTrue(dao.allGamesWithOwnerships().isNotEmpty())
         assertTrue(dao.allExternalGames().isNotEmpty())
+        assertTrue(dao.dismissedSyncUids(1, listOf("111")).isNotEmpty())
 
         val secure = RecordingSecureStorage().apply {
             put(STEAM_ID_KEY, "76561190000000000")
@@ -57,6 +64,7 @@ class LocalDataResetTest {
 
         assertTrue(dao.allGamesWithOwnerships().isEmpty())
         assertTrue(dao.allExternalGames().isEmpty())
+        assertTrue(dao.dismissedSyncUids(1, listOf("111")).isEmpty())
         assertTrue(repository.ownedGames.first().isEmpty())
         assertTrue(repository.wishlistGames.first().isEmpty())
         assertNull(secure.get(STEAM_ID_KEY))
