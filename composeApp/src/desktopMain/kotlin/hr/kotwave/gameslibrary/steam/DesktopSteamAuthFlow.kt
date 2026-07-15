@@ -10,12 +10,12 @@ import java.net.URI
 import java.net.URLDecoder
 
 /**
- * Desktop Steam sign-in: the system browser opens Steam's OpenID page with a loopback `return_to`; a
- * one-shot `127.0.0.1` HttpServer catches the redirect, serves a done page, then stops (RFC 8252).
+ * Desktop Steam sign-in: the system browser opens Steam's OpenID page built from the listener's port;
+ * a one-shot `127.0.0.1` HttpServer catches the redirect, serves a done page, then stops (RFC 8252).
  */
 class DesktopSteamAuthFlow : SteamAuthFlow {
 
-    override suspend fun authenticate(buildAuthUrl: (returnTo: String) -> String): Map<String, String>? {
+    override suspend fun authenticate(buildAuthUrl: (port: Int) -> String): Map<String, String>? {
         val server = HttpServer.create(InetSocketAddress(InetAddress.getLoopbackAddress(), 0), 0)
         val callback = CompletableDeferred<Map<String, String>>()
         server.createContext("/callback") { exchange ->
@@ -28,8 +28,7 @@ class DesktopSteamAuthFlow : SteamAuthFlow {
         }
         server.start()
         try {
-            val returnTo = "http://127.0.0.1:${server.address.port}/callback"
-            openBrowser(buildAuthUrl(returnTo))
+            openBrowser(buildAuthUrl(server.address.port))
             return withTimeoutOrNull(AUTH_TIMEOUT) { callback.await() }?.ifEmpty { null }
         } finally {
             server.stop(0)

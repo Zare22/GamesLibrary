@@ -45,6 +45,7 @@ class SteamViewModel(
     private val secureStorage: SecureStorage,
     private val openId: SteamOpenId,
     private val authFlow: SteamAuthFlow,
+    private val bounce: SteamBounce,
 ) : ViewModel() {
 
     var steamId by mutableStateOf<String?>(null)
@@ -89,16 +90,19 @@ class SteamViewModel(
     }
 
     /**
-     * Runs "Sign in through Steam": opens the browser ([SteamAuthFlow]), verifies the redirect with
-     * Steam ([SteamOpenId.verify]), and persists the verified SteamID64. A cancelled/timed-out browser
-     * leg returns to [SteamConnectState.Idle]; a rejected assertion or network error surfaces as Failed.
+     * Runs "Sign in through Steam": opens the browser ([SteamAuthFlow]) at a `return_to` routed
+     * through the hosted bounce page when it's reachable — consent then shows the app's domain —
+     * else the loopback URL ([SteamBounce]), verifies the redirect with Steam ([SteamOpenId.verify]),
+     * and persists the verified SteamID64. A cancelled/timed-out browser leg returns to
+     * [SteamConnectState.Idle]; a rejected assertion or network error surfaces as Failed.
      */
     fun connect() {
         if (connectState is SteamConnectState.Connecting) return
         connectState = SteamConnectState.Connecting
         connectJob = viewModelScope.launch {
             try {
-                val params = authFlow.authenticate { returnTo -> openId.authUrl(returnTo) }
+                val viaBounce = bounce.reachable()
+                val params = authFlow.authenticate { port -> openId.authUrl(bounce.returnTo(port, viaBounce)) }
                 if (params == null) {
                     connectState = SteamConnectState.Idle
                     return@launch

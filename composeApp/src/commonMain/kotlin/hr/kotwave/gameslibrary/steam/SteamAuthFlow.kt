@@ -4,13 +4,14 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 
 /**
- * The platform browser leg of Steam OpenID sign-in: opens a browser to the URL built from a loopback
- * `return_to`, captures the redirect, and returns its `openid.*` callback params (null if the user
- * cancels or it times out). Verifying those params is `:shared` ([SteamOpenId]). Android = a Custom
- * Tab; Desktop = the system browser.
+ * The platform browser leg of Steam OpenID sign-in: binds a loopback listener, opens a browser to
+ * the URL built from the listener's ephemeral port, captures the redirect, and returns its `openid.*`
+ * callback params (null if the user cancels or it times out). Building the `return_to` from the port
+ * and verifying the params is `:shared` ([SteamBounce] + [SteamOpenId]). Android = a Custom Tab;
+ * Desktop = the system browser.
  */
 interface SteamAuthFlow {
-    suspend fun authenticate(buildAuthUrl: (returnTo: String) -> String): Map<String, String>?
+    suspend fun authenticate(buildAuthUrl: (port: Int) -> String): Map<String, String>?
 }
 
 /** How long to wait for the OpenID redirect before giving up (the browser leg is user-driven). */

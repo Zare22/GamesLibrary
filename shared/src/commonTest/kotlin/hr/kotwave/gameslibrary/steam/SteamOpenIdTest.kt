@@ -51,6 +51,16 @@ class SteamOpenIdTest {
     }
 
     @Test
+    fun authUrlDerivesDomainRealmFromBounceReturnTo() {
+        val url = openIdWith(MockEngine { respond("", HttpStatusCode.OK) })
+            .authUrl("https://gameslibrary.kotwave.hr/callback?port=54321")
+
+        val params = Url(url).parameters
+        assertEquals("https://gameslibrary.kotwave.hr/callback?port=54321", params["openid.return_to"])
+        assertEquals("https://gameslibrary.kotwave.hr", params["openid.realm"])
+    }
+
+    @Test
     fun verifyReturnsSteamIdWhenSteamConfirms() = runTest {
         val openId = openIdWith(
             MockEngine { respond("ns:http://specs.openid.net/auth/2.0\nis_valid:true\n", HttpStatusCode.OK, textHeaders) },

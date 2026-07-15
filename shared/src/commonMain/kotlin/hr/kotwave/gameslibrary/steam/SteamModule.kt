@@ -8,4 +8,5 @@ val steamModule: Module = module {
     // Each HttpClient is built inline (not a bare single) so it never collides with IGDB's HttpClient.
     single { SteamClient(buildSteamHttpClient(steamEngine()), get()) }
     single { SteamOpenId(buildSteamHttpClient(steamEngine())) }
+    single { SteamBounce(buildSteamHttpClient(steamEngine())) }
 }

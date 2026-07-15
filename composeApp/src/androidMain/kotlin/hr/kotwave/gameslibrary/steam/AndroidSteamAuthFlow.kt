@@ -2,8 +2,8 @@ package hr.kotwave.gameslibrary.steam
 
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import androidx.browser.customtabs.CustomTabsIntent
+import androidx.core.net.toUri
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
@@ -18,18 +18,18 @@ import java.net.SocketException
 import java.net.URLDecoder
 
 /**
- * Android Steam sign-in: a Custom Tab opens Steam's OpenID page with a loopback `return_to`; a one-shot
- * `127.0.0.1` server catches the redirect (RFC 8252). Cancelling closes the socket to unblock `accept()`.
+ * Android Steam sign-in: a Custom Tab opens Steam's OpenID page built from the listener's port; a
+ * one-shot `127.0.0.1` server catches the redirect (RFC 8252). Cancelling closes the socket to unblock
+ * `accept()`.
  */
 class AndroidSteamAuthFlow(private val context: Context) : SteamAuthFlow {
 
-    override suspend fun authenticate(buildAuthUrl: (returnTo: String) -> String): Map<String, String>? =
+    override suspend fun authenticate(buildAuthUrl: (port: Int) -> String): Map<String, String>? =
         withTimeoutOrNull(AUTH_TIMEOUT) {
             withContext(Dispatchers.IO) {
                 ServerSocket().use { server ->
                     server.bind(InetSocketAddress(InetAddress.getByName("127.0.0.1"), 0))
-                    val returnTo = "http://127.0.0.1:${server.localPort}/callback"
-                    launchCustomTab(buildAuthUrl(returnTo))
+                    launchCustomTab(buildAuthUrl(server.localPort))
                     // Cancel/timeout closes the socket so the blocking accept() throws instead of hanging.
                     val closer = currentCoroutineContext().job.invokeOnCompletion { runCatching { server.close() } }
                     try {
@@ -47,7 +47,7 @@ class AndroidSteamAuthFlow(private val context: Context) : SteamAuthFlow {
     private fun launchCustomTab(url: String) {
         val tabs = CustomTabsIntent.Builder().build()
         tabs.intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        tabs.launchUrl(context, Uri.parse(url))
+        tabs.launchUrl(context, url.toUri())
     }
 }
 
