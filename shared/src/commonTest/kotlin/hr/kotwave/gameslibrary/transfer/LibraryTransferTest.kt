@@ -120,6 +120,29 @@ class LibraryTransferTest {
     }
 
     @Test
+    fun addedAtRoundTripsThroughTheExportFormat() {
+        val stamped = GameWithOwnerships(
+            game = Game(id = 1, name = "Stamped", igdbId = 10, status = Status.BACKLOG, addedAt = 1_700_000_000_000),
+            ownerships = emptyList(),
+        )
+
+        val decoded = LibraryTransfer.decode(LibraryTransfer.encode(listOf(stamped), emptyMap()))
+
+        assertEquals(1_700_000_000_000, decoded.games.single().addedAt)
+        assertEquals(1_700_000_000_000, decoded.games.single().toGame().addedAt)
+    }
+
+    @Test
+    fun aFileWrittenBeforeAddedAtLoadsWithANullStamp() {
+        val json = """{ "schemaVersion": 1, "games": [ { "name": "Old Row" } ] }"""
+
+        val decoded = LibraryTransfer.decode(json)
+
+        assertNull(decoded.games.single().addedAt)
+        assertNull(decoded.games.single().toGame().addedAt)
+    }
+
+    @Test
     fun ownedGameWithNoKnownStatusDefaultsToBacklog() {
         assertEquals(Status.BACKLOG, ExportedGame(name = "X", igdbId = 1, wishlist = false, status = null).toGame().status)
         assertNull(ExportedGame(name = "Y", igdbId = 2, wishlist = true, status = null).toGame().status)

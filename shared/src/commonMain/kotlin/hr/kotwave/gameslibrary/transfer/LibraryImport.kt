@@ -79,6 +79,7 @@ fun ExportedGame.toGame(): Game = Game(
     platforms = platforms,
     alternativeNames = alternativeNames,
     orphaned = orphaned,
+    addedAt = addedAt,
 )
 
 /** The Ownership rows for this imported game on [gameId], dropping any naming an unknown Store. */

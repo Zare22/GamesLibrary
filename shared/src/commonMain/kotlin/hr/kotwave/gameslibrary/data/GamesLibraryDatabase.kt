@@ -6,7 +6,10 @@ import androidx.room.RoomDatabase
 import androidx.room.RoomDatabaseConstructor
 import androidx.room.TypeConverters
 
-@Database(entities = [Game::class, Ownership::class, ExternalGame::class, SyncDismissal::class], version = 6)
+@Database(
+    entities = [Game::class, Ownership::class, ExternalGame::class, SyncDismissal::class, MirrorBaseline::class],
+    version = 7,
+)
 @ConstructedBy(GamesLibraryDatabaseConstructor::class)
 @TypeConverters(Converters::class)
 abstract class GamesLibraryDatabase : RoomDatabase() {

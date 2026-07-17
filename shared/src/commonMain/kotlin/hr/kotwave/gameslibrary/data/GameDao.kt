@@ -124,13 +124,72 @@ interface GameDao {
     @Query("DELETE FROM sync_dismissal")
     suspend fun deleteAllSyncDismissals()
 
-    /** Empties every table (child → parent) in one transaction — the local-data wipe. */
+    @Query("DELETE FROM ownership WHERE gameId = :gameId")
+    suspend fun deleteOwnershipsFor(gameId: Long)
+
+    /** The stored Mirror Baseline snapshot for a pairing, or null before its first completed Mirror. */
+    @Query("SELECT snapshot FROM mirror_baseline WHERE pairingId = :pairingId")
+    suspend fun mirrorBaseline(pairingId: String): String?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertMirrorBaseline(baseline: MirrorBaseline)
+
+    @Query("DELETE FROM mirror_baseline")
+    suspend fun deleteAllMirrorBaselines()
+
+    /**
+     * Empties every table (child → parent) in one transaction — the local-data wipe. Includes the
+     * Mirror Baseline: a Baseline surviving a reset would diff as "deleted everything" on the peer.
+     */
     @Transaction
     suspend fun clearAll() {
         deleteAllExternalGames()
         deleteAllOwnerships()
         deleteAllGames()
         deleteAllSyncDismissals()
+        deleteAllMirrorBaselines()
+    }
+
+    /**
+     * Applies a converged Mirror atomically: own deletes, converged upserts (insert or full
+     * overwrite, resolved by [mirrorTarget] inside the transaction), dismissal union, new Baseline.
+     */
+    @Transaction
+    suspend fun applyMirror(
+        deletes: List<MirrorGameWrite>,
+        upserts: List<MirrorGameWrite>,
+        dismissals: List<SyncDismissal>,
+        baseline: MirrorBaseline,
+    ) {
+        deletes.forEach { row -> mirrorTarget(row)?.let { deleteGame(it.id) } }
+        upserts.forEach { row ->
+            val local = mirrorTarget(row)
+            if (local == null) {
+                val gameId = insertGame(row.game)
+                row.ownerships.forEach { insertOwnership(it.copy(gameId = gameId)) }
+                if (row.externals.isNotEmpty()) insertExternalGames(row.externals.map { it.copy(gameId = gameId) })
+            } else {
+                updateGame(row.game.copy(id = local.id, addedAt = row.game.addedAt ?: local.addedAt))
+                deleteOwnershipsFor(local.id)
+                row.ownerships.forEach { insertOwnership(it.copy(gameId = local.id)) }
+                deleteExternalGamesFor(local.id)
+                if (row.externals.isNotEmpty()) insertExternalGames(row.externals.map { it.copy(gameId = local.id) })
+            }
+        }
+        if (dismissals.isNotEmpty()) insertSyncDismissals(dismissals)
+        upsertMirrorBaseline(baseline)
+    }
+
+    /** The local Game a Mirror row targets: `igdbId`, then a shared external uid, then a manual-row title. */
+    suspend fun mirrorTarget(row: MirrorGameWrite): Game? {
+        row.game.igdbId?.let { id -> getGameByIgdbId(id)?.let { return it } }
+        row.externals.forEach { ext ->
+            getGameByExternalUid(ext.category, ext.uid)
+                ?.takeIf { it.igdbId == null || row.game.igdbId == null || it.igdbId == row.game.igdbId }
+                ?.let { return it }
+        }
+        if (row.game.igdbId != null) return null
+        return gamesByTitle(row.game.name).firstOrNull { it.igdbId == null }
     }
 
     /** Overwrites a Game's row and replaces its external references in one transaction (refresh/re-match). */

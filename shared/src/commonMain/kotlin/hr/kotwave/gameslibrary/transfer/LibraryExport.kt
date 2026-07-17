@@ -34,6 +34,7 @@ data class ExportedGame(
     val platforms: List<Platform> = emptyList(),
     val alternativeNames: List<String> = emptyList(),
     val orphaned: Boolean = false,
+    val addedAt: Long? = null,
     val ownerships: List<ExportedOwnership> = emptyList(),
     val externals: List<ExportedExternal> = emptyList(),
 )

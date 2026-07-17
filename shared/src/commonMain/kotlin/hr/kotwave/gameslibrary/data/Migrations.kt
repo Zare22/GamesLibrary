@@ -95,3 +95,18 @@ val MIGRATION_5_6 = object : Migration(5, 6) {
         )
     }
 }
+
+/**
+ * v6 -> v7: adds the mirror_baseline table — the per-pairing converged snapshot (export-format JSON)
+ * a Mirror three-way merge diffs against.
+ */
+val MIGRATION_6_7 = object : Migration(6, 7) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL(
+            "CREATE TABLE IF NOT EXISTS `mirror_baseline` (" +
+                "`pairingId` TEXT NOT NULL, " +
+                "`snapshot` TEXT NOT NULL, " +
+                "PRIMARY KEY(`pairingId`))",
+        )
+    }
+}

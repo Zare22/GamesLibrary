@@ -17,6 +17,9 @@ object LibraryTransfer {
         encodeDefaults = true
     }
 
+    /** Encodes an already-built export snapshot (the Mirror Baseline / push payload path). */
+    fun encode(export: LibraryExport): String = json.encodeToString(LibraryExport.serializer(), export)
+
     /** Encodes the full library. [externalsByGameId] groups `external_game` rows by their Game id. */
     fun encode(
         games: List<GameWithOwnerships>,
@@ -40,6 +43,7 @@ object LibraryTransfer {
                     platforms = game.platforms,
                     alternativeNames = game.alternativeNames,
                     orphaned = game.orphaned,
+                    addedAt = game.addedAt,
                     ownerships = withOwnerships.ownerships.map { ExportedOwnership(it.store.name, it.source.name) },
                     externals = (externalsByGameId[game.id] ?: emptyList()).map {
                         ExportedExternal(it.category, it.uid, it.url)

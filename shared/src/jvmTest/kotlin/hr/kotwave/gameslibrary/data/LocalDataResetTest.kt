@@ -13,6 +13,7 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -49,9 +50,11 @@ class LocalDataResetTest {
             bare = emptyList(),
             dismissed = listOf(SyncTailRow("Dismissed App", listOf("111"))),
         )
+        dao.upsertMirrorBaseline(MirrorBaseline("desktop", "{\"schemaVersion\":1,\"games\":[]}"))
         assertTrue(dao.allGamesWithOwnerships().isNotEmpty())
         assertTrue(dao.allExternalGames().isNotEmpty())
         assertTrue(dao.dismissedSyncUids(1, listOf("111")).isNotEmpty())
+        assertNotNull(dao.mirrorBaseline("desktop"))
 
         val secure = RecordingSecureStorage().apply {
             put(STEAM_ID_KEY, "76561190000000000")
@@ -65,6 +68,7 @@ class LocalDataResetTest {
         assertTrue(dao.allGamesWithOwnerships().isEmpty())
         assertTrue(dao.allExternalGames().isEmpty())
         assertTrue(dao.dismissedSyncUids(1, listOf("111")).isEmpty())
+        assertNull(dao.mirrorBaseline("desktop"))
         assertTrue(repository.ownedGames.first().isEmpty())
         assertTrue(repository.wishlistGames.first().isEmpty())
         assertNull(secure.get(STEAM_ID_KEY))

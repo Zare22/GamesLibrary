@@ -1,5 +1,6 @@
 package hr.kotwave.gameslibrary.data
 
+import hr.kotwave.gameslibrary.mirror.MirrorOutcome
 import hr.kotwave.gameslibrary.transfer.ExportedGame
 import hr.kotwave.gameslibrary.transfer.LibraryExport
 import hr.kotwave.gameslibrary.transfer.LibraryImportDecision
@@ -619,6 +620,33 @@ class GameRepository(
         imported.ownershipEntities(gameId).forEach { gameDao.insertOwnership(it) }
         imported.externalEntities(gameId).takeIf { it.isNotEmpty() }?.let { gameDao.insertExternalGames(it) }
     }
+
+    /** The stored Mirror Baseline for a pairing, or null before its first completed Mirror. */
+    suspend fun mirrorBaseline(pairingId: String): LibraryExport? =
+        gameDao.mirrorBaseline(pairingId)?.let { LibraryTransfer.decode(it) }
+
+    /**
+     * Applies a resolved Mirror outcome to the local library and persists its converged snapshot as
+     * the pairing's new Baseline, in one transaction. `addedAt` travels as-is: a null stamp stays
+     * null (the row sorts as oldest on both replicas) rather than re-stamping at apply time.
+     */
+    suspend fun applyMirrorMerge(pairingId: String, outcome: MirrorOutcome) {
+        gameDao.applyMirror(
+            deletes = outcome.mineChanges.deletes.map { it.toMirrorWrite() },
+            upserts = (outcome.mineChanges.adds + outcome.mineChanges.updates).map { it.toMirrorWrite() },
+            dismissals = outcome.dismissals,
+            baseline = MirrorBaseline(
+                pairingId = pairingId,
+                snapshot = LibraryTransfer.encode(LibraryExport(games = outcome.converged)),
+            ),
+        )
+    }
+
+    private fun ExportedGame.toMirrorWrite(): MirrorGameWrite = MirrorGameWrite(
+        game = toGame(),
+        ownerships = ownershipEntities(gameId = 0),
+        externals = externalEntities(gameId = 0),
+    )
 
     /**
      * Re-match: repoints a Game's `igdb_id` to a chosen IGDB entry and overwrites its metadata,
