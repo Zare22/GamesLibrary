@@ -27,6 +27,9 @@ ktor = "3.5.0"
 coil = "3.5.0"
 kotlinxDatetime = "0.7.1"
 javaKeyring = "1.0.4"
+zxing = "3.5.3"
+camerax = "1.6.1"
+mlkitBarcode = "17.3.0"
 
 [libraries]
 # Room + SQLite (KMP, bundled driver)
@@ -67,6 +70,15 @@ androidx-security-crypto = { module = "androidx.security:security-crypto", versi
 
 # Desktop secure storage (OS keychain — Windows Credential Manager / macOS Keychain; backs the SecureStorage actual)
 java-keyring = { module = "com.github.javakeyring:java-keyring", version.ref = "javaKeyring" }
+
+# Desktop QR rendering (the Mirror hosting screen's pairing code)
+zxing-core = { module = "com.google.zxing:core", version.ref = "zxing" }
+
+# Android camera preview + QR decoding (the Mirror pairing scan screen; ML Kit model bundled in the APK)
+androidx-camera-camera2 = { module = "androidx.camera:camera-camera2", version.ref = "camerax" }
+androidx-camera-lifecycle = { module = "androidx.camera:camera-lifecycle", version.ref = "camerax" }
+androidx-camera-view = { module = "androidx.camera:camera-view", version.ref = "camerax" }
+mlkit-barcode-scanning = { module = "com.google.mlkit:barcode-scanning", version.ref = "mlkitBarcode" }
 
 # Coil (image loading, KMP)
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }

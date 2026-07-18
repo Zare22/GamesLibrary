@@ -74,6 +74,24 @@ object AppIcons {
     val Minus: ImageVector = strokeIcon("Minus", "M5 12h14", strokeWidth = 2.4f)
 
     val Steam: ImageVector = fillIcon("Steam", STEAM_PATH)
+
+    val Mirror: ImageVector = strokeIcon(
+        "Mirror",
+        roundedRectD(2f, 4f, 13f, 9f, 1.5f),
+        "M6 17h5M8.5 13v4",
+        "M18 8h3v13h-6v-4",
+    )
+
+    val Qr: ImageVector = strokeIcon(
+        "Qr",
+        roundedRectD(3f, 3f, 8f, 8f, 1.5f),
+        roundedRectD(13f, 13f, 8f, 8f, 1.5f),
+        "M17 3v4M21 5h-4M3 17h4M5 21v-4",
+    )
+
+    val Play: ImageVector = strokeIcon("Play", "M6 4l12 8-12 8z", strokeWidth = 2.2f)
+
+    val Stop: ImageVector = strokeIcon("Stop", roundedRectD(6f, 6f, 12f, 12f, 1.5f), strokeWidth = 2.2f)
 }
 
 private const val STEAM_PATH =

@@ -1,6 +1,7 @@
 package hr.kotwave.gameslibrary.mirror
 
 import hr.kotwave.gameslibrary.mirror.wire.MIRROR_PROTOCOL_VERSION
+import hr.kotwave.gameslibrary.mirror.wire.MirrorPairFailure
 import hr.kotwave.gameslibrary.mirror.wire.MirrorPairRequest
 import hr.kotwave.gameslibrary.mirror.wire.MirrorPairResponse
 import hr.kotwave.gameslibrary.mirror.wire.MirrorPullResponse
@@ -41,6 +42,13 @@ internal fun buildMirrorHttpClient(
 /** The host rejected the credentials (401): the secret, token, or pairing is no longer valid. */
 class MirrorNotPairedException : Exception("The Mirror host rejected the pairing")
 
+/** The pairing secret didn't match (401): [remainingAttempts] left before the host locks pairing. */
+class MirrorWrongSecretException(val remainingAttempts: Int) :
+    Exception("Wrong Mirror pairing secret, $remainingAttempts attempts remaining")
+
+/** Pairing is locked on the host (423) until it stops and hosts again with a fresh secret. */
+class MirrorPairingLockedException : Exception("Mirror pairing is locked on the host")
+
 /** The two ends run incompatible Mirror protocol versions. */
 class MirrorProtocolException(theirs: Int) :
     Exception("Mirror protocol mismatch: theirs $theirs, ours $MIRROR_PROTOCOL_VERSION")
@@ -70,7 +78,14 @@ class MirrorClient internal constructor(private val http: HttpClient, private va
                 MirrorWireJson.decodeFromString(MirrorPairResponse.serializer(), response.bodyAsText())
                     .also { checkProtocol(it.protocolVersion) }
 
-            HttpStatusCode.Unauthorized -> throw MirrorNotPairedException()
+            HttpStatusCode.Unauthorized -> {
+                val remaining = runCatching {
+                    MirrorWireJson.decodeFromString(MirrorPairFailure.serializer(), response.bodyAsText())
+                }.getOrNull()?.remainingAttempts ?: 0
+                throw MirrorWrongSecretException(remaining)
+            }
+
+            HttpStatusCode.Locked -> throw MirrorPairingLockedException()
             else -> throw MirrorTransportException(response.status.value, "/pair")
         }
     }

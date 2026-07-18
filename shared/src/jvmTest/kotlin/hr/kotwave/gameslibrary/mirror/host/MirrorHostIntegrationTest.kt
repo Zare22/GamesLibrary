@@ -8,11 +8,14 @@ import hr.kotwave.gameslibrary.data.SyncDismissal
 import hr.kotwave.gameslibrary.data.buildGamesLibraryDatabase
 import hr.kotwave.gameslibrary.mirror.MirrorNotPairedException
 import hr.kotwave.gameslibrary.mirror.MirrorOutcome
+import hr.kotwave.gameslibrary.mirror.MirrorPairingLockedException
 import hr.kotwave.gameslibrary.mirror.MirrorPushOutcome
 import hr.kotwave.gameslibrary.mirror.MirrorReviewDecisions
 import hr.kotwave.gameslibrary.mirror.MirrorSession
 import hr.kotwave.gameslibrary.mirror.MirrorSessionResult
+import hr.kotwave.gameslibrary.mirror.MirrorWrongSecretException
 import hr.kotwave.gameslibrary.mirror.RepositoryMirrorStore
+import hr.kotwave.gameslibrary.mirror.fetchMirrorCertFingerprint
 import hr.kotwave.gameslibrary.mirror.mirrorClient
 import hr.kotwave.gameslibrary.mirror.mirrorMerge
 import hr.kotwave.gameslibrary.mirror.wire.MIRROR_PORT_ATTEMPTS
@@ -20,8 +23,13 @@ import hr.kotwave.gameslibrary.mirror.wire.MirrorPullResponse
 import hr.kotwave.gameslibrary.mirror.wire.MirrorPushRequest
 import hr.kotwave.gameslibrary.mirror.wire.toWire
 import hr.kotwave.gameslibrary.transfer.LibraryExport
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.yield
 import java.io.File
+import java.io.IOException
 import java.net.ServerSocket
 import java.nio.file.Files
 import java.security.cert.CertificateException
@@ -124,11 +132,12 @@ class MirrorHostIntegrationTest {
     }
 
     @Test
-    fun wrongSecretIsRejected(): Unit = runBlocking {
+    fun wrongSecretIsRejectedWithRemainingAttempts(): Unit = runBlocking {
         val hosting = host.start()
         val client = mirrorClient("127.0.0.1:${hosting.port}", hosting.fingerprint)
 
-        assertFailsWith<MirrorNotPairedException> { client.pair("000000") }
+        val failure = assertFailsWith<MirrorWrongSecretException> { client.pair("000000") }
+        assertEquals(4, failure.remainingAttempts)
     }
 
     @Test
@@ -136,8 +145,53 @@ class MirrorHostIntegrationTest {
         val hosting = host.start()
         val client = mirrorClient("127.0.0.1:${hosting.port}", hosting.fingerprint)
 
-        repeat(5) { assertFailsWith<MirrorNotPairedException> { client.pair("000000") } }
-        assertFailsWith<MirrorNotPairedException> { client.pair(hosting.secret) }
+        repeat(4) { attempt ->
+            val failure = assertFailsWith<MirrorWrongSecretException> { client.pair("000000") }
+            assertEquals(4 - attempt, failure.remainingAttempts)
+        }
+        assertFailsWith<MirrorPairingLockedException> { client.pair("000000") }
+        assertFailsWith<MirrorPairingLockedException> { client.pair(hosting.secret) }
+    }
+
+    @Test
+    fun hostEmitsPairedPulledAppliedAndLockedEvents(): Unit = runBlocking {
+        hostRepo.addOwnedGame("Host Game", igdbId = 1L)
+        phoneRepo.addOwnedGame("Phone Game", igdbId = 2L)
+
+        val events = mutableListOf<MirrorHostEvent>()
+        val collector = launch(start = CoroutineStart.UNDISPATCHED) { host.events.collect { events.add(it) } }
+        val hosting = host.start()
+        val session = MirrorSession(RepositoryMirrorStore(phoneRepo), phoneStorage)
+        session.pair(hosting.payload("127.0.0.1"))
+        assertIs<MirrorSessionResult.Completed>(session.mirror { MirrorReviewDecisions() })
+
+        withTimeout(5_000) { while (events.size < 3) yield() }
+        assertEquals(
+            listOf(
+                MirrorHostEvent.Paired,
+                MirrorHostEvent.Pulled,
+                MirrorHostEvent.Applied(added = 1, updated = 0, removed = 0),
+            ),
+            events,
+        )
+
+        val client = mirrorClient("127.0.0.1:${hosting.port}", hosting.fingerprint)
+        repeat(5) { runCatching { client.pair("000000") } }
+        withTimeout(5_000) { while (events.lastOrNull() != MirrorHostEvent.PairingLocked) yield() }
+        assertEquals(1, events.count { it == MirrorHostEvent.PairingLocked })
+        collector.cancel()
+    }
+
+    @Test
+    fun fetchCertReturnsTheHostingFingerprintWithoutPairing(): Unit = runBlocking {
+        val hosting = host.start()
+
+        assertEquals(hosting.fingerprint, fetchMirrorCertFingerprint("127.0.0.1", hosting.port))
+    }
+
+    @Test
+    fun fetchCertThrowsWhenNothingListens(): Unit = runBlocking {
+        assertFailsWith<IOException> { fetchMirrorCertFingerprint("127.0.0.1", basePort, timeoutMillis = 3_000) }
     }
 
     @Test

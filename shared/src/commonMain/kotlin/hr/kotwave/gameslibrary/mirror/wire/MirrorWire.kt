@@ -34,6 +34,13 @@ data class MirrorPairResponse(
     val token: String,
 )
 
+/** `POST /pair` 401 body: how many secret attempts remain before pairing locks. */
+@Serializable
+data class MirrorPairFailure(
+    val protocolVersion: Int = MIRROR_PROTOCOL_VERSION,
+    val remainingAttempts: Int,
+)
+
 /** `GET /library` response: the host's snapshot, its dismissals, and the hash a push must echo. */
 @Serializable
 data class MirrorPullResponse(
@@ -78,3 +85,10 @@ fun WireSideChanges.toSideChanges(): MirrorSideChanges = MirrorSideChanges(adds,
 
 /** The canonical fingerprint form shared by the QR payload, the pinning check, and the Baseline key. */
 fun normalizeFingerprint(raw: String): String = raw.replace(":", "").trim().lowercase()
+
+/**
+ * The display-only code a person compares across devices on the typed pairing path: the
+ * fingerprint's first 12 hex characters, uppercase, in dot-separated groups of four.
+ */
+fun mirrorVerifyCode(fingerprint: String): String =
+    normalizeFingerprint(fingerprint).take(12).uppercase().chunked(4).joinToString(" · ")

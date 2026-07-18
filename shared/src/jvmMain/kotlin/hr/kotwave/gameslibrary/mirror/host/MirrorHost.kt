@@ -6,6 +6,7 @@ import hr.kotwave.gameslibrary.mirror.MirrorSideChanges
 import hr.kotwave.gameslibrary.mirror.wire.MIRROR_DEFAULT_PORT
 import hr.kotwave.gameslibrary.mirror.wire.MIRROR_PORT_ATTEMPTS
 import hr.kotwave.gameslibrary.mirror.wire.MIRROR_PROTOCOL_VERSION
+import hr.kotwave.gameslibrary.mirror.wire.MirrorPairFailure
 import hr.kotwave.gameslibrary.mirror.wire.MirrorPairRequest
 import hr.kotwave.gameslibrary.mirror.wire.MirrorPairResponse
 import hr.kotwave.gameslibrary.mirror.wire.MirrorPairingPayload
@@ -34,6 +35,9 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.routing
 import java.util.concurrent.atomic.AtomicInteger
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -42,9 +46,25 @@ class MirrorHosting internal constructor(
     val port: Int,
     val fingerprint: String,
     val secret: String,
+    val certProvenance: MirrorCertProvenance,
 ) {
     fun payload(ip: String): MirrorPairingPayload =
         MirrorPairingPayload(ip = ip, port = port, secret = secret, fingerprint = fingerprint)
+}
+
+/** What happened on the host while serving, in arrival order — the hosting screen's live feed. */
+sealed interface MirrorHostEvent {
+    /** A phone exchanged the pairing secret for a token. */
+    data object Paired : MirrorHostEvent
+
+    /** The paired phone pulled the snapshot — a Mirror is underway. */
+    data object Pulled : MirrorHostEvent
+
+    /** A push was applied; the counts are what changed on this device. */
+    data class Applied(val added: Int, val updated: Int, val removed: Int) : MirrorHostEvent
+
+    /** The fifth wrong secret arrived — pairing stays locked until the next hosting start. */
+    data object PairingLocked : MirrorHostEvent
 }
 
 /**
@@ -62,6 +82,14 @@ class MirrorHost(
     private var server: EmbeddedServer<*, *>? = null
     private val pushMutex = Mutex()
     private val pairingFailures = AtomicInteger(0)
+
+    private val _events = MutableSharedFlow<MirrorHostEvent>(
+        extraBufferCapacity = 8,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST,
+    )
+
+    /** Serving activity for the hosting screen; replays nothing across hosting sessions. */
+    val events: SharedFlow<MirrorHostEvent> = _events
 
     /** Binds the first free port in the [basePort]+[MIRROR_PORT_ATTEMPTS] walk and starts serving. */
     suspend fun start(): MirrorHosting {
@@ -89,7 +117,7 @@ class MirrorHost(
             try {
                 attempt.start(wait = false)
                 server = attempt
-                return MirrorHosting(candidate, identity.fingerprint, secret)
+                return MirrorHosting(candidate, identity.fingerprint, secret, identity.provenance)
             } catch (failure: Exception) {
                 lastFailure = failure
                 attempt.stop(0, 0)
@@ -117,16 +145,28 @@ class MirrorHost(
                         call.respond(HttpStatusCode.BadRequest)
 
                     pairingFailures.get() >= MAX_PAIRING_FAILURES ->
-                        call.respond(HttpStatusCode.Unauthorized)
+                        call.respond(HttpStatusCode.Locked)
 
                     !constantTimeEquals(request.secret, secret) -> {
-                        pairingFailures.incrementAndGet()
-                        call.respond(HttpStatusCode.Unauthorized)
+                        val failures = pairingFailures.incrementAndGet()
+                        if (failures >= MAX_PAIRING_FAILURES) {
+                            _events.tryEmit(MirrorHostEvent.PairingLocked)
+                            call.respond(HttpStatusCode.Locked)
+                        } else {
+                            call.respondJson(
+                                MirrorWireJson.encodeToString(
+                                    MirrorPairFailure.serializer(),
+                                    MirrorPairFailure(remainingAttempts = MAX_PAIRING_FAILURES - failures),
+                                ),
+                                HttpStatusCode.Unauthorized,
+                            )
+                        }
                     }
 
                     else -> {
                         val token = randomHex(32)
                         secureStorage.put(MIRROR_HOST_TOKEN_HASH_KEY, sha256Hex(token))
+                        _events.tryEmit(MirrorHostEvent.Paired)
                         call.respondJson(MirrorWireJson.encodeToString(MirrorPairResponse.serializer(), MirrorPairResponse(token = token)))
                     }
                 }
@@ -142,6 +182,7 @@ class MirrorHost(
                     dismissals = store.dismissals().map { it.toWire() },
                     snapshotHash = snapshotContentHash(snapshot),
                 )
+                _events.tryEmit(MirrorHostEvent.Pulled)
                 call.respondJson(MirrorWireJson.encodeToString(MirrorPullResponse.serializer(), response))
             }
 
@@ -168,6 +209,13 @@ class MirrorHost(
                             dismissals = request.dismissals.map { it.toDismissal() },
                         ),
                     )
+                    _events.tryEmit(
+                        MirrorHostEvent.Applied(
+                            added = request.hostChanges.adds.size,
+                            updated = request.hostChanges.updates.size,
+                            removed = request.hostChanges.deletes.size,
+                        ),
+                    )
                     call.respond(HttpStatusCode.OK)
                 }
             }
@@ -186,5 +234,5 @@ class MirrorHost(
     }
 }
 
-private suspend fun ApplicationCall.respondJson(body: String) =
-    respondText(body, ContentType.Application.Json)
+private suspend fun ApplicationCall.respondJson(body: String, status: HttpStatusCode = HttpStatusCode.OK) =
+    respondText(body, ContentType.Application.Json, status)

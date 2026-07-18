@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import hr.kotwave.gameslibrary.data.Game
 import hr.kotwave.gameslibrary.data.Store
+import hr.kotwave.gameslibrary.mirror.MirrorSettingsSection
 import hr.kotwave.gameslibrary.resources.Res
 import hr.kotwave.gameslibrary.resources.action_delete
 import hr.kotwave.gameslibrary.resources.cd_dismiss
@@ -72,6 +73,7 @@ import hr.kotwave.gameslibrary.resources.settings_section_connections
 import hr.kotwave.gameslibrary.resources.settings_section_danger
 import hr.kotwave.gameslibrary.resources.settings_section_developer
 import hr.kotwave.gameslibrary.resources.settings_section_library
+import hr.kotwave.gameslibrary.resources.settings_section_mirror
 import hr.kotwave.gameslibrary.resources.settings_section_maintenance
 import hr.kotwave.gameslibrary.resources.settings_title
 import hr.kotwave.gameslibrary.settings.SettingsViewModel
@@ -106,6 +108,7 @@ fun SettingsScreen(
     onOpenPsn: () -> Unit,
     onOpenEpic: () -> Unit,
     onOpenBattleNet: () -> Unit,
+    onOpenMirror: () -> Unit,
     onOpenImport: () -> Unit,
     onOpenPasteImport: () -> Unit,
     modifier: Modifier = Modifier,
@@ -194,6 +197,10 @@ fun SettingsScreen(
         }
 
         Spacer(Modifier.height(tokens.spacing.lg))
+        SectionLabel(stringResource(Res.string.settings_section_mirror))
+        MirrorSettingsSection(onOpenMirror = onOpenMirror)
+
+        Spacer(Modifier.height(tokens.spacing.lg))
         SectionLabel(stringResource(Res.string.settings_section_library))
         SettingsCard {
             SettingsItem(
@@ -270,7 +277,7 @@ fun SettingsScreen(
 }
 
 @Composable
-private fun SectionLabel(text: String) {
+internal fun SectionLabel(text: String) {
     val tokens = AppTheme.tokens
     Text(
         text,
@@ -282,7 +289,7 @@ private fun SectionLabel(text: String) {
 
 /** A grouped card holding [SettingsItem]s separated by [HairlineDivider]s (the mockup's `.card`). */
 @Composable
-private fun SettingsCard(content: @Composable () -> Unit) {
+internal fun SettingsCard(content: @Composable () -> Unit) {
     val tokens = AppTheme.tokens
     val shape = RoundedCornerShape(tokens.radii.lg)
     Column(
@@ -293,12 +300,12 @@ private fun SettingsCard(content: @Composable () -> Unit) {
 }
 
 @Composable
-private fun HairlineDivider() {
+internal fun HairlineDivider() {
     Box(Modifier.fillMaxWidth().height(1.dp).background(AppTheme.tokens.colors.border))
 }
 
 @Composable
-private fun SettingsItem(
+internal fun SettingsItem(
     icon: ImageVector,
     iconTint: Color,
     title: String,
@@ -369,7 +376,7 @@ private fun ComingSoonItem(store: Store) {
 }
 
 @Composable
-private fun ItemIcon(icon: ImageVector, tint: Color) {
+internal fun ItemIcon(icon: ImageVector, tint: Color) {
     val tokens = AppTheme.tokens
     val shape = RoundedCornerShape(tokens.radii.md)
     Box(
@@ -395,7 +402,7 @@ private fun GlyphIcon(store: Store) {
 }
 
 @Composable
-private fun ItemText(title: String, subtitle: String, modifier: Modifier = Modifier) {
+internal fun ItemText(title: String, subtitle: String, modifier: Modifier = Modifier) {
     val tokens = AppTheme.tokens
     Column(modifier) {
         Text(title, style = AppTheme.type.bodyStrong, color = tokens.colors.text, maxLines = 1, overflow = TextOverflow.Ellipsis)

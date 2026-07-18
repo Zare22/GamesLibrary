@@ -38,9 +38,11 @@ class MirrorHostCertificatesTest {
         assertTrue(File(dir, MIRROR_KEYSTORE_FILE_NAME).exists())
         assertNotNull(storage.values[MIRROR_HOST_KEYSTORE_PASSWORD_KEY])
         assertTrue(Regex("[0-9a-f]{64}").matches(first.fingerprint))
+        assertEquals(MirrorCertProvenance.GENERATED_FIRST, first.provenance)
 
         val second = certificates.loadOrGenerate()
         assertEquals(first.fingerprint, second.fingerprint)
+        assertEquals(MirrorCertProvenance.LOADED, second.provenance)
     }
 
     @Test
@@ -52,6 +54,7 @@ class MirrorHostCertificatesTest {
 
         assertNotEquals(first.fingerprint, regenerated.fingerprint)
         assertNotNull(storage.values[MIRROR_HOST_KEYSTORE_PASSWORD_KEY])
+        assertEquals(MirrorCertProvenance.REGENERATED, regenerated.provenance)
     }
 }
 

@@ -8,9 +8,12 @@ import hr.kotwave.gameslibrary.mirror.wire.toDismissal
 import hr.kotwave.gameslibrary.mirror.wire.toWire
 import hr.kotwave.gameslibrary.secure.MIRROR_CLIENT_HOST_ENDPOINT_KEY
 import hr.kotwave.gameslibrary.secure.MIRROR_CLIENT_HOST_FINGERPRINT_KEY
+import hr.kotwave.gameslibrary.secure.MIRROR_CLIENT_NEEDS_REPAIR_KEY
+import hr.kotwave.gameslibrary.secure.MIRROR_CLIENT_PAIRED_AT_KEY
 import hr.kotwave.gameslibrary.secure.MIRROR_CLIENT_TOKEN_KEY
 import hr.kotwave.gameslibrary.secure.SecureStorage
 import hr.kotwave.gameslibrary.transfer.LibraryExport
+import kotlin.time.Clock
 
 /** The Conflict and collision rows a Mirror Review must decide, one decision per row. */
 data class MirrorReview(
@@ -39,13 +42,14 @@ sealed interface MirrorSessionResult {
 class MirrorSession(
     private val store: MirrorLocalStore,
     private val secureStorage: SecureStorage,
+    private val clock: Clock = Clock.System,
     private val clientFactory: (endpoint: String, certFingerprint: String) -> MirrorClient = ::mirrorClient,
 ) {
 
     /**
      * Pairs against a scanned or typed [payload]: the pinned TLS handshake proves the cert matches
      * the payload's fingerprint, and the secret buys the long-lived token. Stores token, fingerprint,
-     * and endpoint; a re-pair overwrites the previous pairing.
+     * endpoint, and the pairing moment; a re-pair overwrites the previous pairing.
      */
     suspend fun pair(payload: MirrorPairingPayload) {
         if (payload.version != MIRROR_PROTOCOL_VERSION) throw MirrorProtocolException(payload.version)
@@ -55,6 +59,17 @@ class MirrorSession(
         secureStorage.put(MIRROR_CLIENT_TOKEN_KEY, response.token)
         secureStorage.put(MIRROR_CLIENT_HOST_FINGERPRINT_KEY, fingerprint)
         secureStorage.put(MIRROR_CLIENT_HOST_ENDPOINT_KEY, endpoint)
+        secureStorage.put(MIRROR_CLIENT_PAIRED_AT_KEY, clock.now().toEpochMilliseconds().toString())
+        secureStorage.remove(MIRROR_CLIENT_NEEDS_REPAIR_KEY)
+    }
+
+    /** Forgets the pairing on this device; the games on both devices stay as they are. */
+    suspend fun unpair() {
+        secureStorage.remove(MIRROR_CLIENT_TOKEN_KEY)
+        secureStorage.remove(MIRROR_CLIENT_HOST_FINGERPRINT_KEY)
+        secureStorage.remove(MIRROR_CLIENT_HOST_ENDPOINT_KEY)
+        secureStorage.remove(MIRROR_CLIENT_PAIRED_AT_KEY)
+        secureStorage.remove(MIRROR_CLIENT_NEEDS_REPAIR_KEY)
     }
 
     /**

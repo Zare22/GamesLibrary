@@ -343,4 +343,103 @@
         <item quantity="other">Orphaned games · %1$d</item>
     </plurals>
 
+    <!-- Settings › Mirror section -->
+    <string name="settings_section_mirror">Mirror</string>
+    <string name="mirror_settings_host_title">Host a Mirror</string>
+    <string name="mirror_settings_host_subtitle">Pair your phone and Mirror your libraries over Wi-Fi</string>
+    <string name="mirror_settings_pair_title">Pair with your computer</string>
+    <string name="mirror_settings_pair_subtitle">Mirror your libraries over Wi-Fi — no cloud</string>
+    <string name="mirror_settings_paired_title">Your computer</string>
+    <string name="mirror_settings_paired_subtitle">%1$s · paired %2$s</string>
+    <string name="mirror_settings_paired_pill">Paired</string>
+    <string name="mirror_settings_not_mirrored_yet">Not mirrored yet — Mirror any time both apps are open</string>
+    <string name="mirror_settings_mirror_now">Mirror now</string>
+    <string name="mirror_settings_unpair">Unpair</string>
+    <string name="mirror_settings_repair_subtitle">Its identity changed — scan the new QR to pair again</string>
+    <string name="mirror_settings_repair_pill">Pair again</string>
+    <string name="mirror_unpair_title">Unpair from your computer?</string>
+    <string name="mirror_unpair_body">Mirroring will need a fresh pairing afterwards. Your games stay exactly as they are — on both devices.</string>
+
+    <!-- Mirror hosting screen (desktop) -->
+    <string name="mirror_host_title">Host a Mirror</string>
+    <string name="mirror_host_pill_waiting">Hosting — waiting for your phone</string>
+    <string name="mirror_host_pill_running">Mirror running</string>
+    <string name="mirror_host_pill_starting">Starting…</string>
+    <string name="mirror_host_pill_stopped">Not hosting</string>
+    <string name="mirror_host_pill_locked">Pairing locked</string>
+    <string name="mirror_host_stop">Stop hosting</string>
+    <string name="mirror_host_start">Start hosting</string>
+    <string name="mirror_host_starting_body">Setting up a secure connection…</string>
+    <string name="mirror_host_starting_first">First time takes a few seconds.</string>
+    <string name="mirror_host_qr_caption">Scan with GamesLibrary on your phone. The small code lets you double-check the connection.</string>
+    <string name="mirror_host_steps_title">Pair your phone</string>
+    <string name="mirror_host_step_1">Open GamesLibrary on your phone → Settings → Mirror.</string>
+    <string name="mirror_host_step_2">Tap Pair with your computer and scan this QR code.</string>
+    <string name="mirror_host_step_3">Keep both apps open — the phone starts the Mirror, this computer answers.</string>
+    <string name="mirror_host_fallback_title">No camera at hand?</string>
+    <string name="mirror_host_fallback_subtitle">On your phone choose "Type it instead" and enter:</string>
+    <string name="mirror_host_fallback_address">Address</string>
+    <string name="mirror_host_fallback_port">Port</string>
+    <string name="mirror_host_fallback_pin">PIN</string>
+    <string name="mirror_host_fallback_note">Then make sure the code on the phone matches %1$s above.</string>
+    <string name="mirror_host_privacy_title">Stays on your Wi-Fi</string>
+    <string name="mirror_host_privacy_body">Your library moves directly between your two devices. Nothing touches the internet.</string>
+    <string name="mirror_host_firewall_title">Windows will ask first</string>
+    <string name="mirror_host_firewall_body">Windows shows a firewall prompt the first time you host. Choose Allow — otherwise your phone can't reach this computer.</string>
+    <string name="mirror_host_identity_changed">This computer's identity changed with the data reset. Paired phones will ask to pair again — scan the new QR.</string>
+    <string name="mirror_host_feed_pulled">Phone pulled the library</string>
+    <string name="mirror_host_feed_paired">Phone paired</string>
+    <string name="mirror_host_feed_waiting_push">Waiting for the merged library — reviewing on the phone…</string>
+    <string name="mirror_host_applied_title">Mirror applied — libraries match</string>
+    <string name="mirror_host_applied_added">ADDED</string>
+    <string name="mirror_host_applied_updated">UPDATED</string>
+    <string name="mirror_host_applied_removed">REMOVED</string>
+    <string name="mirror_host_still_hosting">Still hosting — your phone can Mirror again</string>
+    <string name="mirror_host_locked_body">Five wrong PIN attempts. Stop and host again to get a fresh PIN — already-paired phones can still Mirror.</string>
+    <string name="mirror_host_no_port_title">Couldn't start hosting</string>
+    <string name="mirror_host_no_port_body">Ports %1$d–%2$d are all in use on this computer. Close whatever is using them, then try again.</string>
+    <string name="mirror_host_try_again">Try again</string>
+    <string name="mirror_host_stopped_body">Your phone can only pair or Mirror while hosting is on.</string>
+    <string name="mirror_net_wifi">Wi-Fi</string>
+    <string name="mirror_net_ethernet">Ethernet</string>
+    <string name="mirror_net_other">Network</string>
+    <string name="mirror_net_virtual">Virtual</string>
+
+    <!-- Mirror pairing flow (phone) -->
+    <string name="mirror_pair_title">Pair with your computer</string>
+    <string name="mirror_pair_scan_hint">Point at the QR on your computer — Settings → Mirror → Host a Mirror</string>
+    <string name="mirror_pair_type_instead">Type it instead</string>
+    <string name="mirror_pair_privacy_footnote">Your library moves only between your two devices — nothing touches the internet.</string>
+    <string name="mirror_pair_camera_denied">Camera access is off — type the details instead.</string>
+    <string name="mirror_typed_title">Type it instead</string>
+    <string name="mirror_typed_address">Computer address</string>
+    <string name="mirror_typed_pin">PIN — under the QR on your computer</string>
+    <string name="mirror_typed_connect">Connect</string>
+    <string name="mirror_typed_footnote">Everything here is on the hosting screen of your computer.</string>
+    <string name="mirror_verify_title">Check the code</string>
+    <string name="mirror_verify_heading">Do the codes match?</string>
+    <string name="mirror_verify_body">Your computer shows a code under its QR. Pair only if it reads exactly:</string>
+    <string name="mirror_verify_hint">A different code means another device answered. Stop hosting on the computer and start again.</string>
+    <string name="mirror_verify_match">They match — pair</string>
+    <string name="mirror_verify_mismatch">They don't match</string>
+    <string name="mirror_paired_title">Paired with your computer</string>
+    <string name="mirror_paired_body">Mirror any time both apps are open.</string>
+    <string name="mirror_paired_replaces">This replaces your previous pairing.</string>
+    <string name="mirror_paired_done">Done</string>
+    <string name="mirror_error_wrong_pin_title">That PIN didn't match</string>
+    <plurals name="mirror_error_wrong_pin_body">
+        <item quantity="one">Check the six digits under the QR on your computer. %1$d try left on this hosting.</item>
+        <item quantity="other">Check the six digits under the QR on your computer. %1$d tries left on this hosting.</item>
+    </plurals>
+    <string name="mirror_error_locked_title">Pairing is locked</string>
+    <string name="mirror_error_locked_body">Too many wrong PINs. On your computer, stop hosting and host again — that makes a fresh PIN.</string>
+    <string name="mirror_error_unreachable_title">Can't reach %1$s</string>
+    <string name="mirror_error_unreachable_wifi">Both devices on the same Wi-Fi?</string>
+    <string name="mirror_error_unreachable_hosting">Is the hosting screen open on the computer?</string>
+    <string name="mirror_error_unreachable_firewall">Did the computer ask about the firewall? Choose Allow.</string>
+    <string name="mirror_error_not_pairing_title">That's a different QR</string>
+    <string name="mirror_error_not_pairing_body">This isn't a GamesLibrary pairing code. It's on your computer under Settings → Mirror → Host a Mirror.</string>
+    <string name="mirror_error_version_title">The apps don't match</string>
+    <string name="mirror_error_version_body">One of your apps is older — their Mirror versions don't match. Update both, then pair again.</string>
+
 </resources>

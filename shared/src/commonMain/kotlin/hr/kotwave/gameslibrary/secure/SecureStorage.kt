@@ -28,6 +28,12 @@ const val MIRROR_CLIENT_HOST_FINGERPRINT_KEY = "mirror.client.host.fingerprint"
 /** The Mirror host's last-known `ip:port`, for the silent re-Mirror reconnect. */
 const val MIRROR_CLIENT_HOST_ENDPOINT_KEY = "mirror.client.host.endpoint"
 
+/** When this device paired with its Mirror host, as epoch millis — the paired card's date. */
+const val MIRROR_CLIENT_PAIRED_AT_KEY = "mirror.client.paired.at"
+
+/** Set when pinning fails against the paired host (its identity changed) — the card asks to pair again. */
+const val MIRROR_CLIENT_NEEDS_REPAIR_KEY = "mirror.client.needs.repair"
+
 /** The password of the Mirror host's TLS keystore file; without it the cert regenerates. */
 const val MIRROR_HOST_KEYSTORE_PASSWORD_KEY = "mirror.host.keystore.password"
 

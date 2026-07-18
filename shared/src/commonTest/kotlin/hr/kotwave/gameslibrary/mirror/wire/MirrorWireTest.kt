@@ -93,6 +93,24 @@ class MirrorWireTest {
     }
 
     @Test
+    fun mirrorVerifyCodeIsFirstTwelveHexUppercaseGrouped() {
+        assertEquals("AB12 · CD34 · EF56", mirrorVerifyCode("ab12cd34ef567890aabbccdd"))
+        assertEquals("AB12 · CD34 · EF56", mirrorVerifyCode(" AB:12:CD:34:EF:56:78:90 "))
+    }
+
+    @Test
+    fun pairFailureRoundTrips() {
+        val failure = MirrorPairFailure(remainingAttempts = 3)
+        assertEquals(
+            failure,
+            MirrorWireJson.decodeFromString(
+                MirrorPairFailure.serializer(),
+                MirrorWireJson.encodeToString(MirrorPairFailure.serializer(), failure),
+            ),
+        )
+    }
+
+    @Test
     fun dismissalConvertersRoundTrip() {
         val dismissal = SyncDismissal(category = 1, uid = "570")
         assertEquals(dismissal, dismissal.toWire().toDismissal())

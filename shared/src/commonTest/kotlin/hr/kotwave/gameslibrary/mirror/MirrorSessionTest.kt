@@ -1,6 +1,7 @@
 package hr.kotwave.gameslibrary.mirror
 
 import hr.kotwave.gameslibrary.data.SyncDismissal
+import hr.kotwave.gameslibrary.mirror.wire.MirrorPairFailure
 import hr.kotwave.gameslibrary.mirror.wire.MirrorPairResponse
 import hr.kotwave.gameslibrary.mirror.wire.MirrorPairingPayload
 import hr.kotwave.gameslibrary.mirror.wire.MirrorPullResponse
@@ -9,6 +10,8 @@ import hr.kotwave.gameslibrary.mirror.wire.MirrorWireJson
 import hr.kotwave.gameslibrary.mirror.wire.WireDismissal
 import hr.kotwave.gameslibrary.secure.MIRROR_CLIENT_HOST_ENDPOINT_KEY
 import hr.kotwave.gameslibrary.secure.MIRROR_CLIENT_HOST_FINGERPRINT_KEY
+import hr.kotwave.gameslibrary.secure.MIRROR_CLIENT_NEEDS_REPAIR_KEY
+import hr.kotwave.gameslibrary.secure.MIRROR_CLIENT_PAIRED_AT_KEY
 import hr.kotwave.gameslibrary.secure.MIRROR_CLIENT_TOKEN_KEY
 import hr.kotwave.gameslibrary.secure.SecureStorage
 import hr.kotwave.gameslibrary.transfer.ExportedGame
@@ -24,6 +27,8 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.test.fail
 
@@ -210,6 +215,7 @@ class MirrorSessionTest {
     @Test
     fun pairStoresTokenNormalizedFingerprintAndEndpoint() = runTest {
         val storage = FakeSecureStorage()
+        storage.values[MIRROR_CLIENT_NEEDS_REPAIR_KEY] = "true"
         var pairedSecret: String? = null
         val engine = MockEngine { request ->
             pairedSecret = MirrorWireJson.decodeFromString(
@@ -229,6 +235,20 @@ class MirrorSessionTest {
         assertEquals("tok-9", storage.values[MIRROR_CLIENT_TOKEN_KEY])
         assertEquals("aabbcc", storage.values[MIRROR_CLIENT_HOST_FINGERPRINT_KEY])
         assertEquals("192.168.1.10:56790", storage.values[MIRROR_CLIENT_HOST_ENDPOINT_KEY])
+        assertNotNull(storage.values[MIRROR_CLIENT_PAIRED_AT_KEY]?.toLongOrNull())
+        assertNull(storage.values[MIRROR_CLIENT_NEEDS_REPAIR_KEY])
+    }
+
+    @Test
+    fun unpairRemovesEveryClientKey() = runTest {
+        val storage = pairedStorage()
+        storage.values[MIRROR_CLIENT_PAIRED_AT_KEY] = "1752800000000"
+        storage.values[MIRROR_CLIENT_NEEDS_REPAIR_KEY] = "true"
+        val session = MirrorSession(FakeLocalStore(), storage) { _, _ -> fail("No request expected on unpair") }
+
+        session.unpair()
+
+        assertTrue(storage.values.isEmpty())
     }
 
     @Test
@@ -240,6 +260,36 @@ class MirrorSessionTest {
 
         assertFailsWith<MirrorProtocolException> {
             session.pair(MirrorPairingPayload(version = 99, ip = "1.2.3.4", port = 1, secret = "s", fingerprint = "ff"))
+        }
+    }
+
+    @Test
+    fun wrongSecretPairSurfacesRemainingAttempts() = runTest {
+        val engine = MockEngine {
+            respond(
+                MirrorWireJson.encodeToString(MirrorPairFailure.serializer(), MirrorPairFailure(remainingAttempts = 2)),
+                HttpStatusCode.Unauthorized,
+            )
+        }
+        val session = MirrorSession(FakeLocalStore(), FakeSecureStorage()) { endpoint, _ ->
+            testClient(engine, endpoint)
+        }
+
+        val failure = assertFailsWith<MirrorWrongSecretException> {
+            session.pair(MirrorPairingPayload(ip = "1.2.3.4", port = 1, secret = "000000", fingerprint = "ff"))
+        }
+        assertEquals(2, failure.remainingAttempts)
+    }
+
+    @Test
+    fun lockedPairThrowsPairingLocked() = runTest {
+        val engine = MockEngine { respond("", HttpStatusCode.Locked) }
+        val session = MirrorSession(FakeLocalStore(), FakeSecureStorage()) { endpoint, _ ->
+            testClient(engine, endpoint)
+        }
+
+        assertFailsWith<MirrorPairingLockedException> {
+            session.pair(MirrorPairingPayload(ip = "1.2.3.4", port = 1, secret = "000000", fingerprint = "ff"))
         }
     }
 }
