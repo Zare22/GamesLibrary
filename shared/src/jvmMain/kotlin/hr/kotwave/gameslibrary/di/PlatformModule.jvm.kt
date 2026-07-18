@@ -4,6 +4,9 @@ import androidx.room.Room
 import hr.kotwave.gameslibrary.data.DATABASE_FILE_NAME
 import hr.kotwave.gameslibrary.data.GamesLibraryDatabase
 import hr.kotwave.gameslibrary.data.buildGamesLibraryDatabase
+import hr.kotwave.gameslibrary.mirror.host.MIRROR_KEYSTORE_FILE_NAME
+import hr.kotwave.gameslibrary.mirror.host.MirrorHost
+import hr.kotwave.gameslibrary.mirror.host.MirrorHostCertificates
 import hr.kotwave.gameslibrary.secure.FileSecureStorage
 import hr.kotwave.gameslibrary.secure.KeyringSecureStorage
 import hr.kotwave.gameslibrary.secure.SecureStorage
@@ -27,6 +30,8 @@ actual val platformModule: Module = module {
             legacyFile = File(dir, FileSecureStorage.FILE_NAME),
         )
     }
+    single { MirrorHostCertificates(get(), File(appDataDirectory(), MIRROR_KEYSTORE_FILE_NAME)) }
+    single { MirrorHost(get(), get(), get()) }
 }
 
 /** Per-OS application data directory; created if absent. */

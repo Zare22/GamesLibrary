@@ -24,8 +24,14 @@ object LibraryTransfer {
     fun encode(
         games: List<GameWithOwnerships>,
         externalsByGameId: Map<Long, List<ExternalGame>>,
-    ): String {
-        val export = LibraryExport(
+    ): String = encode(buildExport(games, externalsByGameId))
+
+    /** Builds the export snapshot DTO. [externalsByGameId] groups `external_game` rows by their Game id. */
+    fun buildExport(
+        games: List<GameWithOwnerships>,
+        externalsByGameId: Map<Long, List<ExternalGame>>,
+    ): LibraryExport {
+        return LibraryExport(
             games = games.map { withOwnerships ->
                 val game = withOwnerships.game
                 ExportedGame(
@@ -51,7 +57,6 @@ object LibraryTransfer {
                 )
             },
         )
-        return json.encodeToString(LibraryExport.serializer(), export)
     }
 
     /** Parses an export file; throws [kotlinx.serialization.SerializationException] on malformed JSON. */

@@ -565,8 +565,14 @@ class GameRepository(
     }
 
     /** Serializes the whole library (Games, Ownerships, external refs) to the export file format. */
-    suspend fun exportLibrary(): String =
-        LibraryTransfer.encode(gameDao.allGamesWithOwnerships(), gameDao.allExternalGames().groupBy { it.gameId })
+    suspend fun exportLibrary(): String = LibraryTransfer.encode(exportSnapshot())
+
+    /** The current library as an export snapshot DTO — the Mirror pull/merge form. */
+    suspend fun exportSnapshot(): LibraryExport =
+        LibraryTransfer.buildExport(gameDao.allGamesWithOwnerships(), gameDao.allExternalGames().groupBy { it.gameId })
+
+    /** Every stored sync-Review dismissal — the Mirror wire and merge input. */
+    suspend fun syncDismissals(): List<SyncDismissal> = gameDao.allSyncDismissals()
 
     /** Classifies a decoded [export] against the current library (live keys) for the import Review. */
     suspend fun classifyImport(export: LibraryExport): List<LibraryImportRow> {

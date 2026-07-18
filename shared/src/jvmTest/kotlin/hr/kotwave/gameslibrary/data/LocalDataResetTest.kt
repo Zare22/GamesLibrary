@@ -3,6 +3,11 @@ package hr.kotwave.gameslibrary.data
 import androidx.room.Room
 import hr.kotwave.gameslibrary.secure.EPIC_TOKEN_KEY
 import hr.kotwave.gameslibrary.secure.GOG_TOKEN_KEY
+import hr.kotwave.gameslibrary.secure.MIRROR_CLIENT_HOST_ENDPOINT_KEY
+import hr.kotwave.gameslibrary.secure.MIRROR_CLIENT_HOST_FINGERPRINT_KEY
+import hr.kotwave.gameslibrary.secure.MIRROR_CLIENT_TOKEN_KEY
+import hr.kotwave.gameslibrary.secure.MIRROR_HOST_KEYSTORE_PASSWORD_KEY
+import hr.kotwave.gameslibrary.secure.MIRROR_HOST_TOKEN_HASH_KEY
 import hr.kotwave.gameslibrary.secure.PSN_TOKEN_KEY
 import hr.kotwave.gameslibrary.secure.STEAM_ID_KEY
 import hr.kotwave.gameslibrary.secure.SecureStorage
@@ -61,6 +66,11 @@ class LocalDataResetTest {
             put(GOG_TOKEN_KEY, "{\"access\":\"x\"}")
             put(PSN_TOKEN_KEY, "{\"access\":\"y\"}")
             put(EPIC_TOKEN_KEY, "{\"access\":\"z\"}")
+            put(MIRROR_CLIENT_TOKEN_KEY, "mirror-token")
+            put(MIRROR_CLIENT_HOST_FINGERPRINT_KEY, "aabb")
+            put(MIRROR_CLIENT_HOST_ENDPOINT_KEY, "192.168.1.10:56789")
+            put(MIRROR_HOST_KEYSTORE_PASSWORD_KEY, "keystore-pw")
+            put(MIRROR_HOST_TOKEN_HASH_KEY, "token-hash")
         }
 
         LocalDataReset(repository, secure).reset()
@@ -75,7 +85,19 @@ class LocalDataResetTest {
         assertNull(secure.get(GOG_TOKEN_KEY))
         assertNull(secure.get(PSN_TOKEN_KEY))
         assertNull(secure.get(EPIC_TOKEN_KEY))
-        assertEquals(listOf(STEAM_ID_KEY, GOG_TOKEN_KEY, PSN_TOKEN_KEY, EPIC_TOKEN_KEY), secure.removed)
+        assertNull(secure.get(MIRROR_CLIENT_TOKEN_KEY))
+        assertNull(secure.get(MIRROR_CLIENT_HOST_FINGERPRINT_KEY))
+        assertNull(secure.get(MIRROR_CLIENT_HOST_ENDPOINT_KEY))
+        assertNull(secure.get(MIRROR_HOST_KEYSTORE_PASSWORD_KEY))
+        assertNull(secure.get(MIRROR_HOST_TOKEN_HASH_KEY))
+        assertEquals(
+            listOf(
+                STEAM_ID_KEY, GOG_TOKEN_KEY, PSN_TOKEN_KEY, EPIC_TOKEN_KEY,
+                MIRROR_CLIENT_TOKEN_KEY, MIRROR_CLIENT_HOST_FINGERPRINT_KEY, MIRROR_CLIENT_HOST_ENDPOINT_KEY,
+                MIRROR_HOST_KEYSTORE_PASSWORD_KEY, MIRROR_HOST_TOKEN_HASH_KEY,
+            ),
+            secure.removed,
+        )
     }
 }
 

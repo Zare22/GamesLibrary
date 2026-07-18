@@ -109,6 +109,9 @@ kotlin {
             dependencies {
                 implementation(libs.ktor.client.okhttp)
                 implementation(libs.java.keyring)
+                implementation(libs.ktor.server.core)
+                implementation(libs.ktor.server.netty)
+                implementation(libs.ktor.network.tls.certificates)
             }
         }
         val jvmTest by getting {

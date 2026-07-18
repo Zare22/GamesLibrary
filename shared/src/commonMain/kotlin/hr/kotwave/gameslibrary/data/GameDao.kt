@@ -70,6 +70,10 @@ interface GameDao {
     @Query("SELECT uid FROM sync_dismissal WHERE category = :category AND uid IN (:uids)")
     suspend fun dismissedSyncUids(category: Int, uids: List<String>): List<String>
 
+    /** Every stored dismissal — the Mirror wire and merge input. */
+    @Query("SELECT * FROM sync_dismissal")
+    suspend fun allSyncDismissals(): List<SyncDismissal>
+
     /** Ignores an already-dismissed (category, uid): dismissal is idempotent. */
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertSyncDismissals(dismissals: List<SyncDismissal>)

@@ -6,6 +6,9 @@ import hr.kotwave.gameslibrary.data.LocalDataReset
 import hr.kotwave.gameslibrary.epic.epicModule
 import hr.kotwave.gameslibrary.gog.gogModule
 import hr.kotwave.gameslibrary.igdb.igdbModule
+import hr.kotwave.gameslibrary.mirror.MirrorLocalStore
+import hr.kotwave.gameslibrary.mirror.MirrorSession
+import hr.kotwave.gameslibrary.mirror.RepositoryMirrorStore
 import hr.kotwave.gameslibrary.psn.psnModule
 import hr.kotwave.gameslibrary.steam.steamModule
 import org.koin.core.module.Module
@@ -18,6 +21,8 @@ val dataModule = module {
     single { get<GamesLibraryDatabase>().gameDao() }
     single { GameRepository(get()) }
     single { LocalDataReset(get(), get()) }
+    single<MirrorLocalStore> { RepositoryMirrorStore(get()) }
+    single { MirrorSession(get(), get()) }
 }
 
 val sharedModules: List<Module> =
