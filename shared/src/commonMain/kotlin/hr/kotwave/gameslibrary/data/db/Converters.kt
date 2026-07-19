@@ -1,6 +1,10 @@
-package hr.kotwave.gameslibrary.data
+package hr.kotwave.gameslibrary.data.db
 
 import androidx.room.TypeConverter
+import hr.kotwave.gameslibrary.data.Platform
+import hr.kotwave.gameslibrary.data.Source
+import hr.kotwave.gameslibrary.data.Status
+import hr.kotwave.gameslibrary.data.Store
 import kotlinx.serialization.json.Json
 
 private val json = Json { ignoreUnknownKeys = true }

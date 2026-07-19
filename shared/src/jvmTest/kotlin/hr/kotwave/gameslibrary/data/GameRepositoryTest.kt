@@ -3,6 +3,12 @@ package hr.kotwave.gameslibrary.data
 import androidx.room.Room
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import androidx.sqlite.execSQL
+import hr.kotwave.gameslibrary.data.db.GameDao
+import hr.kotwave.gameslibrary.data.db.GamesLibraryDatabase
+import hr.kotwave.gameslibrary.data.db.buildGamesLibraryDatabase
+import hr.kotwave.gameslibrary.data.sync.RematchResult
+import hr.kotwave.gameslibrary.data.sync.SyncEntry
+import hr.kotwave.gameslibrary.data.sync.SyncSummary
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import java.io.File

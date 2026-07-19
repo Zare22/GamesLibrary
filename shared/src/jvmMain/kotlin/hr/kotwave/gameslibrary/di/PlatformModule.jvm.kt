@@ -1,9 +1,9 @@
 package hr.kotwave.gameslibrary.di
 
 import androidx.room.Room
-import hr.kotwave.gameslibrary.data.DATABASE_FILE_NAME
-import hr.kotwave.gameslibrary.data.GamesLibraryDatabase
-import hr.kotwave.gameslibrary.data.buildGamesLibraryDatabase
+import hr.kotwave.gameslibrary.data.db.DATABASE_FILE_NAME
+import hr.kotwave.gameslibrary.data.db.GamesLibraryDatabase
+import hr.kotwave.gameslibrary.data.db.buildGamesLibraryDatabase
 import hr.kotwave.gameslibrary.mirror.host.MIRROR_KEYSTORE_FILE_NAME
 import hr.kotwave.gameslibrary.mirror.host.MirrorHost
 import hr.kotwave.gameslibrary.mirror.host.MirrorHostCertificates

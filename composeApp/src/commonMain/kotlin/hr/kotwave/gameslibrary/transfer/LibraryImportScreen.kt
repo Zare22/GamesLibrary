@@ -29,7 +29,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import hr.kotwave.gameslibrary.data.ImportSummary
+import hr.kotwave.gameslibrary.data.sync.ImportSummary
 import hr.kotwave.gameslibrary.resources.Res
 import hr.kotwave.gameslibrary.resources.action_back
 import hr.kotwave.gameslibrary.resources.cd_back

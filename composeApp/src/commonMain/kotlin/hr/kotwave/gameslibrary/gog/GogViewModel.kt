@@ -7,9 +7,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import hr.kotwave.gameslibrary.data.GameRepository
 import hr.kotwave.gameslibrary.data.Store
-import hr.kotwave.gameslibrary.data.SyncEntry
-import hr.kotwave.gameslibrary.data.SyncSummary
-import hr.kotwave.gameslibrary.data.SyncTailRow
+import hr.kotwave.gameslibrary.data.sync.SyncEntry
+import hr.kotwave.gameslibrary.data.sync.SyncSummary
+import hr.kotwave.gameslibrary.data.sync.SyncTailRow
 import hr.kotwave.gameslibrary.igdb.IgdbClient
 import hr.kotwave.gameslibrary.importer.SyncReviewResult
 import hr.kotwave.gameslibrary.secure.GOG_TOKEN_KEY

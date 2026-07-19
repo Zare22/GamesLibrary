@@ -1,11 +1,11 @@
 package hr.kotwave.gameslibrary.mirror.host
 
 import androidx.room.Room
-import hr.kotwave.gameslibrary.data.GameDao
+import hr.kotwave.gameslibrary.data.db.GameDao
 import hr.kotwave.gameslibrary.data.GameRepository
-import hr.kotwave.gameslibrary.data.GamesLibraryDatabase
+import hr.kotwave.gameslibrary.data.db.GamesLibraryDatabase
 import hr.kotwave.gameslibrary.data.SyncDismissal
-import hr.kotwave.gameslibrary.data.buildGamesLibraryDatabase
+import hr.kotwave.gameslibrary.data.db.buildGamesLibraryDatabase
 import hr.kotwave.gameslibrary.mirror.MirrorNotPairedException
 import hr.kotwave.gameslibrary.mirror.MirrorOutcome
 import hr.kotwave.gameslibrary.mirror.MirrorPairingLockedException

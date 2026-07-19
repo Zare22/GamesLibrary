@@ -1,4 +1,6 @@
-package hr.kotwave.gameslibrary.data
+package hr.kotwave.gameslibrary.data.sync
+
+import hr.kotwave.gameslibrary.data.IgdbGame
 
 /**
  * One owned game resolved for a store's additive sync: either [Matched] to an IGDB Game, or
@@ -6,7 +8,7 @@ package hr.kotwave.gameslibrary.data
  * uid behind the entry so the merge can dedup against (and upgrade) Games from earlier syncs
  * regardless of which uid keyed them — one appid/product id for Steam/GOG; titleIds plus the
  * conceptId for PSN, catalogItemIds plus the offerId for Epic. The ViewModel does the networking
- * (store + IGDB) and hands these to [GameRepository.syncStore].
+ * (store + IGDB) and hands these to [hr.kotwave.gameslibrary.data.GameRepository.syncStore].
  */
 sealed interface SyncEntry {
     val uids: List<String>

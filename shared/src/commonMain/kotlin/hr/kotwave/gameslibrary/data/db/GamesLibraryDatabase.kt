@@ -1,10 +1,15 @@
-package hr.kotwave.gameslibrary.data
+package hr.kotwave.gameslibrary.data.db
 
 import androidx.room.ConstructedBy
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.RoomDatabaseConstructor
 import androidx.room.TypeConverters
+import hr.kotwave.gameslibrary.data.ExternalGame
+import hr.kotwave.gameslibrary.data.Game
+import hr.kotwave.gameslibrary.data.MirrorBaseline
+import hr.kotwave.gameslibrary.data.Ownership
+import hr.kotwave.gameslibrary.data.SyncDismissal
 
 @Database(
     entities = [Game::class, Ownership::class, ExternalGame::class, SyncDismissal::class, MirrorBaseline::class],

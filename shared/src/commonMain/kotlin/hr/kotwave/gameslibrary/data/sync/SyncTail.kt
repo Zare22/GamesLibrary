@@ -1,4 +1,6 @@
-package hr.kotwave.gameslibrary.data
+package hr.kotwave.gameslibrary.data.sync
+
+import hr.kotwave.gameslibrary.data.IgdbGame
 
 /**
  * One id-unmatched sync row headed for the Review picker: the store's display [name] and every store

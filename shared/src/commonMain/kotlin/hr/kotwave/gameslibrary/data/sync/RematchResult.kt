@@ -1,4 +1,4 @@
-package hr.kotwave.gameslibrary.data
+package hr.kotwave.gameslibrary.data.sync
 
 /** Outcome of repointing a Game's `igdb_id` to a chosen IGDB entry. */
 sealed interface RematchResult {

@@ -1,4 +1,4 @@
-package hr.kotwave.gameslibrary.data
+package hr.kotwave.gameslibrary.data.db
 
 import androidx.room.migration.Migration
 import androidx.sqlite.SQLiteConnection

@@ -1,5 +1,15 @@
 package hr.kotwave.gameslibrary.data
 
+import hr.kotwave.gameslibrary.data.db.GameDao
+import hr.kotwave.gameslibrary.data.sync.ImportEntry
+import hr.kotwave.gameslibrary.data.sync.ImportSummary
+import hr.kotwave.gameslibrary.data.sync.MatchedAddResult
+import hr.kotwave.gameslibrary.data.sync.RematchResult
+import hr.kotwave.gameslibrary.data.sync.SyncEntry
+import hr.kotwave.gameslibrary.data.sync.SyncReviewPick
+import hr.kotwave.gameslibrary.data.sync.SyncSummary
+import hr.kotwave.gameslibrary.data.sync.SyncTailRow
+import hr.kotwave.gameslibrary.data.sync.SyncTailSplit
 import hr.kotwave.gameslibrary.mirror.MirrorOutcome
 import hr.kotwave.gameslibrary.transfer.ExportedGame
 import hr.kotwave.gameslibrary.transfer.LibraryExport

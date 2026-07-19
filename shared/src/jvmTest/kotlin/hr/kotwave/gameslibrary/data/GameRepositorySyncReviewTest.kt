@@ -1,6 +1,13 @@
 package hr.kotwave.gameslibrary.data
 
 import androidx.room.Room
+import hr.kotwave.gameslibrary.data.db.GameDao
+import hr.kotwave.gameslibrary.data.db.GamesLibraryDatabase
+import hr.kotwave.gameslibrary.data.db.buildGamesLibraryDatabase
+import hr.kotwave.gameslibrary.data.sync.SyncEntry
+import hr.kotwave.gameslibrary.data.sync.SyncReviewPick
+import hr.kotwave.gameslibrary.data.sync.SyncSummary
+import hr.kotwave.gameslibrary.data.sync.SyncTailRow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import java.io.File
@@ -73,7 +80,10 @@ class GameRepositorySyncReviewTest {
     @Test
     fun confirmSyncReviewPickRecordsStoreUidsIgdbLacks() = runTest {
         // The KOTOR shape: the picked IGDB game has no Epic reference at all.
-        val pick = SyncReviewPick(sampleIgdb(igdbId = 501L, name = "Star Wars: KOTOR", refs = emptyList()), listOf("offer1", "item1"))
+        val pick = SyncReviewPick(
+            sampleIgdb(igdbId = 501L, name = "Star Wars: KOTOR", refs = emptyList()),
+            listOf("offer1", "item1")
+        )
 
         val outcome = repository.confirmSyncReview(Store.EPIC, picks = listOf(pick), bare = emptyList(), dismissed = emptyList())
 
@@ -85,7 +95,12 @@ class GameRepositorySyncReviewTest {
         assertEquals(listOf(Source.EPIC_SYNC), dao.ownershipsFor(game.id).map { it.source })
 
         // The re-sync loop closes: the row is now known and the merge dedups it.
-        val split = repository.splitSyncTail(Store.EPIC, listOf(SyncTailRow("Star Wars: KOTOR", listOf("offer1", "item1"))))
+        val split = repository.splitSyncTail(Store.EPIC, listOf(
+            SyncTailRow(
+                "Star Wars: KOTOR",
+                listOf("offer1", "item1")
+            )
+        ))
         assertEquals(emptyList(), split.needsReview)
         val resync = repository.syncStore(Store.EPIC, listOf(SyncEntry.Unmatched(uids = listOf("offer1", "item1"), name = "Star Wars: KOTOR")))
         assertEquals(SyncSummary(added = 0, updated = 1), resync)
@@ -98,7 +113,12 @@ class GameRepositorySyncReviewTest {
 
         val outcome = repository.confirmSyncReview(
             Store.STEAM,
-            picks = listOf(SyncReviewPick(sampleIgdb(igdbId = 5L, refs = emptyList()), listOf("777"))),
+            picks = listOf(
+                SyncReviewPick(
+                    sampleIgdb(igdbId = 5L, refs = emptyList()),
+                    listOf("777")
+                )
+            ),
             bare = emptyList(),
             dismissed = emptyList(),
         )
@@ -126,7 +146,12 @@ class GameRepositorySyncReviewTest {
         assertNull(game.igdbId)
         assertEquals("Obscure Shareware", game.name)
         assertEquals(listOf(Source.GOG_SYNC), dao.ownershipsFor(game.id).map { it.source })
-        val split = repository.splitSyncTail(Store.GOG, listOf(SyncTailRow("Obscure Shareware", listOf("2077"))))
+        val split = repository.splitSyncTail(Store.GOG, listOf(
+            SyncTailRow(
+                "Obscure Shareware",
+                listOf("2077")
+            )
+        ))
         assertEquals(emptyList(), split.needsReview)
     }
 
@@ -141,7 +166,12 @@ class GameRepositorySyncReviewTest {
 
         assertEquals(SyncSummary(added = 0, updated = 0), outcome)
         assertEquals(0, repository.ownedGames.first().size)
-        val split = repository.splitSyncTail(Store.PSN, listOf(SyncTailRow("Netflix", listOf("CUSA0001_00", "10001"))))
+        val split = repository.splitSyncTail(Store.PSN, listOf(
+            SyncTailRow(
+                "Netflix",
+                listOf("CUSA0001_00", "10001")
+            )
+        ))
         assertEquals(emptyList(), split.known)
         assertEquals(emptyList(), split.needsReview)
     }

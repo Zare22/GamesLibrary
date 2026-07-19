@@ -1,4 +1,4 @@
-package hr.kotwave.gameslibrary.data
+package hr.kotwave.gameslibrary.data.db
 
 import androidx.room.Dao
 import androidx.room.Insert
@@ -6,6 +6,15 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Update
+import hr.kotwave.gameslibrary.data.ExternalGame
+import hr.kotwave.gameslibrary.data.Game
+import hr.kotwave.gameslibrary.data.GameWithOwnerships
+import hr.kotwave.gameslibrary.data.MirrorBaseline
+import hr.kotwave.gameslibrary.data.MirrorGameWrite
+import hr.kotwave.gameslibrary.data.Ownership
+import hr.kotwave.gameslibrary.data.Source
+import hr.kotwave.gameslibrary.data.Store
+import hr.kotwave.gameslibrary.data.SyncDismissal
 import kotlinx.coroutines.flow.Flow
 
 @Dao

@@ -1,7 +1,7 @@
 package hr.kotwave.gameslibrary.di
 
 import hr.kotwave.gameslibrary.data.GameRepository
-import hr.kotwave.gameslibrary.data.GamesLibraryDatabase
+import hr.kotwave.gameslibrary.data.db.GamesLibraryDatabase
 import hr.kotwave.gameslibrary.data.LocalDataReset
 import hr.kotwave.gameslibrary.epic.epicModule
 import hr.kotwave.gameslibrary.gog.gogModule

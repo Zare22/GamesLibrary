@@ -1,6 +1,11 @@
 package hr.kotwave.gameslibrary.data
 
 import androidx.room.Room
+import hr.kotwave.gameslibrary.data.db.GameDao
+import hr.kotwave.gameslibrary.data.db.GamesLibraryDatabase
+import hr.kotwave.gameslibrary.data.db.buildGamesLibraryDatabase
+import hr.kotwave.gameslibrary.data.sync.SyncEntry
+import hr.kotwave.gameslibrary.data.sync.SyncTailRow
 import hr.kotwave.gameslibrary.secure.EPIC_TOKEN_KEY
 import hr.kotwave.gameslibrary.secure.GOG_TOKEN_KEY
 import hr.kotwave.gameslibrary.secure.MIRROR_CLIENT_HOST_ENDPOINT_KEY

@@ -7,7 +7,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import hr.kotwave.gameslibrary.data.GameRepository
-import hr.kotwave.gameslibrary.data.ImportSummary
+import hr.kotwave.gameslibrary.data.sync.ImportSummary
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
