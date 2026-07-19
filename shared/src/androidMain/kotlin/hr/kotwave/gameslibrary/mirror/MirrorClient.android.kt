@@ -20,6 +20,9 @@ internal actual fun mirrorEngine(certFingerprint: String): HttpClientEngine = Ok
     }
 }
 
+actual fun isMirrorPinningFailure(failure: Throwable): Boolean =
+    generateSequence(failure) { it.cause.takeIf { cause -> cause !== it } }.any { it is CertificateException }
+
 /** Trusts exactly the paired cert: the presented leaf's SHA-256 must equal the pinned fingerprint. */
 private class PinnedCertTrustManager(private val fingerprint: String) : X509TrustManager {
 

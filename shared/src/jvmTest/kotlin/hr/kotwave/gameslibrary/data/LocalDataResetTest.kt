@@ -5,6 +5,7 @@ import hr.kotwave.gameslibrary.secure.EPIC_TOKEN_KEY
 import hr.kotwave.gameslibrary.secure.GOG_TOKEN_KEY
 import hr.kotwave.gameslibrary.secure.MIRROR_CLIENT_HOST_ENDPOINT_KEY
 import hr.kotwave.gameslibrary.secure.MIRROR_CLIENT_HOST_FINGERPRINT_KEY
+import hr.kotwave.gameslibrary.secure.MIRROR_CLIENT_LAST_MIRROR_AT_KEY
 import hr.kotwave.gameslibrary.secure.MIRROR_CLIENT_NEEDS_REPAIR_KEY
 import hr.kotwave.gameslibrary.secure.MIRROR_CLIENT_PAIRED_AT_KEY
 import hr.kotwave.gameslibrary.secure.MIRROR_CLIENT_TOKEN_KEY
@@ -73,6 +74,7 @@ class LocalDataResetTest {
             put(MIRROR_CLIENT_HOST_ENDPOINT_KEY, "192.168.1.10:56789")
             put(MIRROR_CLIENT_PAIRED_AT_KEY, "1752800000000")
             put(MIRROR_CLIENT_NEEDS_REPAIR_KEY, "true")
+            put(MIRROR_CLIENT_LAST_MIRROR_AT_KEY, "1752810000000")
             put(MIRROR_HOST_KEYSTORE_PASSWORD_KEY, "keystore-pw")
             put(MIRROR_HOST_TOKEN_HASH_KEY, "token-hash")
         }
@@ -94,13 +96,14 @@ class LocalDataResetTest {
         assertNull(secure.get(MIRROR_CLIENT_HOST_ENDPOINT_KEY))
         assertNull(secure.get(MIRROR_CLIENT_PAIRED_AT_KEY))
         assertNull(secure.get(MIRROR_CLIENT_NEEDS_REPAIR_KEY))
+        assertNull(secure.get(MIRROR_CLIENT_LAST_MIRROR_AT_KEY))
         assertNull(secure.get(MIRROR_HOST_KEYSTORE_PASSWORD_KEY))
         assertNull(secure.get(MIRROR_HOST_TOKEN_HASH_KEY))
         assertEquals(
             listOf(
                 STEAM_ID_KEY, GOG_TOKEN_KEY, PSN_TOKEN_KEY, EPIC_TOKEN_KEY,
                 MIRROR_CLIENT_TOKEN_KEY, MIRROR_CLIENT_HOST_FINGERPRINT_KEY, MIRROR_CLIENT_HOST_ENDPOINT_KEY,
-                MIRROR_CLIENT_PAIRED_AT_KEY, MIRROR_CLIENT_NEEDS_REPAIR_KEY,
+                MIRROR_CLIENT_PAIRED_AT_KEY, MIRROR_CLIENT_NEEDS_REPAIR_KEY, MIRROR_CLIENT_LAST_MIRROR_AT_KEY,
                 MIRROR_HOST_KEYSTORE_PASSWORD_KEY, MIRROR_HOST_TOKEN_HASH_KEY,
             ),
             secure.removed,

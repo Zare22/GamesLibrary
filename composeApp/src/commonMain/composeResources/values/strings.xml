@@ -442,4 +442,105 @@
     <string name="mirror_error_version_title">The apps don't match</string>
     <string name="mirror_error_version_body">One of your apps is older — their Mirror versions don't match. Update both, then pair again.</string>
 
+    <!-- Settings › Mirror paired card, last-Mirror line -->
+    <string name="mirror_settings_last_mirror_today">Last Mirror today, %1$s · libraries match</string>
+    <string name="mirror_settings_last_mirror_date">Last Mirror %1$s, %2$s · libraries match</string>
+
+    <!-- Mirror session (phone) -->
+    <string name="mirror_session_title">Mirror</string>
+    <string name="mirror_session_step_pull">Pulling your computer's library</string>
+    <string name="mirror_session_step_pull_done">Pulled your computer's library</string>
+    <string name="mirror_session_step_pull_again">Pulling again</string>
+    <string name="mirror_session_pull_attempt">Your computer changed — attempt %1$d of %2$d</string>
+    <plurals name="mirror_session_pulled_count">
+        <item quantity="one">%1$d game received</item>
+        <item quantity="other">%1$d games received</item>
+    </plurals>
+    <string name="mirror_session_step_compare">Compare both libraries</string>
+    <string name="mirror_session_step_compare_done">Compared both libraries</string>
+    <string name="mirror_session_compare_clean">Everything merged cleanly</string>
+    <plurals name="mirror_session_compare_rows">
+        <item quantity="one">%1$d row needs your call</item>
+        <item quantity="other">%1$d rows need your call</item>
+    </plurals>
+    <string name="mirror_session_step_review">Review</string>
+    <string name="mirror_session_review_skipped">Review — nothing to decide</string>
+    <string name="mirror_session_review_waiting">Waiting for your decisions below</string>
+    <string name="mirror_session_review_kept">Decisions that still apply are kept</string>
+    <string name="mirror_session_step_send">Send the merged library</string>
+    <string name="mirror_session_step_send_live">Sending the merged library</string>
+    <string name="mirror_session_step_apply">Apply here</string>
+    <string name="mirror_session_infoband">Keep both apps open. Nothing is changed on either device until the very end — cancelling now loses nothing.</string>
+    <plurals name="mirror_session_open_review">
+        <item quantity="one">Open Review — %1$d row</item>
+        <item quantity="other">Open Review — %1$d rows</item>
+    </plurals>
+    <string name="mirror_session_cancel_footnote">Or cancel from the back arrow — the Mirror simply stops.</string>
+
+    <!-- Mirror Review -->
+    <string name="mirror_review_title">Review this Mirror</string>
+    <string name="mirror_review_pill_conflicts">CONFLICTS</string>
+    <string name="mirror_review_pill_added_twice">ADDED TWICE</string>
+    <string name="mirror_review_pill_decided">DECIDED</string>
+    <string name="mirror_review_pill_decided_count">%1$d / %2$d</string>
+    <string name="mirror_review_group_changed">Changed on both devices</string>
+    <string name="mirror_review_group_changed_badge">pick a side</string>
+    <string name="mirror_review_group_deleted">Deleted on one device</string>
+    <string name="mirror_review_group_deleted_badge">keep or let it go</string>
+    <string name="mirror_review_group_added_twice">Added twice — same title</string>
+    <string name="mirror_review_group_added_twice_badge">merge or keep both</string>
+    <string name="mirror_review_this_device">This device</string>
+    <string name="mirror_review_other_device">Other device</string>
+    <string name="mirror_review_side_manual">%1$s · by hand</string>
+    <string name="mirror_review_side_matched">%1$s · matched</string>
+    <string name="mirror_review_field_status">Status</string>
+    <string name="mirror_review_field_rating">Your rating</string>
+    <string name="mirror_review_field_wishlist">Wishlist</string>
+    <string name="mirror_review_differs_one">%1$s differs</string>
+    <string name="mirror_review_differs_many">%1$s differ</string>
+    <string name="mirror_review_removed_edited">Removed here · edited there</string>
+    <string name="mirror_review_edited_removed">Edited here · removed there</string>
+    <string name="mirror_review_added_here_matched_there">By hand here · matched there</string>
+    <string name="mirror_review_matched_here_added_there">Matched here · by hand there</string>
+    <string name="mirror_review_removed_here">You removed it</string>
+    <string name="mirror_review_removed_there">Removed on the other device</string>
+    <string name="mirror_review_igdb_match">IGDB match</string>
+    <string name="mirror_review_rating_chip">%1$s / 10</string>
+    <string name="mirror_review_on_wishlist">On the wishlist</string>
+    <string name="mirror_review_not_wishlist">Not on the wishlist</string>
+    <string name="mirror_review_merge">Merge into one</string>
+    <string name="mirror_review_keep_both">Keep both</string>
+    <string name="mirror_review_confirm">Continue Mirror</string>
+    <string name="mirror_review_footnote">%1$d of %2$d decided · everything else already merged cleanly</string>
+
+    <!-- Mirror summary -->
+    <string name="mirror_summary_title">Libraries match</string>
+    <plurals name="mirror_summary_body">
+        <item quantity="one">%1$d game on both devices · %2$s</item>
+        <item quantity="other">%1$d games on both devices · %2$s</item>
+    </plurals>
+    <string name="mirror_summary_time_today">today, %1$s</string>
+    <string name="mirror_summary_time_date">%1$s, %2$s</string>
+    <string name="mirror_summary_side_mine">This device</string>
+    <string name="mirror_summary_side_theirs">Your computer</string>
+    <string name="mirror_summary_added">Added</string>
+    <string name="mirror_summary_updated">Updated</string>
+    <string name="mirror_summary_removed">Removed</string>
+    <string name="mirror_summary_footnote">Removed = your own deletions arriving from the other device. Stores never remove anything.</string>
+    <string name="mirror_summary_first_footnote">A first Mirror never deletes — both devices gained the union of the two libraries.</string>
+    <string name="mirror_summary_matching_title">Already matching</string>
+    <string name="mirror_summary_matching_body">Both libraries were the same — nothing changed on either device. The Baseline still refreshes, so the next Mirror stays exact.</string>
+    <string name="mirror_summary_done">Done</string>
+
+    <!-- Mirror session errors (V4–V7) -->
+    <string name="mirror_error_kept_changing_title">Your computer kept changing</string>
+    <string name="mirror_error_kept_changing_body">Its library changed during every attempt, three times. Nothing was applied on either device. Let the computer finish what it's doing — a Sync, an import — then Mirror again.</string>
+    <string name="mirror_error_lost_title">Lost your computer</string>
+    <string name="mirror_error_lost_body">The connection dropped before anything was applied — both libraries are untouched. Check the hosting screen is still open, then Mirror again.</string>
+    <string name="mirror_error_rejected_title">This pairing is no longer valid</string>
+    <string name="mirror_error_rejected_body">The computer didn't recognize this phone — usually after a reset or a re-pair from another device. Nothing was applied on either device. Pair again from Settings → Mirror.</string>
+    <string name="mirror_error_identity_title">Your computer's identity changed</string>
+    <string name="mirror_error_identity_body">Usually a data reset on the computer. Nothing was applied on either device — scan its new QR to pair again.</string>
+    <string name="mirror_error_mirror_again">Mirror again</string>
+
 </resources>

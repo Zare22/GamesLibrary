@@ -34,6 +34,9 @@ const val MIRROR_CLIENT_PAIRED_AT_KEY = "mirror.client.paired.at"
 /** Set when pinning fails against the paired host (its identity changed) — the card asks to pair again. */
 const val MIRROR_CLIENT_NEEDS_REPAIR_KEY = "mirror.client.needs.repair"
 
+/** When the last Mirror completed on this device, as epoch millis — the paired card's last-Mirror line. */
+const val MIRROR_CLIENT_LAST_MIRROR_AT_KEY = "mirror.client.last.mirror.at"
+
 /** The password of the Mirror host's TLS keystore file; without it the cert regenerates. */
 const val MIRROR_HOST_KEYSTORE_PASSWORD_KEY = "mirror.host.keystore.password"
 

@@ -115,7 +115,7 @@ private val WarnAmber = Color(0xFFFFD24A)
 private val ErrorRed = Color(0xFFF4707A)
 
 @Composable
-actual fun MirrorSettingsSection(onOpenMirror: () -> Unit) {
+actual fun MirrorSettingsSection(onOpenMirror: () -> Unit, onMirrorNow: () -> Unit) {
     SettingsCard {
         SettingsItem(
             icon = AppIcons.Mirror,
@@ -128,7 +128,7 @@ actual fun MirrorSettingsSection(onOpenMirror: () -> Unit) {
 }
 
 @Composable
-actual fun MirrorScreen(onBack: () -> Unit) {
+actual fun MirrorScreen(onBack: () -> Unit, onMirrorNow: () -> Unit) {
     ContentColumn { MirrorHostingScreen(onBack) }
 }
 

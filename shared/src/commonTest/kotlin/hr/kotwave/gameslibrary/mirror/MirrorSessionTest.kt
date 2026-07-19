@@ -10,6 +10,7 @@ import hr.kotwave.gameslibrary.mirror.wire.MirrorWireJson
 import hr.kotwave.gameslibrary.mirror.wire.WireDismissal
 import hr.kotwave.gameslibrary.secure.MIRROR_CLIENT_HOST_ENDPOINT_KEY
 import hr.kotwave.gameslibrary.secure.MIRROR_CLIENT_HOST_FINGERPRINT_KEY
+import hr.kotwave.gameslibrary.secure.MIRROR_CLIENT_LAST_MIRROR_AT_KEY
 import hr.kotwave.gameslibrary.secure.MIRROR_CLIENT_NEEDS_REPAIR_KEY
 import hr.kotwave.gameslibrary.secure.MIRROR_CLIENT_PAIRED_AT_KEY
 import hr.kotwave.gameslibrary.secure.MIRROR_CLIENT_TOKEN_KEY
@@ -22,6 +23,8 @@ import io.ktor.client.engine.mock.respond
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.TextContent
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -213,9 +216,96 @@ class MirrorSessionTest {
     }
 
     @Test
+    fun mirrorReportsProgressInOrderWithCounts() = runTest {
+        val store = FakeLocalStore(current = LibraryExport(games = listOf(phoneGame)))
+        val storage = pairedStorage()
+        val engine = MockEngine { request ->
+            if (request.method == HttpMethod.Get) {
+                respond(pullJson(LibraryExport(games = listOf(hostGame)), "hash-1"))
+            } else {
+                respond("", HttpStatusCode.OK)
+            }
+        }
+        val progress = mutableListOf<MirrorProgress>()
+
+        sessionWith(engine, store, storage).mirror(onProgress = progress::add) { MirrorReviewDecisions() }
+
+        assertEquals(
+            listOf(
+                MirrorProgress.Pulling(1),
+                MirrorProgress.Pulled(1),
+                MirrorProgress.Compared(rowsToDecide = 0, firstMirror = true),
+                MirrorProgress.Pushing,
+                MirrorProgress.Applied,
+            ),
+            progress,
+        )
+        assertNotNull(storage.values[MIRROR_CLIENT_LAST_MIRROR_AT_KEY]?.toLongOrNull())
+    }
+
+    @Test
+    fun rejectedPushReportsTheNextAttemptAndSkipsLastMirrorAt() = runTest {
+        val store = FakeLocalStore(
+            current = LibraryExport(games = listOf(phoneGame)),
+            storedBaseline = LibraryExport(),
+        )
+        val storage = pairedStorage()
+        var pulls = 0
+        val engine = MockEngine { request ->
+            if (request.method == HttpMethod.Get) {
+                pulls++
+                respond(pullJson(LibraryExport(), "hash-$pulls"))
+            } else {
+                respond("", HttpStatusCode.Conflict)
+            }
+        }
+        val progress = mutableListOf<MirrorProgress>()
+
+        val result = sessionWith(engine, store, storage).mirror(onProgress = progress::add) { MirrorReviewDecisions() }
+
+        assertEquals(MirrorSessionResult.HostKeptChanging, result)
+        assertEquals(listOf(1, 2, 3), progress.filterIsInstance<MirrorProgress.Pulling>().map { it.attempt })
+        assertEquals(
+            MirrorProgress.Compared(rowsToDecide = 0, firstMirror = false),
+            progress.first { it is MirrorProgress.Compared },
+        )
+        assertTrue(progress.none { it is MirrorProgress.Applied })
+        assertNull(storage.values[MIRROR_CLIENT_LAST_MIRROR_AT_KEY])
+    }
+
+    @Test
+    fun cancellationDuringThePushWindowStillAppliesBothSides() = runTest {
+        val store = FakeLocalStore(current = LibraryExport(games = listOf(phoneGame)))
+        val storage = pairedStorage()
+        val pushStarted = CompletableDeferred<Unit>()
+        val releasePush = CompletableDeferred<Unit>()
+        val engine = MockEngine { request ->
+            if (request.method == HttpMethod.Get) {
+                respond(pullJson(LibraryExport(), "hash-1"))
+            } else {
+                pushStarted.complete(Unit)
+                releasePush.await()
+                respond("", HttpStatusCode.OK)
+            }
+        }
+        val job = launch {
+            sessionWith(engine, store, storage).mirror { MirrorReviewDecisions() }
+        }
+        pushStarted.await()
+
+        job.cancel()
+        releasePush.complete(Unit)
+        job.join()
+
+        assertEquals(1, store.applied.size)
+        assertNotNull(storage.values[MIRROR_CLIENT_LAST_MIRROR_AT_KEY])
+    }
+
+    @Test
     fun pairStoresTokenNormalizedFingerprintAndEndpoint() = runTest {
         val storage = FakeSecureStorage()
         storage.values[MIRROR_CLIENT_NEEDS_REPAIR_KEY] = "true"
+        storage.values[MIRROR_CLIENT_LAST_MIRROR_AT_KEY] = "1752800000000"
         var pairedSecret: String? = null
         val engine = MockEngine { request ->
             pairedSecret = MirrorWireJson.decodeFromString(
@@ -237,6 +327,7 @@ class MirrorSessionTest {
         assertEquals("192.168.1.10:56790", storage.values[MIRROR_CLIENT_HOST_ENDPOINT_KEY])
         assertNotNull(storage.values[MIRROR_CLIENT_PAIRED_AT_KEY]?.toLongOrNull())
         assertNull(storage.values[MIRROR_CLIENT_NEEDS_REPAIR_KEY])
+        assertNull(storage.values[MIRROR_CLIENT_LAST_MIRROR_AT_KEY])
     }
 
     @Test
@@ -244,6 +335,7 @@ class MirrorSessionTest {
         val storage = pairedStorage()
         storage.values[MIRROR_CLIENT_PAIRED_AT_KEY] = "1752800000000"
         storage.values[MIRROR_CLIENT_NEEDS_REPAIR_KEY] = "true"
+        storage.values[MIRROR_CLIENT_LAST_MIRROR_AT_KEY] = "1752810000000"
         val session = MirrorSession(FakeLocalStore(), storage) { _, _ -> fail("No request expected on unpair") }
 
         session.unpair()

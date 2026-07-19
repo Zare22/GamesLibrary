@@ -7,6 +7,7 @@ import hr.kotwave.gameslibrary.importer.ImportViewModel
 import hr.kotwave.gameslibrary.importer.SharedTextInbox
 import hr.kotwave.gameslibrary.library.LibraryViewModel
 import hr.kotwave.gameslibrary.mirror.MirrorPairingViewModel
+import hr.kotwave.gameslibrary.mirror.MirrorSessionViewModel
 import hr.kotwave.gameslibrary.psn.PsnViewModel
 import hr.kotwave.gameslibrary.settings.SettingsViewModel
 import hr.kotwave.gameslibrary.steam.SteamViewModel
@@ -19,8 +20,9 @@ import org.koin.dsl.module
 
 val appModule: Module = module {
     single { SharedTextInbox() }
-    // Explicit call, not viewModelOf: the injectable fetch-cert lambda keeps its default.
+    // Explicit calls, not viewModelOf: the injectable fetch-cert / clock / pinning lambdas keep their defaults.
     viewModel { MirrorPairingViewModel(get(), get()) }
+    viewModel { MirrorSessionViewModel(get(), get()) }
     viewModelOf(::LibraryViewModel)
     viewModelOf(::DetailViewModel)
     viewModelOf(::SettingsViewModel)

@@ -9,6 +9,7 @@ import hr.kotwave.gameslibrary.mirror.wire.MIRROR_PROTOCOL_VERSION
 import hr.kotwave.gameslibrary.mirror.wire.MirrorPairingPayload
 import hr.kotwave.gameslibrary.mirror.wire.mirrorVerifyCode
 import hr.kotwave.gameslibrary.secure.MIRROR_CLIENT_HOST_ENDPOINT_KEY
+import hr.kotwave.gameslibrary.secure.MIRROR_CLIENT_LAST_MIRROR_AT_KEY
 import hr.kotwave.gameslibrary.secure.MIRROR_CLIENT_NEEDS_REPAIR_KEY
 import hr.kotwave.gameslibrary.secure.MIRROR_CLIENT_PAIRED_AT_KEY
 import hr.kotwave.gameslibrary.secure.MIRROR_CLIENT_TOKEN_KEY
@@ -39,7 +40,12 @@ sealed interface PairingError {
 }
 
 /** The Settings › Mirror card's state: paired coordinates, or a pair-again ask after a host reset. */
-data class PairedState(val endpoint: String, val pairedAtLabel: String?, val needsRepair: Boolean)
+data class PairedState(
+    val endpoint: String,
+    val pairedAtLabel: String?,
+    val needsRepair: Boolean,
+    val lastMirroredAtMillis: Long? = null,
+)
 
 class MirrorPairingViewModel(
     private val session: MirrorSession,
@@ -68,6 +74,7 @@ class MirrorPairingViewModel(
                     endpoint = endpoint,
                     pairedAtLabel = secureStorage.get(MIRROR_CLIENT_PAIRED_AT_KEY)?.toLongOrNull()?.let(::pairedAtLabel),
                     needsRepair = secureStorage.get(MIRROR_CLIENT_NEEDS_REPAIR_KEY) != null,
+                    lastMirroredAtMillis = secureStorage.get(MIRROR_CLIENT_LAST_MIRROR_AT_KEY)?.toLongOrNull(),
                 )
             }
         }
@@ -163,9 +170,18 @@ internal fun Exception.asPairingError(endpoint: String): PairingError = when (th
     else -> PairingError.Unreachable(endpoint)
 }
 
-/** "18 Jul" — the paired card's date half. */
+/** Day plus three-letter month — the paired card's date half. */
 internal fun pairedAtLabel(epochMillis: Long): String {
     val date = Instant.fromEpochMilliseconds(epochMillis).toLocalDateTime(TimeZone.currentSystemDefault()).date
     val month = date.month.name.lowercase().replaceFirstChar { it.uppercase() }.take(3)
     return "${date.day} $month"
+}
+
+/** Zero-padded 24-hour time, plus a day-and-month date part when [epochMillis] falls on a day other than [nowMillis]'s. */
+internal fun mirrorTimeParts(epochMillis: Long, nowMillis: Long): Pair<String?, String> {
+    val zone = TimeZone.currentSystemDefault()
+    val dateTime = Instant.fromEpochMilliseconds(epochMillis).toLocalDateTime(zone)
+    val today = Instant.fromEpochMilliseconds(nowMillis).toLocalDateTime(zone).date
+    val time = "${dateTime.hour.toString().padStart(2, '0')}:${dateTime.minute.toString().padStart(2, '0')}"
+    return (if (dateTime.date == today) null else pairedAtLabel(epochMillis)) to time
 }

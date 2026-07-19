@@ -97,6 +97,8 @@ import hr.kotwave.gameslibrary.resources.mirror_settings_repair_subtitle
 import hr.kotwave.gameslibrary.resources.mirror_settings_unpair
 import hr.kotwave.gameslibrary.resources.mirror_typed_address
 import hr.kotwave.gameslibrary.resources.mirror_typed_connect
+import hr.kotwave.gameslibrary.resources.mirror_settings_last_mirror_date
+import hr.kotwave.gameslibrary.resources.mirror_settings_last_mirror_today
 import hr.kotwave.gameslibrary.resources.mirror_typed_footnote
 import hr.kotwave.gameslibrary.resources.mirror_typed_pin
 import hr.kotwave.gameslibrary.resources.mirror_typed_title
@@ -128,7 +130,7 @@ private val ErrorRed = Color(0xFFF4707A)
 
 /** The phone's pairing flow: scan → (typed → verify) → paired; errors E1–E5 overlay in place. */
 @Composable
-actual fun MirrorScreen(onBack: () -> Unit) {
+actual fun MirrorScreen(onBack: () -> Unit, onMirrorNow: () -> Unit) {
     val viewModel: MirrorPairingViewModel = koinViewModel()
     val tokens = AppTheme.tokens
     Box(Modifier.fillMaxSize()) {
@@ -136,7 +138,7 @@ actual fun MirrorScreen(onBack: () -> Unit) {
             PairingStep.Scan -> ScanStep(viewModel, onBack)
             PairingStep.Typed -> TypedStep(viewModel, onBack = viewModel::backToScan)
             is PairingStep.Verify -> VerifyStep(step, viewModel)
-            is PairingStep.Paired -> PairedStep(step, onDone = onBack)
+            is PairingStep.Paired -> PairedStep(step, onDone = onBack, onMirrorNow = onMirrorNow)
         }
         viewModel.error?.let { error ->
             Box(
@@ -383,7 +385,7 @@ private fun VerifyStep(step: PairingStep.Verify, viewModel: MirrorPairingViewMod
 }
 
 @Composable
-private fun PairedStep(step: PairingStep.Paired, onDone: () -> Unit) {
+private fun PairedStep(step: PairingStep.Paired, onDone: () -> Unit, onMirrorNow: () -> Unit) {
     val tokens = AppTheme.tokens
     Column(Modifier.fillMaxSize().padding(horizontal = tokens.spacing.lg, vertical = tokens.spacing.md)) {
         Column(
@@ -415,9 +417,8 @@ private fun PairedStep(step: PairingStep.Paired, onDone: () -> Unit) {
         }
         PrimaryButton(
             text = stringResource(Res.string.mirror_settings_mirror_now),
-            onClick = {},
+            onClick = onMirrorNow,
             leadingIcon = AppIcons.Sync,
-            enabled = false,
             modifier = Modifier.fillMaxWidth(),
         )
         Spacer(Modifier.height(tokens.spacing.sm))
@@ -526,7 +527,7 @@ private fun ErrorSpec(
 /** Settings › Mirror on the phone: pair row (P1), the paired card (P2), or pair-again (P3). */
 @kotlin.OptIn(ExperimentalMaterial3Api::class)
 @Composable
-actual fun MirrorSettingsSection(onOpenMirror: () -> Unit) {
+actual fun MirrorSettingsSection(onOpenMirror: () -> Unit, onMirrorNow: () -> Unit) {
     val viewModel: MirrorPairingViewModel = koinViewModel()
     var confirmUnpair by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { viewModel.refreshPairedState() }
@@ -546,7 +547,7 @@ actual fun MirrorSettingsSection(onOpenMirror: () -> Unit) {
             if (paired.needsRepair) {
                 RepairCard(onOpenMirror)
             } else {
-                PairedCard(paired, onUnpair = { confirmUnpair = true })
+                PairedCard(paired, onMirrorNow = onMirrorNow, onUnpair = { confirmUnpair = true })
             }
     }
 
@@ -566,9 +567,9 @@ actual fun MirrorSettingsSection(onOpenMirror: () -> Unit) {
     }
 }
 
-/** P2: the paired card — coordinates, last-Mirror line, and the (for now inert) Mirror actions. */
+/** P2: the paired card — coordinates, the last-Mirror line, and the Mirror / Unpair actions. */
 @Composable
-private fun PairedCard(paired: PairedState, onUnpair: () -> Unit) {
+private fun PairedCard(paired: PairedState, onMirrorNow: () -> Unit, onUnpair: () -> Unit) {
     val tokens = AppTheme.tokens
     SettingsCard {
         Column(Modifier.padding(tokens.spacing.md), verticalArrangement = Arrangement.spacedBy(tokens.spacing.sm)) {
@@ -586,16 +587,22 @@ private fun PairedCard(paired: PairedState, onUnpair: () -> Unit) {
             }
             HairlineDivider()
             Text(
-                stringResource(Res.string.mirror_settings_not_mirrored_yet),
+                paired.lastMirroredAtMillis?.let { millis ->
+                    val (date, time) = mirrorTimeParts(millis, System.currentTimeMillis())
+                    if (date == null) {
+                        stringResource(Res.string.mirror_settings_last_mirror_today, time)
+                    } else {
+                        stringResource(Res.string.mirror_settings_last_mirror_date, date, time)
+                    }
+                } ?: stringResource(Res.string.mirror_settings_not_mirrored_yet),
                 style = AppTheme.type.caption,
                 color = tokens.colors.faint,
             )
             Row(horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm)) {
                 PrimaryButton(
                     text = stringResource(Res.string.mirror_settings_mirror_now),
-                    onClick = {},
+                    onClick = onMirrorNow,
                     leadingIcon = AppIcons.Sync,
-                    enabled = false,
                     modifier = Modifier.weight(1f),
                 )
                 SecondaryButton(

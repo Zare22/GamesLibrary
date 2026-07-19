@@ -25,6 +25,12 @@ import io.ktor.http.contentType
 /** The Ktor engine for Mirror calls: OkHttp trusting exactly the cert with [certFingerprint]. */
 internal expect fun mirrorEngine(certFingerprint: String): HttpClientEngine
 
+/**
+ * True when [failure]'s cause chain carries the pinned trust manager's rejection — the host presented
+ * a different cert than the pairing pinned. Plain connect/TLS failures without it stay false.
+ */
+expect fun isMirrorPinningFailure(failure: Throwable): Boolean
+
 internal fun buildMirrorHttpClient(
     engine: HttpClientEngine,
     requestTimeoutMillis: Long = 30_000,

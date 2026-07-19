@@ -35,6 +35,7 @@ import hr.kotwave.gameslibrary.importer.SharedTextInbox
 import hr.kotwave.gameslibrary.gog.GogScreen
 import hr.kotwave.gameslibrary.library.LibraryScreen
 import hr.kotwave.gameslibrary.mirror.MirrorScreen
+import hr.kotwave.gameslibrary.mirror.MirrorSessionScreen
 import hr.kotwave.gameslibrary.navigation.Route
 import hr.kotwave.gameslibrary.epic.EpicScreen
 import hr.kotwave.gameslibrary.psn.PsnScreen
@@ -139,6 +140,7 @@ private fun AppNavHost(navController: NavHostController, modifier: Modifier = Mo
                     onOpenEpic = { navController.navigate(Route.Epic) },
                     onOpenBattleNet = { navController.navigate(Route.BattleNet) },
                     onOpenMirror = { navController.navigate(Route.Mirror) },
+                    onMirrorNow = { navController.navigate(Route.MirrorSession) },
                     onOpenImport = { navController.navigate(Route.LibraryImport) },
                     onOpenPasteImport = { navController.navigate(Route.Import) },
                 )
@@ -166,7 +168,17 @@ private fun AppNavHost(navController: NavHostController, modifier: Modifier = Mo
             ContentColumn { BattleNetScreen(onBack = { navController.popBackStack() }) }
         }
         composable<Route.Mirror> {
-            MirrorScreen(onBack = { navController.popBackStack() })
+            MirrorScreen(
+                onBack = { navController.popBackStack() },
+                onMirrorNow = {
+                    navController.navigate(Route.MirrorSession) {
+                        popUpTo<Route.Mirror> { inclusive = true }
+                    }
+                },
+            )
+        }
+        composable<Route.MirrorSession> {
+            MirrorSessionScreen(onExit = { navController.popBackStack() })
         }
         composable<Route.LibraryImport> {
             LibraryImportScreen(onBack = { navController.popBackStack() })

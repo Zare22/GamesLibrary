@@ -109,6 +109,7 @@ fun SettingsScreen(
     onOpenEpic: () -> Unit,
     onOpenBattleNet: () -> Unit,
     onOpenMirror: () -> Unit,
+    onMirrorNow: () -> Unit,
     onOpenImport: () -> Unit,
     onOpenPasteImport: () -> Unit,
     modifier: Modifier = Modifier,
@@ -198,7 +199,7 @@ fun SettingsScreen(
 
         Spacer(Modifier.height(tokens.spacing.lg))
         SectionLabel(stringResource(Res.string.settings_section_mirror))
-        MirrorSettingsSection(onOpenMirror = onOpenMirror)
+        MirrorSettingsSection(onOpenMirror = onOpenMirror, onMirrorNow = onMirrorNow)
 
         Spacer(Modifier.height(tokens.spacing.lg))
         SectionLabel(stringResource(Res.string.settings_section_library))
