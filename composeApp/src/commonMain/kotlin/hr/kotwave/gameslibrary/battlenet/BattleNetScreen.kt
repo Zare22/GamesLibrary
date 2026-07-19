@@ -47,8 +47,6 @@ import hr.kotwave.gameslibrary.ui.theme.AppTheme
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
-private val ErrorRed = Color(0xFFF4707A)
-
 /**
  * The Battle.net picker: tick owned titles from the fixed [BattleNetCatalog], then the same Matching →
  * Review → Confirm funnel as a paste Import (Store.BATTLE_NET, additive). Drives its own
@@ -181,12 +179,12 @@ private fun IgdbUnreachableNotice() {
     val tokens = AppTheme.tokens
     val shape = RoundedCornerShape(tokens.radii.md)
     Row(
-        Modifier.fillMaxWidth().clip(shape).background(ErrorRed.copy(alpha = 0.10f))
-            .border(1.dp, ErrorRed.copy(alpha = 0.35f), shape).padding(horizontal = tokens.spacing.sm, vertical = tokens.spacing.sm),
+        Modifier.fillMaxWidth().clip(shape).background(tokens.colors.error.copy(alpha = 0.10f))
+            .border(1.dp, tokens.colors.error.copy(alpha = 0.35f), shape).padding(horizontal = tokens.spacing.sm, vertical = tokens.spacing.sm),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs),
     ) {
-        Icon(AppIcons.Close, null, Modifier.size(14.dp), tint = ErrorRed)
+        Icon(AppIcons.Close, null, Modifier.size(14.dp), tint = tokens.colors.error)
         Text(stringResource(Res.string.error_igdb_unreachable), style = AppTheme.type.caption, color = tokens.colors.muted)
     }
 }

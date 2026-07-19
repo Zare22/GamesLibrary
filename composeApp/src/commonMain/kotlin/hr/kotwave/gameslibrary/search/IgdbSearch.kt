@@ -26,7 +26,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -158,7 +157,7 @@ fun IgdbSearchStatus(searching: Boolean, count: Int, failed: Boolean) {
         else -> stringResource(Res.string.no_matches)
     }
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs)) {
-        Box(Modifier.size(7.dp).clip(CircleShape).background(if (failed) Color(0xFFF4707A) else tokens.colors.accent))
+        Box(Modifier.size(7.dp).clip(CircleShape).background(if (failed) tokens.colors.error else tokens.colors.accent))
         Text(text, style = AppTheme.type.caption, color = tokens.colors.faint)
     }
 }

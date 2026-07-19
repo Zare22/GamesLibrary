@@ -74,9 +74,6 @@ import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
-private val EpicError = Color(0xFFF4707A)
-private val ReviewAmber = Color(0xFFFFD24A)
-
 /**
  * The Epic screen: connect an Epic Games account (authorizationCode paste), then additively sync
  * the owned library incl. free claims. The sync's id-unmatched tail goes through the Import funnel's
@@ -227,7 +224,7 @@ private fun ConnectSection(viewModel: EpicViewModel, epic: Color) {
                     )
                     if (state is EpicConnectState.Failed) {
                         Spacer(Modifier.height(tokens.spacing.sm))
-                        Text(state.reason.message(), style = AppTheme.type.caption, color = EpicError)
+                        Text(state.reason.message(), style = AppTheme.type.caption, color = tokens.colors.error)
                     }
                 }
             }
@@ -317,7 +314,7 @@ private fun ConnectedCard(viewModel: EpicViewModel, epic: Color, reviewFailed: B
                 Text(
                     failure.message(),
                     style = AppTheme.type.caption,
-                    color = EpicError,
+                    color = tokens.colors.error,
                 )
             }
 
@@ -326,7 +323,7 @@ private fun ConnectedCard(viewModel: EpicViewModel, epic: Color, reviewFailed: B
                 Text(
                     stringResource(Res.string.error_igdb_unreachable),
                     style = AppTheme.type.caption,
-                    color = EpicError,
+                    color = tokens.colors.error,
                 )
             }
 
@@ -380,8 +377,8 @@ private fun ReviewStat(count: Int, enabled: Boolean, onClick: () -> Unit) {
             .padding(horizontal = tokens.spacing.micro),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(tokens.spacing.micro)) {
-            Text("$count", style = AppTheme.type.numeric.copy(fontSize = 18.sp), color = ReviewAmber)
-            Icon(AppIcons.ChevronRight, null, Modifier.size(14.dp), tint = ReviewAmber)
+            Text("$count", style = AppTheme.type.numeric.copy(fontSize = 18.sp), color = tokens.colors.warning)
+            Icon(AppIcons.ChevronRight, null, Modifier.size(14.dp), tint = tokens.colors.warning)
         }
         Text(stringResource(Res.string.sync_stat_review), style = AppTheme.type.caption.copy(fontSize = 10.sp), color = AppTheme.tokens.colors.faint)
     }

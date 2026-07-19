@@ -83,7 +83,6 @@ import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
 private val SteamWarn = Color(0xFFFFCE4A)
-private val SteamError = Color(0xFFF4707A)
 private const val STEAM_PRIVACY_URL = "https://steamcommunity.com/my/edit/settings"
 
 /**
@@ -233,7 +232,7 @@ private fun ConnectSection(viewModel: SteamViewModel, steam: Color) {
                     )
                     if (state is SteamConnectState.Failed) {
                         Spacer(Modifier.height(tokens.spacing.sm))
-                        Text(state.reason.message(), style = AppTheme.type.caption, color = SteamError)
+                        Text(state.reason.message(), style = AppTheme.type.caption, color = tokens.colors.error)
                     }
                 }
             }
@@ -349,7 +348,7 @@ private fun ConnectedCard(viewModel: SteamViewModel, steam: Color, reviewFailed:
                 Text(
                     stage.message(),
                     style = AppTheme.type.caption,
-                    color = SteamError,
+                    color = tokens.colors.error,
                 )
             }
 
@@ -358,7 +357,7 @@ private fun ConnectedCard(viewModel: SteamViewModel, steam: Color, reviewFailed:
                 Text(
                     stringResource(Res.string.error_igdb_unreachable),
                     style = AppTheme.type.caption,
-                    color = SteamError,
+                    color = tokens.colors.error,
                 )
             }
 

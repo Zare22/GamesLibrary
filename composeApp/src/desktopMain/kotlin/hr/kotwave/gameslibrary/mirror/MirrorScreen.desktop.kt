@@ -111,8 +111,6 @@ import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 
 private val OkGreen = Color(0xFF7DF0B6)
-private val WarnAmber = Color(0xFFFFD24A)
-private val ErrorRed = Color(0xFFF4707A)
 
 @Composable
 actual fun MirrorSettingsSection(onOpenMirror: () -> Unit, onMirrorNow: () -> Unit) {
@@ -247,7 +245,7 @@ private fun HostPill(ui: HostingUi) {
         HostingUi.Starting -> stringResource(Res.string.mirror_host_pill_starting) to AppTheme.tokens.colors.faint
         HostingUi.Stopped, HostingUi.StartFailed -> stringResource(Res.string.mirror_host_pill_stopped) to AppTheme.tokens.colors.faint
         is HostingUi.Hosting -> when {
-            ui.locked -> stringResource(Res.string.mirror_host_pill_locked) to WarnAmber
+            ui.locked -> stringResource(Res.string.mirror_host_pill_locked) to AppTheme.tokens.colors.warning
             ui.feed.any { it.event == MirrorHostEvent.Pulled } && ui.applied == null ->
                 stringResource(Res.string.mirror_host_pill_running) to OkGreen
 
@@ -300,11 +298,11 @@ private fun StartFailedCard(onRetry: () -> Unit) {
     val shape = RoundedCornerShape(tokens.radii.lg)
     Column(
         Modifier.widthIn(max = 560.dp).clip(shape)
-            .background(ErrorRed.copy(alpha = 0.06f)).border(1.dp, ErrorRed.copy(alpha = 0.30f), shape)
+            .background(tokens.colors.error.copy(alpha = 0.06f)).border(1.dp, tokens.colors.error.copy(alpha = 0.30f), shape)
             .padding(tokens.spacing.lg),
         verticalArrangement = Arrangement.spacedBy(tokens.spacing.sm),
     ) {
-        Text(stringResource(Res.string.mirror_host_no_port_title), style = AppTheme.type.bodyStrong, color = ErrorRed)
+        Text(stringResource(Res.string.mirror_host_no_port_title), style = AppTheme.type.bodyStrong, color = tokens.colors.error)
         Text(
             stringResource(
                 Res.string.mirror_host_no_port_body,
@@ -412,7 +410,7 @@ private fun PairingArea(state: HostingUi.Hosting) {
                 InfoBand(
                     title = stringResource(Res.string.mirror_host_firewall_title),
                     body = stringResource(Res.string.mirror_host_firewall_body),
-                    color = WarnAmber,
+                    color = tokens.colors.warning,
                 )
             }
             if (state.hosting.certProvenance == MirrorCertProvenance.REGENERATED) {
@@ -586,7 +584,7 @@ private fun AppliedCard(applied: MirrorHostEvent.Applied) {
             Row(horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xl)) {
                 AppliedCount("+${applied.added}", stringResource(Res.string.mirror_host_applied_added), OkGreen)
                 AppliedCount("${applied.updated}", stringResource(Res.string.mirror_host_applied_updated), AppTheme.tokens.colors.accent)
-                AppliedCount("${applied.removed}", stringResource(Res.string.mirror_host_applied_removed), ErrorRed)
+                AppliedCount("${applied.removed}", stringResource(Res.string.mirror_host_applied_removed), tokens.colors.error)
             }
         }
         Text(stringResource(Res.string.mirror_host_still_hosting), style = AppTheme.type.caption, color = tokens.colors.faint)
@@ -609,11 +607,11 @@ private fun LockedCard() {
     val shape = RoundedCornerShape(tokens.radii.lg)
     Column(
         Modifier.widthIn(max = 560.dp).clip(shape)
-            .background(WarnAmber.copy(alpha = 0.06f)).border(1.dp, WarnAmber.copy(alpha = 0.30f), shape)
+            .background(tokens.colors.warning.copy(alpha = 0.06f)).border(1.dp, tokens.colors.warning.copy(alpha = 0.30f), shape)
             .padding(tokens.spacing.lg),
         verticalArrangement = Arrangement.spacedBy(tokens.spacing.sm),
     ) {
-        Text(stringResource(Res.string.mirror_host_pill_locked), style = AppTheme.type.bodyStrong, color = WarnAmber)
+        Text(stringResource(Res.string.mirror_host_pill_locked), style = AppTheme.type.bodyStrong, color = tokens.colors.warning)
         Text(stringResource(Res.string.mirror_host_locked_body), style = AppTheme.type.body.copy(fontSize = 13.sp), color = tokens.colors.muted)
     }
 }

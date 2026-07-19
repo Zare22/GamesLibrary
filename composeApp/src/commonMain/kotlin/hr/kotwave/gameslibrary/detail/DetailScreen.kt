@@ -111,8 +111,6 @@ import kotlin.math.roundToInt
 private val RatingGreen = Color(0xFF7DF0B6)
 private val RatingGreenBorder = Color(0xFF39D98A)
 private val RatingBlue = Color(0xFFBCD4FF)
-private val Amber = Color(0xFFFFD24A)
-private val OrphanRed = Color(0xFFF4707A)
 private val HeroHeight = 380.dp
 
 /** Actions a detail screen invokes — wired to the [DetailViewModel], or faked in render tests. */
@@ -322,7 +320,7 @@ private fun DetailBody(owned: GameWithOwnerships, igdbUnreachable: Boolean, acti
         OrphanedBanner(onRematch = actions.onRematch)
     }
     if (igdbUnreachable) {
-        InlineNote(stringResource(Res.string.igdb_unreachable_short), OrphanRed)
+        InlineNote(stringResource(Res.string.igdb_unreachable_short), AppTheme.tokens.colors.error)
     }
     if (game.wishlist) {
         NotOwnedSection()
@@ -383,14 +381,14 @@ private fun WishlistPill() {
     Row(
         Modifier
             .clip(shape)
-            .background(Amber.copy(alpha = 0.14f))
-            .border(1.dp, Amber.copy(alpha = 0.40f), shape)
+            .background(tokens.colors.warning.copy(alpha = 0.14f))
+            .border(1.dp, tokens.colors.warning.copy(alpha = 0.40f), shape)
             .padding(horizontal = tokens.spacing.sm, vertical = tokens.spacing.xs),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs),
     ) {
-        Icon(AppIcons.HeartFilled, null, Modifier.size(13.dp), tint = Amber)
-        Text(stringResource(Res.string.detail_on_wishlist), style = AppTheme.type.caption.copy(fontSize = 11.sp), color = Amber)
+        Icon(AppIcons.HeartFilled, null, Modifier.size(13.dp), tint = tokens.colors.warning)
+        Text(stringResource(Res.string.detail_on_wishlist), style = AppTheme.type.caption.copy(fontSize = 11.sp), color = tokens.colors.warning)
     }
 }
 
@@ -615,18 +613,18 @@ private fun NotOwnedSection() {
     SectionHeader(stringResource(Res.string.detail_ownership))
     Row(
         Modifier.fillMaxWidth().clip(shape)
-            .background(Brush.linearGradient(listOf(Amber.copy(alpha = 0.10f), Amber.copy(alpha = 0.02f))))
-            .border(1.dp, Amber.copy(alpha = 0.28f), shape)
+            .background(Brush.linearGradient(listOf(tokens.colors.warning.copy(alpha = 0.10f), tokens.colors.warning.copy(alpha = 0.02f))))
+            .border(1.dp, tokens.colors.warning.copy(alpha = 0.28f), shape)
             .padding(tokens.spacing.md),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm),
     ) {
         Box(
             Modifier.size(40.dp).clip(iconShape)
-                .background(Amber.copy(alpha = 0.14f)).border(1.dp, Amber.copy(alpha = 0.40f), iconShape),
+                .background(tokens.colors.warning.copy(alpha = 0.14f)).border(1.dp, tokens.colors.warning.copy(alpha = 0.40f), iconShape),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(AppIcons.HeartFilled, null, Modifier.size(19.dp), tint = Amber)
+            Icon(AppIcons.HeartFilled, null, Modifier.size(19.dp), tint = tokens.colors.warning)
         }
         Column(Modifier.weight(1f)) {
             Text(stringResource(Res.string.detail_not_owned_title), style = AppTheme.type.bodyStrong, color = tokens.colors.text)
@@ -669,17 +667,17 @@ private fun OrphanedBanner(onRematch: () -> Unit) {
     val iconShape = RoundedCornerShape(tokens.radii.md)
     Column(
         Modifier.fillMaxWidth().clip(shape)
-            .background(OrphanRed.copy(alpha = 0.08f)).border(1.dp, OrphanRed.copy(alpha = 0.35f), shape)
+            .background(tokens.colors.error.copy(alpha = 0.08f)).border(1.dp, tokens.colors.error.copy(alpha = 0.35f), shape)
             .padding(tokens.spacing.md),
         verticalArrangement = Arrangement.spacedBy(tokens.spacing.sm),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm)) {
             Box(
                 Modifier.size(36.dp).clip(iconShape)
-                    .background(OrphanRed.copy(alpha = 0.14f)).border(1.dp, OrphanRed.copy(alpha = 0.40f), iconShape),
+                    .background(tokens.colors.error.copy(alpha = 0.14f)).border(1.dp, tokens.colors.error.copy(alpha = 0.40f), iconShape),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(AppIcons.Sync, null, Modifier.size(18.dp), tint = OrphanRed)
+                Icon(AppIcons.Sync, null, Modifier.size(18.dp), tint = tokens.colors.error)
             }
             Column(Modifier.weight(1f)) {
                 Text(stringResource(Res.string.detail_orphan_title), style = AppTheme.type.bodyStrong, color = tokens.colors.text)
@@ -727,7 +725,7 @@ private fun RematchOverlay(vm: DetailViewModel) {
             IgdbSearchField(value = vm.rematchSearch.query, onValueChange = vm.rematchSearch::updateQuery)
             if (vm.rematchConflict) {
                 Spacer(Modifier.height(tokens.spacing.sm))
-                InlineNote(stringResource(Res.string.detail_rematch_conflict), Amber)
+                InlineNote(stringResource(Res.string.detail_rematch_conflict), tokens.colors.warning)
             }
             if (vm.rematchSearch.query.isNotBlank()) {
                 Spacer(Modifier.height(tokens.spacing.sm))

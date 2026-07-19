@@ -20,6 +20,10 @@ val TextFaint = Color(0xFF646C7D)
 // Accent
 val Accent = Color(0xFF6EA8FF)
 
+// Semantic feedback
+val ErrorRed = Color(0xFFF4707A)
+val WarnAmber = Color(0xFFFFD24A)
+
 // Brand gradient stops
 val BrandGradientStart = Color(0xFF3B6FF0)
 val BrandGradientEnd = Color(0xFF7C4DFF)
@@ -36,7 +40,7 @@ val BackdropBottom = Color(0xFF080A0F)
 val StatusBacklog = Color(0xFF7C8696)
 val StatusPlaying = Color(0xFF39D98A)
 val StatusCompleted = Color(0xFF6EA8FF)
-val StatusDropped = Color(0xFFF4707A)
+val StatusDropped = ErrorRed
 
 // Store accents
 val StoreSteam = Color(0xFF66C0F4)

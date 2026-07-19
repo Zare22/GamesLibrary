@@ -123,8 +123,6 @@ import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
 private val OkGreen = Color(0xFF7DF0B6)
-private val WarnAmber = Color(0xFFFFD24A)
-private val ErrorRed = Color(0xFFF4707A)
 private const val MAX_ATTEMPTS = 3
 
 /** The phone's Mirror session: step checklist (V1–V7), Conflict Review, and the summary. */
@@ -320,7 +318,7 @@ private fun StepRow(state: StepState, title: String, subtitle: String? = null, w
                 },
             )
             subtitle?.let {
-                Text(it, style = AppTheme.type.caption, color = if (warnSubtitle) WarnAmber else tokens.colors.faint)
+                Text(it, style = AppTheme.type.caption, color = if (warnSubtitle) tokens.colors.warning else tokens.colors.faint)
             }
         }
     }
@@ -363,7 +361,7 @@ private fun ReviewContent(review: MirrorSessionPhase.Review, viewModel: MirrorSe
         SessionHeader(stringResource(Res.string.mirror_review_title), onBack = viewModel::backFromReview)
         Spacer(Modifier.height(tokens.spacing.sm))
         Row(horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs), modifier = Modifier.fillMaxWidth()) {
-            ReviewPill(review.conflicts.size.toString(), stringResource(Res.string.mirror_review_pill_conflicts), WarnAmber, Modifier.weight(1f))
+            ReviewPill(review.conflicts.size.toString(), stringResource(Res.string.mirror_review_pill_conflicts), tokens.colors.warning, Modifier.weight(1f))
             ReviewPill(review.collisions.size.toString(), stringResource(Res.string.mirror_review_pill_added_twice), tokens.colors.accent, Modifier.weight(1f))
             ReviewPill(
                 stringResource(Res.string.mirror_review_pill_decided_count, decided, total),
@@ -379,7 +377,7 @@ private fun ReviewContent(review: MirrorSessionPhase.Review, viewModel: MirrorSe
                     GroupHeader(
                         stringResource(Res.string.mirror_review_group_changed),
                         stringResource(Res.string.mirror_review_group_changed_badge),
-                        WarnAmber,
+                        tokens.colors.warning,
                     )
                 }
                 items(userState) { conflict ->
@@ -393,7 +391,7 @@ private fun ReviewContent(review: MirrorSessionPhase.Review, viewModel: MirrorSe
                     GroupHeader(
                         stringResource(Res.string.mirror_review_group_deleted),
                         stringResource(Res.string.mirror_review_group_deleted_badge),
-                        ErrorRed,
+                        tokens.colors.error,
                     )
                 }
                 items(deleteVsEdit) { conflict ->
@@ -548,7 +546,7 @@ private fun ConflictSide(
 ) {
     val tokens = AppTheme.tokens
     val gone = game == null
-    val accent = if (gone) ErrorRed else tokens.colors.accent
+    val accent = if (gone) tokens.colors.error else tokens.colors.accent
     val shape = RoundedCornerShape(tokens.radii.sm)
     Column(
         modifier.clip(shape)
@@ -562,7 +560,7 @@ private fun ConflictSide(
             Text(
                 label.uppercase(),
                 style = AppTheme.type.caption.copy(fontSize = 9.5.sp),
-                color = if (gone) ErrorRed.copy(alpha = 0.8f) else tokens.colors.faint,
+                color = if (gone) tokens.colors.error.copy(alpha = 0.8f) else tokens.colors.faint,
                 modifier = Modifier.weight(1f),
             )
             Box(
@@ -576,8 +574,8 @@ private fun ConflictSide(
         }
         if (game == null) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs)) {
-                Icon(AppIcons.Trash, null, Modifier.size(14.dp), tint = ErrorRed)
-                Text(goneLabel, style = AppTheme.type.caption, color = ErrorRed)
+                Icon(AppIcons.Trash, null, Modifier.size(14.dp), tint = tokens.colors.error)
+                Text(goneLabel, style = AppTheme.type.caption, color = tokens.colors.error)
             }
         } else {
             SideChips(game, fields)
@@ -851,7 +849,7 @@ private fun SummarySide(
         SummaryLine(stringResource(Res.string.mirror_summary_added), "+${counts.added}", OkGreen)
         SummaryLine(stringResource(Res.string.mirror_summary_updated), counts.updated.toString(), AppTheme.tokens.colors.accent)
         if (!firstMirror) {
-            SummaryLine(stringResource(Res.string.mirror_summary_removed), counts.removed.toString(), ErrorRed)
+            SummaryLine(stringResource(Res.string.mirror_summary_removed), counts.removed.toString(), tokens.colors.error)
         }
     }
 }
@@ -878,10 +876,10 @@ private fun FailureContent(failure: MirrorSessionPhase.Failure, onRetry: () -> U
         ) {
             Box(
                 Modifier.size(72.dp).clip(CircleShape)
-                    .background(WarnAmber.copy(alpha = 0.12f)).border(1.dp, WarnAmber.copy(alpha = 0.40f), CircleShape),
+                    .background(tokens.colors.warning.copy(alpha = 0.12f)).border(1.dp, tokens.colors.warning.copy(alpha = 0.40f), CircleShape),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(AppIcons.Close, null, Modifier.size(30.dp), tint = WarnAmber)
+                Icon(AppIcons.Close, null, Modifier.size(30.dp), tint = tokens.colors.warning)
             }
             Spacer(Modifier.height(tokens.spacing.lg))
             Text(

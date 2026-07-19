@@ -92,7 +92,6 @@ import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
-private val OrphanRed = Color(0xFFF4707A)
 private val ExportGreen = Color(0xFF7DF0B6)
 
 /** Stores with no sync yet — shown as disabled "Coming soon" connections (06-settings.html). */
@@ -417,8 +416,8 @@ private fun DangerCard(content: @Composable () -> Unit) {
     val shape = RoundedCornerShape(AppTheme.tokens.radii.lg)
     Column(
         Modifier.fillMaxWidth().clip(shape)
-            .background(OrphanRed.copy(alpha = 0.06f))
-            .border(1.dp, OrphanRed.copy(alpha = 0.30f), shape),
+            .background(AppTheme.tokens.colors.error.copy(alpha = 0.06f))
+            .border(1.dp, AppTheme.tokens.colors.error.copy(alpha = 0.30f), shape),
     ) {
         content()
     }
@@ -436,13 +435,13 @@ private fun DestructiveItem(icon: ImageVector, title: String, subtitle: String, 
     ) {
         Box(
             Modifier.size(36.dp).clip(shape)
-                .background(OrphanRed.copy(alpha = 0.14f)).border(1.dp, OrphanRed.copy(alpha = 0.40f), shape),
+                .background(tokens.colors.error.copy(alpha = 0.14f)).border(1.dp, tokens.colors.error.copy(alpha = 0.40f), shape),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(icon, null, Modifier.size(18.dp), tint = OrphanRed)
+            Icon(icon, null, Modifier.size(18.dp), tint = tokens.colors.error)
         }
         Column(Modifier.weight(1f)) {
-            Text(title, style = AppTheme.type.bodyStrong, color = OrphanRed, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(title, style = AppTheme.type.bodyStrong, color = tokens.colors.error, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(subtitle, style = AppTheme.type.caption, color = tokens.colors.faint, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
         Icon(AppIcons.ChevronRight, null, Modifier.size(17.dp), tint = tokens.colors.faint)
@@ -513,18 +512,18 @@ private fun OrphanedSection(
     val rowShape = RoundedCornerShape(tokens.radii.md)
     Column(
         Modifier.fillMaxWidth().clip(shape)
-            .background(OrphanRed.copy(alpha = 0.06f))
-            .border(1.dp, OrphanRed.copy(alpha = 0.30f), shape)
+            .background(tokens.colors.error.copy(alpha = 0.06f))
+            .border(1.dp, tokens.colors.error.copy(alpha = 0.30f), shape)
             .padding(tokens.spacing.md),
         verticalArrangement = Arrangement.spacedBy(tokens.spacing.sm),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm)) {
             Box(
                 Modifier.size(36.dp).clip(rowShape)
-                    .background(OrphanRed.copy(alpha = 0.14f)).border(1.dp, OrphanRed.copy(alpha = 0.40f), rowShape),
+                    .background(tokens.colors.error.copy(alpha = 0.14f)).border(1.dp, tokens.colors.error.copy(alpha = 0.40f), rowShape),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(AppIcons.Sync, null, Modifier.size(18.dp), tint = OrphanRed)
+                Icon(AppIcons.Sync, null, Modifier.size(18.dp), tint = tokens.colors.error)
             }
             Column(Modifier.weight(1f)) {
                 Text(pluralStringResource(Res.plurals.settings_orphaned_title, games.size, games.size), style = AppTheme.type.bodyStrong, color = tokens.colors.text)

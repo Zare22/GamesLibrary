@@ -64,8 +64,6 @@ import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
-private val Amber = Color(0xFFFFD24A)
-private val ErrorRed = Color(0xFFF4707A)
 private val Ok = Color(0xFF46D39A)
 
 /**
@@ -221,7 +219,7 @@ private fun KindTag(kind: ImportRowKind) {
     val (text, color) = when (kind) {
         ImportRowKind.AlreadyById -> stringResource(Res.string.transfer_kind_already) to AppTheme.tokens.colors.muted
         ImportRowKind.NewMatched -> stringResource(Res.string.transfer_kind_new) to AppTheme.tokens.colors.accent
-        ImportRowKind.TitleCollision -> stringResource(Res.string.transfer_kind_collision) to Amber
+        ImportRowKind.TitleCollision -> stringResource(Res.string.transfer_kind_collision) to AppTheme.tokens.colors.warning
         ImportRowKind.NewManual -> stringResource(Res.string.transfer_kind_manual) to AppTheme.tokens.colors.accent
     }
     Text(text.uppercase(), style = AppTheme.type.section.copy(fontSize = 10.sp), color = color)
@@ -263,10 +261,10 @@ private fun FailedState(message: String, onRetry: () -> Unit, onBack: () -> Unit
         verticalArrangement = Arrangement.Center,
     ) {
         Box(
-            Modifier.size(64.dp).clip(CircleShape).background(ErrorRed.copy(alpha = 0.12f)).border(1.dp, ErrorRed.copy(alpha = 0.40f), CircleShape),
+            Modifier.size(64.dp).clip(CircleShape).background(tokens.colors.error.copy(alpha = 0.12f)).border(1.dp, tokens.colors.error.copy(alpha = 0.40f), CircleShape),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(AppIcons.Close, null, Modifier.size(28.dp), tint = ErrorRed)
+            Icon(AppIcons.Close, null, Modifier.size(28.dp), tint = tokens.colors.error)
         }
         Spacer(Modifier.height(tokens.spacing.lg))
         Text(stringResource(Res.string.transfer_failed_title), style = AppTheme.type.display.copy(fontSize = 20.sp), color = tokens.colors.text)

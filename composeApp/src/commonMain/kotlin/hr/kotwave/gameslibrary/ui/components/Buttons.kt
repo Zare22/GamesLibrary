@@ -29,8 +29,6 @@ import hr.kotwave.gameslibrary.ui.icons.AppIcons
 import hr.kotwave.gameslibrary.ui.theme.AppTheme
 import org.jetbrains.compose.resources.stringResource
 
-private val DestructiveRed = Color(0xFFF4707A)
-
 @Composable
 fun PrimaryButton(
     text: String,
@@ -100,8 +98,8 @@ fun DestructiveButton(
         modifier
             .size(width = 60.dp, height = 50.dp)
             .clip(shape)
-            .background(DestructiveRed.copy(alpha = 0.08f))
-            .border(1.dp, DestructiveRed.copy(alpha = 0.3f), shape)
+            .background(AppTheme.tokens.colors.error.copy(alpha = 0.08f))
+            .border(1.dp, AppTheme.tokens.colors.error.copy(alpha = 0.3f), shape)
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {

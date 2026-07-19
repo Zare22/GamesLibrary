@@ -79,8 +79,6 @@ import hr.kotwave.gameslibrary.ui.model.label
 import hr.kotwave.gameslibrary.ui.theme.AppTheme
 import org.jetbrains.compose.resources.stringResource
 
-private val Amber = Color(0xFFFFD24A)
-
 /** Phone full-screen manual Add. */
 @Composable
 fun AddGameScreen(onClose: () -> Unit, modifier: Modifier = Modifier) {
@@ -409,13 +407,13 @@ private fun SimilarTitleWarning(existing: String) {
         Modifier
             .fillMaxWidth()
             .clip(shape)
-            .background(Amber.copy(alpha = 0.08f))
-            .border(1.dp, Amber.copy(alpha = 0.30f), shape)
+            .background(tokens.colors.warning.copy(alpha = 0.08f))
+            .border(1.dp, tokens.colors.warning.copy(alpha = 0.30f), shape)
             .padding(horizontal = tokens.spacing.sm, vertical = tokens.spacing.sm),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs),
     ) {
-        Icon(AppIcons.Heart, null, Modifier.size(14.dp), tint = Amber)
+        Icon(AppIcons.Heart, null, Modifier.size(14.dp), tint = tokens.colors.warning)
         Text(
             stringResource(Res.string.similar_title_warning, existing),
             style = AppTheme.type.caption,
@@ -488,7 +486,7 @@ private fun WishlistHint() {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs),
     ) {
-        Icon(AppIcons.HeartFilled, null, Modifier.size(13.dp), tint = Amber)
+        Icon(AppIcons.HeartFilled, null, Modifier.size(13.dp), tint = tokens.colors.warning)
         Text(
             stringResource(Res.string.add_wishlist_hint),
             style = AppTheme.type.caption,

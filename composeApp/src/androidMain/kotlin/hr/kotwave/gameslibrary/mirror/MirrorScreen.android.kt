@@ -125,8 +125,6 @@ import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
 private val OkGreen = Color(0xFF7DF0B6)
-private val WarnAmber = Color(0xFFFFD24A)
-private val ErrorRed = Color(0xFFF4707A)
 
 /** The phone's pairing flow: scan → (typed → verify) → paired; errors E1–E5 overlay in place. */
 @Composable
@@ -448,21 +446,21 @@ private fun ErrorCard(error: PairingError) {
     when (error) {
         is PairingError.WrongPin -> ErrorSpec(
             icon = AppIcons.Close,
-            color = WarnAmber,
+            color = AppTheme.tokens.colors.warning,
             title = stringResource(Res.string.mirror_error_wrong_pin_title),
             body = pluralStringResource(Res.plurals.mirror_error_wrong_pin_body, error.remainingAttempts, error.remainingAttempts),
         )
 
         PairingError.Locked -> ErrorSpec(
             icon = AppIcons.Close,
-            color = ErrorRed,
+            color = AppTheme.tokens.colors.error,
             title = stringResource(Res.string.mirror_error_locked_title),
             body = stringResource(Res.string.mirror_error_locked_body),
         )
 
         is PairingError.Unreachable -> ErrorSpec(
             icon = AppIcons.Close,
-            color = WarnAmber,
+            color = AppTheme.tokens.colors.warning,
             title = stringResource(Res.string.mirror_error_unreachable_title, error.endpoint),
             body = null,
         ) {
@@ -480,14 +478,14 @@ private fun ErrorCard(error: PairingError) {
 
         PairingError.NotPairingCode -> ErrorSpec(
             icon = AppIcons.Qr,
-            color = WarnAmber,
+            color = AppTheme.tokens.colors.warning,
             title = stringResource(Res.string.mirror_error_not_pairing_title),
             body = stringResource(Res.string.mirror_error_not_pairing_body),
         )
 
         PairingError.VersionMismatch -> ErrorSpec(
             icon = AppIcons.Sync,
-            color = WarnAmber,
+            color = AppTheme.tokens.colors.warning,
             title = stringResource(Res.string.mirror_error_version_title),
             body = stringResource(Res.string.mirror_error_version_body),
         )
@@ -625,14 +623,14 @@ private fun RepairCard(onOpenMirror: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm),
         ) {
-            ItemIcon(AppIcons.Mirror, WarnAmber)
+            ItemIcon(AppIcons.Mirror, tokens.colors.warning)
             Box(Modifier.weight(1f)) {
                 ItemText(
                     title = stringResource(Res.string.mirror_settings_paired_title),
                     subtitle = stringResource(Res.string.mirror_settings_repair_subtitle),
                 )
             }
-            StatusPill(stringResource(Res.string.mirror_settings_repair_pill), WarnAmber)
+            StatusPill(stringResource(Res.string.mirror_settings_repair_pill), tokens.colors.warning)
             Icon(AppIcons.ChevronRight, null, Modifier.size(17.dp), tint = tokens.colors.faint)
         }
     }

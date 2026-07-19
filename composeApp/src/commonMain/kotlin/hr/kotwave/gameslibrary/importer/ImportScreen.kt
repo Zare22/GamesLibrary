@@ -100,9 +100,6 @@ import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 
-private val Amber = Color(0xFFFFD24A)
-private val ErrorRed = Color(0xFFF4707A)
-
 /** Ambiguous candidates show this many matches inline before a "Show all" expander. */
 private const val AMBIGUOUS_INLINE_CAP = 3
 
@@ -143,7 +140,7 @@ private fun IntakePhase(viewModel: ImportViewModel, modifier: Modifier) {
         Column((if (compact) Modifier.weight(1f) else Modifier.fillMaxWidth()).verticalScroll(rememberScrollState())) {
             Spacer(Modifier.height(tokens.spacing.md))
             if (viewModel.failed) {
-                Notice(stringResource(Res.string.error_igdb_unreachable), ErrorRed)
+                Notice(stringResource(Res.string.error_igdb_unreachable), tokens.colors.error)
                 Spacer(Modifier.height(tokens.spacing.md))
             }
             StepLabel(1, stringResource(Res.string.import_step_paste))
@@ -317,7 +314,7 @@ internal fun ReviewPhase(viewModel: ImportViewModel, modifier: Modifier) {
         }
         Spacer(Modifier.height(tokens.spacing.xs))
         if (viewModel.failed) {
-            Notice(stringResource(Res.string.import_review_error), ErrorRed)
+            Notice(stringResource(Res.string.import_review_error), tokens.colors.error)
             Spacer(Modifier.height(tokens.spacing.xs))
         }
 
@@ -379,7 +376,7 @@ private fun CandidateRow(candidate: ImportCandidate, showDismiss: Boolean) {
 @Composable
 private fun DismissAction(candidate: ImportCandidate) {
     val tokens = AppTheme.tokens
-    val color = if (candidate.dismissed) ErrorRed else tokens.colors.muted
+    val color = if (candidate.dismissed) tokens.colors.error else tokens.colors.muted
     Row(
         Modifier.clip(RoundedCornerShape(tokens.radii.md)).clickable(onClick = candidate::toggleDismissed)
             .padding(horizontal = tokens.spacing.sm, vertical = tokens.spacing.xs),
@@ -417,7 +414,7 @@ private fun AmbiguousHead(candidate: ImportCandidate, options: List<IgdbSearchRe
     val tokens = AppTheme.tokens
     var expanded by remember { mutableStateOf(false) }
     val limit = if (expanded) options.size else maxOf(AMBIGUOUS_INLINE_CAP, candidate.pickedIndex + 1)
-    MatchTag(stringResource(Res.string.import_tag_pick), Amber)
+    MatchTag(stringResource(Res.string.import_tag_pick), tokens.colors.warning)
     Spacer(Modifier.height(tokens.spacing.xs))
     Text("“${candidate.rawTitle}”", style = AppTheme.type.bodyStrong, color = tokens.colors.text, maxLines = 1, overflow = TextOverflow.Ellipsis)
     Spacer(Modifier.height(tokens.spacing.micro))
@@ -564,12 +561,12 @@ private fun SimilarTitleWarning(existing: String) {
     val tokens = AppTheme.tokens
     val shape = RoundedCornerShape(tokens.radii.md)
     Row(
-        Modifier.fillMaxWidth().clip(shape).background(Amber.copy(alpha = 0.08f))
-            .border(1.dp, Amber.copy(alpha = 0.30f), shape).padding(horizontal = tokens.spacing.sm, vertical = tokens.spacing.sm),
+        Modifier.fillMaxWidth().clip(shape).background(tokens.colors.warning.copy(alpha = 0.08f))
+            .border(1.dp, tokens.colors.warning.copy(alpha = 0.30f), shape).padding(horizontal = tokens.spacing.sm, vertical = tokens.spacing.sm),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs),
     ) {
-        Icon(AppIcons.Heart, null, Modifier.size(14.dp), tint = Amber)
+        Icon(AppIcons.Heart, null, Modifier.size(14.dp), tint = tokens.colors.warning)
         Text(
             stringResource(Res.string.similar_title_warning, existing),
             style = AppTheme.type.caption,
