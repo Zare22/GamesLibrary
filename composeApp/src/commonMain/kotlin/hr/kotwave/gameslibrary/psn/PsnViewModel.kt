@@ -160,7 +160,7 @@ class PsnViewModel(
                 // Sony's purchased list rarely carries a conceptId — resolve the gap per titleId,
                 // skipping titles whose Game is already IGDB-matched from an earlier sync.
                 val conceptless = owned.filter { it.conceptId == null }.map { it.titleId }
-                val alreadyMatched = repository.psnUidsAlreadyMatched(conceptless)
+                val alreadyMatched = repository.uidsAlreadyMatched(Store.PSN, conceptless)
                 val resolved = psnClient.resolveConceptIds(fresh.accessToken, conceptless.filterNot { it in alreadyMatched })
                 val library = owned.map { row ->
                     if (row.conceptId == null) row.copy(conceptId = resolved[row.titleId]) else row

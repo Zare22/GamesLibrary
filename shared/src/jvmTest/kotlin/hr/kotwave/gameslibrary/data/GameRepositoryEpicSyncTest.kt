@@ -171,7 +171,7 @@ class GameRepositoryEpicSyncTest {
     }
 
     @Test
-    fun epicUidsAlreadyMatchedReturnsOnlyIgdbMatchedUids() = runTest {
+    fun uidsAlreadyMatchedReturnsOnlyIgdbMatchedEpicUids() = runTest {
         repository.syncStore(
             Store.EPIC,
             listOf(
@@ -180,7 +180,7 @@ class GameRepositoryEpicSyncTest {
             ),
         )
 
-        val matched = repository.epicUidsAlreadyMatched(listOf("catItem1", "fm24item", "neverSeen"))
+        val matched = repository.uidsAlreadyMatched(Store.EPIC, listOf("catItem1", "fm24item", "neverSeen"))
 
         assertEquals(setOf("catItem1"), matched)
     }

@@ -247,12 +247,12 @@ class GameRepository(
     }
 
     /**
-     * Which of these PSN [uids] already belong to an IGDB-matched Game — their rows need no concept
-     * resolution on a re-sync. Chunked to respect SQLite's bound-parameter limit.
+     * Which of these [store] [uids] already belong to an IGDB-matched Game — their rows need no
+     * store-API resolution on a re-sync. Chunked to respect SQLite's bound-parameter limit.
      */
-    suspend fun psnUidsAlreadyMatched(uids: List<String>): Set<String> =
+    suspend fun uidsAlreadyMatched(store: Store, uids: List<String>): Set<String> =
         uids.distinct().chunked(UID_QUERY_CHUNK)
-            .flatMap { gameDao.externalUidsWithIgdbMatch(PSN_EXTERNAL_CATEGORY, it) }
+            .flatMap { gameDao.externalUidsWithIgdbMatch(syncCategoryFor(store), it) }
             .toSet()
 
     /**
@@ -276,15 +276,6 @@ class GameRepository(
             gameDao.insertExternalGames(missing.map { ExternalGame(gameId = gameId, category = category, uid = it) })
         }
     }
-
-    /**
-     * Which of these Epic [uids] already belong to an IGDB-matched Game — their namespaces need no
-     * offer resolution on a re-sync. Chunked to respect SQLite's bound-parameter limit.
-     */
-    suspend fun epicUidsAlreadyMatched(uids: List<String>): Set<String> =
-        uids.distinct().chunked(UID_QUERY_CHUNK)
-            .flatMap { gameDao.externalUidsWithIgdbMatch(EPIC_EXTERNAL_CATEGORY, it) }
-            .toSet()
 
     /**
      * Partitions a sync's id-unmatched tail for the Review picker: rows with any uid already on a Game

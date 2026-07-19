@@ -167,7 +167,7 @@ class GameRepositoryPsnSyncTest {
     }
 
     @Test
-    fun psnUidsAlreadyMatchedReturnsOnlyIgdbMatchedUids() = runTest {
+    fun uidsAlreadyMatchedReturnsOnlyIgdbMatchedPsnUids() = runTest {
         repository.syncStore(
             Store.PSN,
             listOf(
@@ -176,9 +176,10 @@ class GameRepositoryPsnSyncTest {
             ),
         )
 
-        val matched = repository.psnUidsAlreadyMatched(listOf("PPSA1_00", "CUSA2_00", "CUSA3_00"))
+        val matched = repository.uidsAlreadyMatched(Store.PSN, listOf("PPSA1_00", "CUSA2_00", "CUSA3_00"))
 
         assertEquals(setOf("PPSA1_00"), matched)
+        assertEquals(emptySet<String>(), repository.uidsAlreadyMatched(Store.EPIC, listOf("PPSA1_00")))
     }
 
     private fun sampleIgdb(igdbId: Long, name: String = "Sample Game"): IgdbGame = IgdbGame(

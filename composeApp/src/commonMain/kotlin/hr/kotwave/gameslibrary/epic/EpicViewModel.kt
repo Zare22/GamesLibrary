@@ -159,7 +159,7 @@ class EpicViewModel(
                 }
                 stage = EpicSyncFailure.CatalogResolve
                 // Namespaces whose items are all IGDB-matched from an earlier sync skip the offers leg.
-                val alreadyMatched = repository.epicUidsAlreadyMatched(items.map { it.catalogItemId })
+                val alreadyMatched = repository.uidsAlreadyMatched(Store.EPIC, items.map { it.catalogItemId })
                 val owned = epicClient.resolveOwnedGames(fresh.accessToken, items, alreadyMatched)
                 ownedCount = owned.size
                 stage = EpicSyncFailure.IgdbMatch
