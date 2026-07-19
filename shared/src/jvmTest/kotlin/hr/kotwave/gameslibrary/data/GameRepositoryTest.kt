@@ -383,14 +383,14 @@ class GameRepositoryTest {
 
     @Test
     fun steamSyncAddsMatchedAndUnmatchedGames() = runTest {
-        val summary = repository.syncSteamGames(
+        val summary = repository.syncStore(Store.STEAM,
             listOf(
-                SteamSyncEntry.Matched(sampleIgdb(igdbId = 1942L, name = "The Witcher 3")),
-                SteamSyncEntry.Unmatched(appid = "999", name = "Some Indie"),
+                SyncEntry.Matched(sampleIgdb(igdbId = 1942L, name = "The Witcher 3")),
+                SyncEntry.Unmatched(uids = listOf("999"), name = "Some Indie"),
             ),
         )
 
-        assertEquals(SteamSyncSummary(added = 2, updated = 0), summary)
+        assertEquals(SyncSummary(added = 2, updated = 0), summary)
         val owned = repository.ownedGames.first()
         assertEquals(2, owned.size)
         owned.forEach { tile ->
@@ -405,24 +405,24 @@ class GameRepositoryTest {
     @Test
     fun steamResyncIsIdempotent() = runTest {
         val entries = listOf(
-            SteamSyncEntry.Matched(sampleIgdb(igdbId = 1942L)),
-            SteamSyncEntry.Unmatched(appid = "999", name = "Some Indie"),
+            SyncEntry.Matched(sampleIgdb(igdbId = 1942L)),
+            SyncEntry.Unmatched(uids = listOf("999"), name = "Some Indie"),
         )
-        repository.syncSteamGames(entries)
+        repository.syncStore(Store.STEAM, entries)
 
-        val summary = repository.syncSteamGames(entries)
+        val summary = repository.syncStore(Store.STEAM, entries)
 
-        assertEquals(SteamSyncSummary(added = 0, updated = 2), summary)
+        assertEquals(SyncSummary(added = 0, updated = 2), summary)
         assertEquals(2, repository.ownedGames.first().size)
     }
 
     @Test
     fun steamUnmatchedDedupsByAppidNotName() = runTest {
-        repository.syncSteamGames(listOf(SteamSyncEntry.Unmatched(appid = "999", name = "Indie")))
+        repository.syncStore(Store.STEAM, listOf(SyncEntry.Unmatched(uids = listOf("999"), name = "Indie")))
 
-        val summary = repository.syncSteamGames(listOf(SteamSyncEntry.Unmatched(appid = "999", name = "Indie Renamed")))
+        val summary = repository.syncStore(Store.STEAM, listOf(SyncEntry.Unmatched(uids = listOf("999"), name = "Indie Renamed")))
 
-        assertEquals(SteamSyncSummary(added = 0, updated = 1), summary)
+        assertEquals(SyncSummary(added = 0, updated = 1), summary)
         val game = dao.getGameByExternalUid(1, "999")!!
         assertEquals("Indie", game.name) // name is never overwritten
         assertEquals(1, repository.ownedGames.first().size)
@@ -433,7 +433,7 @@ class GameRepositoryTest {
         val added = repository.addMatchedGame(sampleIgdb(igdbId = 5L), wishlist = false, stores = setOf(Store.STEAM))
         assertEquals(Source.MANUAL, dao.ownershipsFor(added.gameId).single().source)
 
-        repository.syncSteamGames(listOf(SteamSyncEntry.Matched(sampleIgdb(igdbId = 5L))))
+        repository.syncStore(Store.STEAM, listOf(SyncEntry.Matched(sampleIgdb(igdbId = 5L))))
 
         val ownership = dao.ownershipsFor(added.gameId).single()
         assertEquals(Store.STEAM, ownership.store)
@@ -450,7 +450,7 @@ class GameRepositoryTest {
         )
         repository.setUserRating(added.gameId, 9.0)
 
-        repository.syncSteamGames(listOf(SteamSyncEntry.Matched(sampleIgdb(igdbId = 7L, name = "Changed Name"))))
+        repository.syncStore(Store.STEAM, listOf(SyncEntry.Matched(sampleIgdb(igdbId = 7L, name = "Changed Name"))))
 
         val game = dao.getGame(added.gameId)!!
         assertEquals("Original Name", game.name) // cached metadata is never overwritten by a sync
@@ -463,7 +463,7 @@ class GameRepositoryTest {
     fun steamSyncOnWishlistedGameClearsWishlistAndOwnsIt() = runTest {
         val wished = repository.addMatchedGame(sampleIgdb(igdbId = 8L), wishlist = true)
 
-        repository.syncSteamGames(listOf(SteamSyncEntry.Matched(sampleIgdb(igdbId = 8L))))
+        repository.syncStore(Store.STEAM, listOf(SyncEntry.Matched(sampleIgdb(igdbId = 8L))))
 
         val game = dao.getGame(wished.gameId)!!
         assertEquals(false, game.wishlist)
@@ -471,6 +471,29 @@ class GameRepositoryTest {
         val ownership = dao.ownershipsFor(wished.gameId).single()
         assertEquals(Store.STEAM, ownership.store)
         assertEquals(Source.STEAM_SYNC, ownership.source)
+    }
+
+    @Test
+    fun steamMatchedUpgradesBareGameInPlace() = runTest {
+        repository.syncStore(Store.STEAM, listOf(SyncEntry.Unmatched(uids = listOf("570"), name = "Bare Steam Game")))
+        val bare = dao.getGameByExternalUid(1, "570")!!
+        repository.setUserRating(bare.id, 9.0)
+
+        val summary = repository.syncStore(
+            Store.STEAM,
+            listOf(SyncEntry.Matched(sampleIgdb(igdbId = 7346L, name = "Breath of the Wild"), uids = listOf("570"))),
+        )
+
+        assertEquals(SyncSummary(added = 0, updated = 1), summary)
+        assertEquals(1, repository.ownedGames.first().size)
+        val upgraded = dao.getGame(bare.id)!!
+        assertEquals(7346L, upgraded.igdbId)
+        assertEquals("Breath of the Wild", upgraded.name)
+        assertEquals("co3p2d", upgraded.coverImageId)
+        assertEquals(9.0, upgraded.userRating) // local state survives the upgrade
+        assertEquals(Status.BACKLOG, upgraded.status)
+        assertEquals(bare.id, dao.getGameByExternalUid(1, "570")!!.id)
+        assertEquals(bare.id, dao.getGameByExternalUid(1, "1234")!!.id)
     }
 
     @Test

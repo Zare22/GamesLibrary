@@ -36,7 +36,7 @@ class GameRepositorySyncReviewTest {
 
     @Test
     fun splitSyncTailPartitionsKnownDismissedAndFresh() = runTest {
-        repository.syncPsnGames(listOf(PsnSyncEntry.Unmatched(psnUids = listOf("CUSA1_00"), name = "Bare From Earlier")))
+        repository.syncStore(Store.PSN, listOf(SyncEntry.Unmatched(uids = listOf("CUSA1_00"), name = "Bare From Earlier")))
         repository.confirmSyncReview(
             Store.PSN,
             picks = emptyList(),
@@ -55,7 +55,7 @@ class GameRepositorySyncReviewTest {
 
     @Test
     fun splitSyncTailKnownUidWinsOverDismissedOnTheSameRow() = runTest {
-        repository.syncPsnGames(listOf(PsnSyncEntry.Unmatched(psnUids = listOf("CUSA1_00"), name = "Bare")))
+        repository.syncStore(Store.PSN, listOf(SyncEntry.Unmatched(uids = listOf("CUSA1_00"), name = "Bare")))
         repository.confirmSyncReview(
             Store.PSN,
             picks = emptyList(),
@@ -77,7 +77,7 @@ class GameRepositorySyncReviewTest {
 
         val outcome = repository.confirmSyncReview(Store.EPIC, picks = listOf(pick), bare = emptyList(), dismissed = emptyList())
 
-        assertEquals(SyncReviewOutcome(added = 1, updated = 0), outcome)
+        assertEquals(SyncSummary(added = 1, updated = 0), outcome)
         val game = dao.getGameByExternalUid(26, "offer1")
         assertNotNull(game)
         assertEquals(501L, game.igdbId)
@@ -87,8 +87,8 @@ class GameRepositorySyncReviewTest {
         // The re-sync loop closes: the row is now known and the merge dedups it.
         val split = repository.splitSyncTail(Store.EPIC, listOf(SyncTailRow("Star Wars: KOTOR", listOf("offer1", "item1"))))
         assertEquals(emptyList(), split.needsReview)
-        val resync = repository.syncEpicGames(listOf(EpicSyncEntry.Unmatched(epicUids = listOf("offer1", "item1"), name = "Star Wars: KOTOR")))
-        assertEquals(EpicSyncSummary(added = 0, updated = 1), resync)
+        val resync = repository.syncStore(Store.EPIC, listOf(SyncEntry.Unmatched(uids = listOf("offer1", "item1"), name = "Star Wars: KOTOR")))
+        assertEquals(SyncSummary(added = 0, updated = 1), resync)
         assertEquals(1, repository.ownedGames.first().size)
     }
 
@@ -103,7 +103,7 @@ class GameRepositorySyncReviewTest {
             dismissed = emptyList(),
         )
 
-        assertEquals(SyncReviewOutcome(added = 0, updated = 1), outcome)
+        assertEquals(SyncSummary(added = 0, updated = 1), outcome)
         assertEquals(added.gameId, dao.getGameByExternalUid(1, "777")?.id)
         val ownerships = dao.ownershipsFor(added.gameId)
         assertEquals(setOf(Store.GOG, Store.STEAM), ownerships.map { it.store }.toSet())
@@ -120,7 +120,7 @@ class GameRepositorySyncReviewTest {
             dismissed = emptyList(),
         )
 
-        assertEquals(SyncReviewOutcome(added = 1, updated = 0), outcome)
+        assertEquals(SyncSummary(added = 1, updated = 0), outcome)
         val game = dao.getGameByExternalUid(5, "2077")
         assertNotNull(game)
         assertNull(game.igdbId)
@@ -139,7 +139,7 @@ class GameRepositorySyncReviewTest {
             dismissed = listOf(SyncTailRow("Netflix", listOf("CUSA0001_00", "10001"))),
         )
 
-        assertEquals(SyncReviewOutcome(added = 0, updated = 0), outcome)
+        assertEquals(SyncSummary(added = 0, updated = 0), outcome)
         assertEquals(0, repository.ownedGames.first().size)
         val split = repository.splitSyncTail(Store.PSN, listOf(SyncTailRow("Netflix", listOf("CUSA0001_00", "10001"))))
         assertEquals(emptyList(), split.known)
@@ -155,9 +155,9 @@ class GameRepositorySyncReviewTest {
 
     @Test
     fun syncRecordsEntryUidsOnExistingMatchedGame() = runTest {
-        repository.syncPsnGames(listOf(PsnSyncEntry.Matched(sampleIgdb(igdbId = 7L), psnUids = listOf("PPSA7_00"))))
+        repository.syncStore(Store.PSN, listOf(SyncEntry.Matched(sampleIgdb(igdbId = 7L), uids = listOf("PPSA7_00"))))
 
-        repository.syncPsnGames(listOf(PsnSyncEntry.Matched(sampleIgdb(igdbId = 7L), psnUids = listOf("PPSA7_00", "CUSA7_00"))))
+        repository.syncStore(Store.PSN, listOf(SyncEntry.Matched(sampleIgdb(igdbId = 7L), uids = listOf("PPSA7_00", "CUSA7_00"))))
 
         val game = dao.getGameByExternalUid(36, "CUSA7_00")
         assertNotNull(game)

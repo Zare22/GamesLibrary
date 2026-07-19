@@ -6,9 +6,9 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import hr.kotwave.gameslibrary.data.GameRepository
-import hr.kotwave.gameslibrary.data.PsnSyncEntry
-import hr.kotwave.gameslibrary.data.PsnSyncSummary
 import hr.kotwave.gameslibrary.data.Store
+import hr.kotwave.gameslibrary.data.SyncEntry
+import hr.kotwave.gameslibrary.data.SyncSummary
 import hr.kotwave.gameslibrary.data.SyncTailRow
 import hr.kotwave.gameslibrary.igdb.IgdbClient
 import hr.kotwave.gameslibrary.importer.SyncReviewResult
@@ -37,7 +37,7 @@ enum class PsnSyncFailure { TokenRefresh, PsnFetch, QueryOutdated, IgdbMatch, Me
 /**
  * PSN screen state: "Connect PlayStation" opens the sign-in + npsso paste capture ([PsnConnectCapture] +
  * [PsnAuth]), persists the resulting token through [SecureStorage], then the additive sync does the
- * PSN + IGDB networking and hands resolved entries to [GameRepository.syncPsnGames] — the merge lives
+ * PSN + IGDB networking and hands resolved entries to [GameRepository.syncStore] — the merge lives
  * in `:shared`.
  */
 class PsnViewModel(
@@ -65,7 +65,7 @@ class PsnViewModel(
     var ownedCount by mutableStateOf<Int?>(null)
         private set
 
-    var lastSummary by mutableStateOf<PsnSyncSummary?>(null)
+    var lastSummary by mutableStateOf<SyncSummary?>(null)
         private set
 
     /** The last sync's needs-review tail: id-unmatched rows the Review picker can settle. */
@@ -128,7 +128,7 @@ class PsnViewModel(
 
     /** Folds a confirmed Review's merge counts into the last summary and drops its settled rows from the tail. */
     fun absorbReview(result: SyncReviewResult) {
-        lastSummary = PsnSyncSummary(
+        lastSummary = SyncSummary(
             added = (lastSummary?.added ?: 0) + result.added,
             updated = (lastSummary?.updated ?: 0) + result.updated,
         )
@@ -154,7 +154,7 @@ class PsnViewModel(
                 val owned = psnClient.getOwnedGames(fresh.accessToken)
                 ownedCount = owned.size
                 if (owned.isEmpty()) {
-                    lastSummary = PsnSyncSummary(added = 0, updated = 0)
+                    lastSummary = SyncSummary(added = 0, updated = 0)
                     return@launch
                 }
                 // Sony's purchased list rarely carries a conceptId — resolve the gap per titleId,
@@ -183,11 +183,11 @@ class PsnViewModel(
                 )
                 val entries = buildList {
                     rowsByGame.forEach { (game, rows) ->
-                        add(PsnSyncEntry.Matched(game, rows.flatMap { listOfNotNull(it.titleId, it.conceptId) }.distinct()))
+                        add(SyncEntry.Matched(game, rows.flatMap { listOfNotNull(it.titleId, it.conceptId) }.distinct()))
                     }
-                    split.known.forEach { add(PsnSyncEntry.Unmatched(psnUids = it.uids, name = it.name)) }
+                    split.known.forEach { add(SyncEntry.Unmatched(uids = it.uids, name = it.name)) }
                 }
-                lastSummary = repository.syncPsnGames(entries)
+                lastSummary = repository.syncStore(Store.PSN, entries)
                 reviewTail = split.needsReview
             } catch (e: CancellationException) {
                 throw e

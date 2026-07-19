@@ -6,9 +6,9 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import hr.kotwave.gameslibrary.data.GameRepository
-import hr.kotwave.gameslibrary.data.GogSyncEntry
-import hr.kotwave.gameslibrary.data.GogSyncSummary
 import hr.kotwave.gameslibrary.data.Store
+import hr.kotwave.gameslibrary.data.SyncEntry
+import hr.kotwave.gameslibrary.data.SyncSummary
 import hr.kotwave.gameslibrary.data.SyncTailRow
 import hr.kotwave.gameslibrary.igdb.IgdbClient
 import hr.kotwave.gameslibrary.importer.SyncReviewResult
@@ -37,7 +37,7 @@ enum class GogSyncStage { TokenRefresh, GogFetch, IgdbMatch, Merge }
 /**
  * GOG screen state: "Connect GOG" opens the OAuth2 login ([GogConnectCapture] + [GogAuth]), persists the
  * resulting token through [SecureStorage], then the additive sync does the GOG + IGDB networking and
- * hands resolved entries to [GameRepository.syncGogGames] — the merge lives in `:shared`.
+ * hands resolved entries to [GameRepository.syncStore] — the merge lives in `:shared`.
  */
 class GogViewModel(
     private val repository: GameRepository,
@@ -61,7 +61,7 @@ class GogViewModel(
     var ownedCount by mutableStateOf<Int?>(null)
         private set
 
-    var lastSummary by mutableStateOf<GogSyncSummary?>(null)
+    var lastSummary by mutableStateOf<SyncSummary?>(null)
         private set
 
     /** The last sync's needs-review tail: id-unmatched rows the Review picker can settle. */
@@ -122,7 +122,7 @@ class GogViewModel(
 
     /** Folds a confirmed Review's merge counts into the last summary and drops its settled rows from the tail. */
     fun absorbReview(result: SyncReviewResult) {
-        lastSummary = GogSyncSummary(
+        lastSummary = SyncSummary(
             added = (lastSummary?.added ?: 0) + result.added,
             updated = (lastSummary?.updated ?: 0) + result.updated,
         )
@@ -147,7 +147,7 @@ class GogViewModel(
                 val owned = gogClient.getOwnedProducts(fresh.accessToken)
                 ownedCount = owned.size
                 if (owned.isEmpty()) {
-                    lastSummary = GogSyncSummary(added = 0, updated = 0)
+                    lastSummary = SyncSummary(added = 0, updated = 0)
                     return@launch
                 }
                 stage = GogSyncStage.IgdbMatch
@@ -162,10 +162,10 @@ class GogViewModel(
                         .map { SyncTailRow(name = it.title, uids = listOf(it.id.toString())) },
                 )
                 val entries = buildList {
-                    matched.forEach { add(GogSyncEntry.Matched(it)) }
-                    split.known.forEach { add(GogSyncEntry.Unmatched(gogId = it.uids.first(), name = it.name)) }
+                    matched.forEach { add(SyncEntry.Matched(it)) }
+                    split.known.forEach { add(SyncEntry.Unmatched(uids = it.uids, name = it.name)) }
                 }
-                lastSummary = repository.syncGogGames(entries)
+                lastSummary = repository.syncStore(Store.GOG, entries)
                 reviewTail = split.needsReview
             } catch (e: CancellationException) {
                 throw e

@@ -50,7 +50,7 @@ class LocalDataResetTest {
     @Test
     fun resetEmptiesEveryTableAndRemovesEverySecret() = runTest {
         // A synced-unmatched game seeds all three tables: Game + Ownership + external reference.
-        repository.syncSteamGames(listOf(SteamSyncEntry.Unmatched(appid = "999", name = "Some Indie")))
+        repository.syncStore(Store.STEAM, listOf(SyncEntry.Unmatched(uids = listOf("999"), name = "Some Indie")))
         repository.addWishlistGame(name = "Hollow Knight: Silksong")
         repository.confirmSyncReview(
             Store.STEAM,

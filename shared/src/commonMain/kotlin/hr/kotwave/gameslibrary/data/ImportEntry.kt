@@ -3,7 +3,7 @@ package hr.kotwave.gameslibrary.data
 /**
  * One checked Candidate resolved for [GameRepository.confirmImport]: either [Matched] to an IGDB Game,
  * or [Unmatched] (added as an `igdbId`-null Game). The ViewModel does the IGDB networking and hands
- * these over, keeping the additive-merge logic pure and `:shared`-testable (mirrors [SteamSyncEntry]).
+ * these over, keeping the additive-merge logic pure and `:shared`-testable (mirrors [SyncEntry]).
  */
 sealed interface ImportEntry {
     val store: Store

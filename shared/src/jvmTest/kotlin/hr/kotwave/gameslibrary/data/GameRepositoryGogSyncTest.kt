@@ -34,14 +34,15 @@ class GameRepositoryGogSyncTest {
 
     @Test
     fun gogSyncAddsMatchedAndUnmatchedGames() = runTest {
-        val summary = repository.syncGogGames(
+        val summary = repository.syncStore(
+            Store.GOG,
             listOf(
-                GogSyncEntry.Matched(sampleIgdb(igdbId = 1207658691L, name = "The Witcher 3")),
-                GogSyncEntry.Unmatched(gogId = "999", name = "Some GOG Indie"),
+                SyncEntry.Matched(sampleIgdb(igdbId = 1207658691L, name = "The Witcher 3")),
+                SyncEntry.Unmatched(uids = listOf("999"), name = "Some GOG Indie"),
             ),
         )
 
-        assertEquals(GogSyncSummary(added = 2, updated = 0), summary)
+        assertEquals(SyncSummary(added = 2, updated = 0), summary)
         val owned = repository.ownedGames.first()
         assertEquals(2, owned.size)
         owned.forEach { tile ->
@@ -56,24 +57,24 @@ class GameRepositoryGogSyncTest {
     @Test
     fun gogResyncIsIdempotent() = runTest {
         val entries = listOf(
-            GogSyncEntry.Matched(sampleIgdb(igdbId = 1207658691L)),
-            GogSyncEntry.Unmatched(gogId = "999", name = "Some GOG Indie"),
+            SyncEntry.Matched(sampleIgdb(igdbId = 1207658691L)),
+            SyncEntry.Unmatched(uids = listOf("999"), name = "Some GOG Indie"),
         )
-        repository.syncGogGames(entries)
+        repository.syncStore(Store.GOG, entries)
 
-        val summary = repository.syncGogGames(entries)
+        val summary = repository.syncStore(Store.GOG, entries)
 
-        assertEquals(GogSyncSummary(added = 0, updated = 2), summary)
+        assertEquals(SyncSummary(added = 0, updated = 2), summary)
         assertEquals(2, repository.ownedGames.first().size)
     }
 
     @Test
     fun gogUnmatchedDedupsByGogIdNotName() = runTest {
-        repository.syncGogGames(listOf(GogSyncEntry.Unmatched(gogId = "999", name = "Indie")))
+        repository.syncStore(Store.GOG, listOf(SyncEntry.Unmatched(uids = listOf("999"), name = "Indie")))
 
-        val summary = repository.syncGogGames(listOf(GogSyncEntry.Unmatched(gogId = "999", name = "Indie Renamed")))
+        val summary = repository.syncStore(Store.GOG, listOf(SyncEntry.Unmatched(uids = listOf("999"), name = "Indie Renamed")))
 
-        assertEquals(GogSyncSummary(added = 0, updated = 1), summary)
+        assertEquals(SyncSummary(added = 0, updated = 1), summary)
         val game = dao.getGameByExternalUid(5, "999")!!
         assertEquals("Indie", game.name) // name is never overwritten
         assertEquals(1, repository.ownedGames.first().size)
@@ -84,7 +85,7 @@ class GameRepositoryGogSyncTest {
         val added = repository.addMatchedGame(sampleIgdb(igdbId = 5L), wishlist = false, stores = setOf(Store.GOG))
         assertEquals(Source.MANUAL, dao.ownershipsFor(added.gameId).single().source)
 
-        repository.syncGogGames(listOf(GogSyncEntry.Matched(sampleIgdb(igdbId = 5L))))
+        repository.syncStore(Store.GOG, listOf(SyncEntry.Matched(sampleIgdb(igdbId = 5L))))
 
         val ownership = dao.ownershipsFor(added.gameId).single()
         assertEquals(Store.GOG, ownership.store)
@@ -101,7 +102,7 @@ class GameRepositoryGogSyncTest {
         )
         repository.setUserRating(added.gameId, 9.0)
 
-        repository.syncGogGames(listOf(GogSyncEntry.Matched(sampleIgdb(igdbId = 7L, name = "Changed Name"))))
+        repository.syncStore(Store.GOG, listOf(SyncEntry.Matched(sampleIgdb(igdbId = 7L, name = "Changed Name"))))
 
         val game = dao.getGame(added.gameId)!!
         assertEquals("Original Name", game.name) // cached metadata is never overwritten by a sync
@@ -114,7 +115,7 @@ class GameRepositoryGogSyncTest {
     fun gogSyncOnWishlistedGameClearsWishlistAndOwnsIt() = runTest {
         val wished = repository.addMatchedGame(sampleIgdb(igdbId = 8L), wishlist = true)
 
-        repository.syncGogGames(listOf(GogSyncEntry.Matched(sampleIgdb(igdbId = 8L))))
+        repository.syncStore(Store.GOG, listOf(SyncEntry.Matched(sampleIgdb(igdbId = 8L))))
 
         val game = dao.getGame(wished.gameId)!!
         assertEquals(false, game.wishlist)
@@ -122,6 +123,29 @@ class GameRepositoryGogSyncTest {
         val ownership = dao.ownershipsFor(wished.gameId).single()
         assertEquals(Store.GOG, ownership.store)
         assertEquals(Source.GOG_SYNC, ownership.source)
+    }
+
+    @Test
+    fun gogMatchedUpgradesBareGameInPlace() = runTest {
+        repository.syncStore(Store.GOG, listOf(SyncEntry.Unmatched(uids = listOf("1207"), name = "Bare GOG Game")))
+        val bare = dao.getGameByExternalUid(5, "1207")!!
+        repository.setUserRating(bare.id, 9.0)
+
+        val summary = repository.syncStore(
+            Store.GOG,
+            listOf(SyncEntry.Matched(sampleIgdb(igdbId = 1942L, name = "The Witcher 3"), uids = listOf("1207"))),
+        )
+
+        assertEquals(SyncSummary(added = 0, updated = 1), summary)
+        assertEquals(1, repository.ownedGames.first().size)
+        val upgraded = dao.getGame(bare.id)!!
+        assertEquals(1942L, upgraded.igdbId)
+        assertEquals("The Witcher 3", upgraded.name)
+        assertEquals("co3p2d", upgraded.coverImageId)
+        assertEquals(9.0, upgraded.userRating) // local state survives the upgrade
+        assertEquals(Status.BACKLOG, upgraded.status)
+        assertEquals(bare.id, dao.getGameByExternalUid(5, "1207")!!.id)
+        assertEquals(bare.id, dao.getGameByExternalUid(5, "1942")!!.id)
     }
 
     private fun sampleIgdb(igdbId: Long, name: String = "Sample Game"): IgdbGame = IgdbGame(

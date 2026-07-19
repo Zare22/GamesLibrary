@@ -34,14 +34,15 @@ class GameRepositoryPsnSyncTest {
 
     @Test
     fun psnSyncAddsMatchedAndUnmatchedGames() = runTest {
-        val summary = repository.syncPsnGames(
+        val summary = repository.syncStore(
+            Store.PSN,
             listOf(
-                PsnSyncEntry.Matched(sampleIgdb(igdbId = 27134L, name = "Deep Rock Galactic"), psnUids = listOf("PPSA100_00", "27134")),
-                PsnSyncEntry.Unmatched(psnUids = listOf("CUSA999_00"), name = "Disc Only Game"),
+                SyncEntry.Matched(sampleIgdb(igdbId = 27134L, name = "Deep Rock Galactic"), uids = listOf("PPSA100_00", "27134")),
+                SyncEntry.Unmatched(uids = listOf("CUSA999_00"), name = "Disc Only Game"),
             ),
         )
 
-        assertEquals(PsnSyncSummary(added = 2, updated = 0), summary)
+        assertEquals(SyncSummary(added = 2, updated = 0), summary)
         val owned = repository.ownedGames.first()
         assertEquals(2, owned.size)
         owned.forEach { tile ->
@@ -56,24 +57,24 @@ class GameRepositoryPsnSyncTest {
     @Test
     fun psnResyncIsIdempotent() = runTest {
         val entries = listOf(
-            PsnSyncEntry.Matched(sampleIgdb(igdbId = 27134L), psnUids = listOf("PPSA100_00", "27134")),
-            PsnSyncEntry.Unmatched(psnUids = listOf("233449"), name = "Disc Only Game"),
+            SyncEntry.Matched(sampleIgdb(igdbId = 27134L), uids = listOf("PPSA100_00", "27134")),
+            SyncEntry.Unmatched(uids = listOf("233449"), name = "Disc Only Game"),
         )
-        repository.syncPsnGames(entries)
+        repository.syncStore(Store.PSN, entries)
 
-        val summary = repository.syncPsnGames(entries)
+        val summary = repository.syncStore(Store.PSN, entries)
 
-        assertEquals(PsnSyncSummary(added = 0, updated = 2), summary)
+        assertEquals(SyncSummary(added = 0, updated = 2), summary)
         assertEquals(2, repository.ownedGames.first().size)
     }
 
     @Test
     fun psnUnmatchedDedupsByUidNotName() = runTest {
-        repository.syncPsnGames(listOf(PsnSyncEntry.Unmatched(psnUids = listOf("10003601"), name = "Cricket 22")))
+        repository.syncStore(Store.PSN, listOf(SyncEntry.Unmatched(uids = listOf("10003601"), name = "Cricket 22")))
 
-        val summary = repository.syncPsnGames(listOf(PsnSyncEntry.Unmatched(psnUids = listOf("10003601"), name = "Cricket 22 Renamed")))
+        val summary = repository.syncStore(Store.PSN, listOf(SyncEntry.Unmatched(uids = listOf("10003601"), name = "Cricket 22 Renamed")))
 
-        assertEquals(PsnSyncSummary(added = 0, updated = 1), summary)
+        assertEquals(SyncSummary(added = 0, updated = 1), summary)
         val game = dao.getGameByExternalUid(36, "10003601")!!
         assertEquals("Cricket 22", game.name) // name is never overwritten
         assertEquals(1, repository.ownedGames.first().size)
@@ -84,7 +85,7 @@ class GameRepositoryPsnSyncTest {
         val added = repository.addMatchedGame(sampleIgdb(igdbId = 5L), wishlist = false, stores = setOf(Store.PSN))
         assertEquals(Source.MANUAL, dao.ownershipsFor(added.gameId).single().source)
 
-        repository.syncPsnGames(listOf(PsnSyncEntry.Matched(sampleIgdb(igdbId = 5L), psnUids = listOf("PPSA5_00"))))
+        repository.syncStore(Store.PSN, listOf(SyncEntry.Matched(sampleIgdb(igdbId = 5L), uids = listOf("PPSA5_00"))))
 
         val ownership = dao.ownershipsFor(added.gameId).single()
         assertEquals(Store.PSN, ownership.store)
@@ -101,7 +102,7 @@ class GameRepositoryPsnSyncTest {
         )
         repository.setUserRating(added.gameId, 9.0)
 
-        repository.syncPsnGames(listOf(PsnSyncEntry.Matched(sampleIgdb(igdbId = 7L, name = "Changed Name"), psnUids = listOf("PPSA7_00"))))
+        repository.syncStore(Store.PSN, listOf(SyncEntry.Matched(sampleIgdb(igdbId = 7L, name = "Changed Name"), uids = listOf("PPSA7_00"))))
 
         val game = dao.getGame(added.gameId)!!
         assertEquals("Original Name", game.name) // cached metadata is never overwritten by a sync
@@ -114,7 +115,7 @@ class GameRepositoryPsnSyncTest {
     fun psnSyncOnWishlistedGameClearsWishlistAndOwnsIt() = runTest {
         val wished = repository.addMatchedGame(sampleIgdb(igdbId = 8L), wishlist = true)
 
-        repository.syncPsnGames(listOf(PsnSyncEntry.Matched(sampleIgdb(igdbId = 8L), psnUids = listOf("PPSA8_00"))))
+        repository.syncStore(Store.PSN, listOf(SyncEntry.Matched(sampleIgdb(igdbId = 8L), uids = listOf("PPSA8_00"))))
 
         val game = dao.getGame(wished.gameId)!!
         assertEquals(false, game.wishlist)
@@ -126,15 +127,16 @@ class GameRepositoryPsnSyncTest {
 
     @Test
     fun psnMatchedUpgradesBareGameInPlace() = runTest {
-        repository.syncPsnGames(listOf(PsnSyncEntry.Unmatched(psnUids = listOf("CUSA100_00"), name = "SHAREfactory")))
+        repository.syncStore(Store.PSN, listOf(SyncEntry.Unmatched(uids = listOf("CUSA100_00"), name = "SHAREfactory")))
         val bare = dao.getGameByExternalUid(36, "CUSA100_00")!!
         repository.setUserRating(bare.id, 9.0)
 
-        val summary = repository.syncPsnGames(
-            listOf(PsnSyncEntry.Matched(sampleIgdb(igdbId = 27134L, name = "Deep Rock Galactic"), psnUids = listOf("CUSA100_00", "27134"))),
+        val summary = repository.syncStore(
+            Store.PSN,
+            listOf(SyncEntry.Matched(sampleIgdb(igdbId = 27134L, name = "Deep Rock Galactic"), uids = listOf("CUSA100_00", "27134"))),
         )
 
-        assertEquals(PsnSyncSummary(added = 0, updated = 1), summary)
+        assertEquals(SyncSummary(added = 0, updated = 1), summary)
         assertEquals(1, repository.ownedGames.first().size)
         val upgraded = dao.getGame(bare.id)!!
         assertEquals(27134L, upgraded.igdbId)
@@ -148,22 +150,24 @@ class GameRepositoryPsnSyncTest {
 
     @Test
     fun psnUnmatchedDedupsAcrossAnyUid() = runTest {
-        repository.syncPsnGames(listOf(PsnSyncEntry.Unmatched(psnUids = listOf("233449"), name = "Old Key Style")))
+        repository.syncStore(Store.PSN, listOf(SyncEntry.Unmatched(uids = listOf("233449"), name = "Old Key Style")))
 
-        val summary = repository.syncPsnGames(
-            listOf(PsnSyncEntry.Unmatched(psnUids = listOf("CUSA200_00", "233449"), name = "Old Key Style")),
+        val summary = repository.syncStore(
+            Store.PSN,
+            listOf(SyncEntry.Unmatched(uids = listOf("CUSA200_00", "233449"), name = "Old Key Style")),
         )
 
-        assertEquals(PsnSyncSummary(added = 0, updated = 1), summary)
+        assertEquals(SyncSummary(added = 0, updated = 1), summary)
         assertEquals(1, repository.ownedGames.first().size)
     }
 
     @Test
     fun psnUidsAlreadyMatchedReturnsOnlyIgdbMatchedUids() = runTest {
-        repository.syncPsnGames(
+        repository.syncStore(
+            Store.PSN,
             listOf(
-                PsnSyncEntry.Matched(sampleIgdb(igdbId = 27134L), psnUids = listOf("PPSA1_00", "27134")),
-                PsnSyncEntry.Unmatched(psnUids = listOf("CUSA2_00"), name = "Bare"),
+                SyncEntry.Matched(sampleIgdb(igdbId = 27134L), uids = listOf("PPSA1_00", "27134")),
+                SyncEntry.Unmatched(uids = listOf("CUSA2_00"), name = "Bare"),
             ),
         )
 

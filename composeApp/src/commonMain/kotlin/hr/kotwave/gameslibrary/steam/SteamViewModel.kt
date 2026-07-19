@@ -6,9 +6,9 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import hr.kotwave.gameslibrary.data.GameRepository
-import hr.kotwave.gameslibrary.data.SteamSyncEntry
-import hr.kotwave.gameslibrary.data.SteamSyncSummary
 import hr.kotwave.gameslibrary.data.Store
+import hr.kotwave.gameslibrary.data.SyncEntry
+import hr.kotwave.gameslibrary.data.SyncSummary
 import hr.kotwave.gameslibrary.data.SyncTailRow
 import hr.kotwave.gameslibrary.igdb.IgdbClient
 import hr.kotwave.gameslibrary.importer.SyncReviewResult
@@ -36,7 +36,7 @@ enum class SteamSyncStage { SteamFetch, IgdbMatch, Merge }
 /**
  * Steam screen state: "Sign in through Steam" (OpenID, [SteamAuthFlow] + [SteamOpenId]) persists a
  * verified SteamID64 through [SecureStorage], then the additive sync does the Steam + IGDB networking
- * and hands resolved entries to [GameRepository.syncSteamGames] — the merge lives in `:shared`.
+ * and hands resolved entries to [GameRepository.syncStore] — the merge lives in `:shared`.
  */
 class SteamViewModel(
     private val repository: GameRepository,
@@ -67,7 +67,7 @@ class SteamViewModel(
     var ownedCount by mutableStateOf<Int?>(null)
         private set
 
-    var lastSummary by mutableStateOf<SteamSyncSummary?>(null)
+    var lastSummary by mutableStateOf<SyncSummary?>(null)
         private set
 
     /** The last sync's needs-review tail: id-unmatched rows the Review picker can settle. */
@@ -144,7 +144,7 @@ class SteamViewModel(
 
     /** Folds a confirmed Review's merge counts into the last summary and drops its settled rows from the tail. */
     fun absorbReview(result: SyncReviewResult) {
-        lastSummary = SteamSyncSummary(
+        lastSummary = SyncSummary(
             added = (lastSummary?.added ?: 0) + result.added,
             updated = (lastSummary?.updated ?: 0) + result.updated,
         )
@@ -167,7 +167,7 @@ class SteamViewModel(
                 val owned = steamClient.getOwnedGames(id)
                 ownedCount = owned.size
                 if (owned.isEmpty()) {
-                    lastSummary = SteamSyncSummary(added = 0, updated = 0)
+                    lastSummary = SyncSummary(added = 0, updated = 0)
                     return@launch
                 }
                 stage = SteamSyncStage.IgdbMatch
@@ -182,10 +182,10 @@ class SteamViewModel(
                         .map { SyncTailRow(name = it.name, uids = listOf(it.appid.toString())) },
                 )
                 val entries = buildList {
-                    matched.forEach { add(SteamSyncEntry.Matched(it)) }
-                    split.known.forEach { add(SteamSyncEntry.Unmatched(appid = it.uids.first(), name = it.name)) }
+                    matched.forEach { add(SyncEntry.Matched(it)) }
+                    split.known.forEach { add(SyncEntry.Unmatched(uids = it.uids, name = it.name)) }
                 }
-                lastSummary = repository.syncSteamGames(entries)
+                lastSummary = repository.syncStore(Store.STEAM, entries)
                 reviewTail = split.needsReview
             } catch (e: CancellationException) {
                 throw e

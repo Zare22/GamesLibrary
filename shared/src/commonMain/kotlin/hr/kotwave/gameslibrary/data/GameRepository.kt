@@ -171,168 +171,69 @@ class GameRepository(
     }
 
     /**
-     * Additively syncs the Steam library from already-resolved [entries] (the ViewModel does the
-     * Steam + IGDB networking). Adds Games it hasn't seen, ensures a Steam Ownership tagged
-     * `STEAM_SYNC` on ones it has (recording the entry's appids as external references), and never
-     * removes anything or overwrites cached metadata or local state (Status/userRating/Wishlist).
-     * Matched entries dedup by `igdbId`; unmatched ones by their Steam appid in `external_game`.
-     */
-    suspend fun syncSteamGames(entries: List<SteamSyncEntry>): SteamSyncSummary {
-        var added = 0
-        var updated = 0
-        entries.forEach { entry ->
-            val existing = when (entry) {
-                is SteamSyncEntry.Matched -> gameDao.getGameByIgdbId(entry.igdb.igdbId)
-                is SteamSyncEntry.Unmatched -> gameDao.getGameByExternalUid(STEAM_EXTERNAL_CATEGORY, entry.appid)
-            }
-            if (existing != null) {
-                ensureSteamOwnership(existing)
-                val uids = when (entry) {
-                    is SteamSyncEntry.Matched -> entry.appids
-                    is SteamSyncEntry.Unmatched -> listOf(entry.appid)
-                }
-                ensureExternalUids(existing.id, STEAM_EXTERNAL_CATEGORY, uids)
-                updated++
-                return@forEach
-            }
-            when (entry) {
-                is SteamSyncEntry.Matched -> insertStampedMatchedGame(
-                    game = entry.igdb.toGame(wishlist = false, status = Status.BACKLOG),
-                    stores = setOf(Store.STEAM),
-                    externals = externalsWithStoreUids(entry.igdb, STEAM_EXTERNAL_CATEGORY, entry.appids),
-                    source = Source.STEAM_SYNC,
-                )
-                is SteamSyncEntry.Unmatched -> insertStampedMatchedGame(
-                    game = Game(name = entry.name, igdbId = null, wishlist = false, status = Status.BACKLOG),
-                    stores = setOf(Store.STEAM),
-                    externals = listOf(ExternalGame(gameId = 0, category = STEAM_EXTERNAL_CATEGORY, uid = entry.appid)),
-                    source = Source.STEAM_SYNC,
-                )
-            }
-            added++
-        }
-        return SteamSyncSummary(added = added, updated = updated)
-    }
-
-    /**
-     * Guarantees a Steam Ownership tagged `STEAM_SYNC` on an existing Game, clearing Wishlist if set.
-     * A pre-existing (Game, Steam) Ownership is left in place by the IGNORE insert, then re-tagged
-     * `STEAM_SYNC` — Steam is the authority on Steam ownership. Never touches Status/userRating.
-     */
-    private suspend fun ensureSteamOwnership(game: Game) {
-        if (game.wishlist) {
-            gameDao.updateGame(game.copy(wishlist = false, status = game.status ?: Status.BACKLOG))
-        }
-        gameDao.insertOwnership(Ownership(gameId = game.id, store = Store.STEAM, source = Source.STEAM_SYNC))
-        gameDao.setOwnershipSource(game.id, Store.STEAM, Source.STEAM_SYNC)
-    }
-
-    /**
-     * Additively syncs the GOG library from already-resolved [entries] (the ViewModel does the GOG +
-     * IGDB networking). Adds Games it hasn't seen, ensures a GOG Ownership tagged `GOG_SYNC` on ones it
-     * has (recording the entry's product ids as external references), and never removes anything or
-     * overwrites cached metadata or local state (Status/userRating/Wishlist). Matched entries dedup by
-     * `igdbId`; unmatched ones by their GOG id in `external_game`.
-     */
-    suspend fun syncGogGames(entries: List<GogSyncEntry>): GogSyncSummary {
-        var added = 0
-        var updated = 0
-        entries.forEach { entry ->
-            val existing = when (entry) {
-                is GogSyncEntry.Matched -> gameDao.getGameByIgdbId(entry.igdb.igdbId)
-                is GogSyncEntry.Unmatched -> gameDao.getGameByExternalUid(GOG_EXTERNAL_CATEGORY, entry.gogId)
-            }
-            if (existing != null) {
-                ensureGogOwnership(existing)
-                val uids = when (entry) {
-                    is GogSyncEntry.Matched -> entry.gogIds
-                    is GogSyncEntry.Unmatched -> listOf(entry.gogId)
-                }
-                ensureExternalUids(existing.id, GOG_EXTERNAL_CATEGORY, uids)
-                updated++
-                return@forEach
-            }
-            when (entry) {
-                is GogSyncEntry.Matched -> insertStampedMatchedGame(
-                    game = entry.igdb.toGame(wishlist = false, status = Status.BACKLOG),
-                    stores = setOf(Store.GOG),
-                    externals = externalsWithStoreUids(entry.igdb, GOG_EXTERNAL_CATEGORY, entry.gogIds),
-                    source = Source.GOG_SYNC,
-                )
-                is GogSyncEntry.Unmatched -> insertStampedMatchedGame(
-                    game = Game(name = entry.name, igdbId = null, wishlist = false, status = Status.BACKLOG),
-                    stores = setOf(Store.GOG),
-                    externals = listOf(ExternalGame(gameId = 0, category = GOG_EXTERNAL_CATEGORY, uid = entry.gogId)),
-                    source = Source.GOG_SYNC,
-                )
-            }
-            added++
-        }
-        return GogSyncSummary(added = added, updated = updated)
-    }
-
-    /**
-     * Guarantees a GOG Ownership tagged `GOG_SYNC` on an existing Game, clearing Wishlist if set. A
-     * pre-existing (Game, GOG) Ownership is left in place by the IGNORE insert, then re-tagged `GOG_SYNC`
-     * — GOG is the authority on GOG ownership. Never touches Status/userRating.
-     */
-    private suspend fun ensureGogOwnership(game: Game) {
-        if (game.wishlist) {
-            gameDao.updateGame(game.copy(wishlist = false, status = game.status ?: Status.BACKLOG))
-        }
-        gameDao.insertOwnership(Ownership(gameId = game.id, store = Store.GOG, source = Source.GOG_SYNC))
-        gameDao.setOwnershipSource(game.id, Store.GOG, Source.GOG_SYNC)
-    }
-
-    /**
-     * Additively syncs the PSN library from already-resolved [entries] (the ViewModel does the PSN +
-     * IGDB networking). Adds Games it hasn't seen, ensures a PSN Ownership tagged `PSN_SYNC` on ones it
-     * has, and never removes anything or overwrites cached metadata or local state (Status/userRating/
-     * Wishlist). Entries dedup by `igdbId` and by every PSN uid in `external_game`; a Matched entry
+     * Additively syncs a [store]'s library from already-resolved [entries] (the ViewModel does the
+     * store + IGDB networking). Adds Games it hasn't seen, ensures a `*_SYNC`-tagged Ownership on ones
+     * it has, and never removes anything or overwrites cached metadata or local state (Status/userRating/
+     * Wishlist). Entries dedup by `igdbId` and by every store uid in `external_game`; a Matched entry
      * landing on an `igdbId`-null Game from an earlier sync upgrades its metadata in place (the
      * re-match rule: IGDB-sourced fields only, local state untouched).
      */
-    suspend fun syncPsnGames(entries: List<PsnSyncEntry>): PsnSyncSummary {
+    suspend fun syncStore(store: Store, entries: List<SyncEntry>): SyncSummary {
+        val category = syncCategoryFor(store)
+        val source = syncSourceFor(store)
         var added = 0
         var updated = 0
         entries.forEach { entry ->
             val existing = when (entry) {
-                is PsnSyncEntry.Matched -> gameDao.getGameByIgdbId(entry.igdb.igdbId)
-                    ?: entry.psnUids.firstNotNullOfOrNull { gameDao.getGameByExternalUid(PSN_EXTERNAL_CATEGORY, it) }
-                is PsnSyncEntry.Unmatched ->
-                    entry.psnUids.firstNotNullOfOrNull { gameDao.getGameByExternalUid(PSN_EXTERNAL_CATEGORY, it) }
+                is SyncEntry.Matched -> gameDao.getGameByIgdbId(entry.igdb.igdbId)
+                    ?: entry.uids.firstNotNullOfOrNull { gameDao.getGameByExternalUid(category, it) }
+                is SyncEntry.Unmatched ->
+                    entry.uids.firstNotNullOfOrNull { gameDao.getGameByExternalUid(category, it) }
             }
             if (existing != null) {
-                ensurePsnOwnership(existing)
-                if (entry is PsnSyncEntry.Matched && existing.igdbId == null) {
+                ensureStoreOwnership(existing, store, source)
+                if (entry is SyncEntry.Matched && existing.igdbId == null) {
                     val current = gameDao.getGame(existing.id) ?: return@forEach
                     gameDao.replaceMetadata(
                         current.withMetadataFrom(entry.igdb),
-                        externalsWithStoreUids(entry.igdb, PSN_EXTERNAL_CATEGORY, entry.psnUids),
+                        externalsWithStoreUids(entry.igdb, category, entry.uids),
                     )
                 } else {
-                    ensureExternalUids(existing.id, PSN_EXTERNAL_CATEGORY, entry.psnUids)
+                    ensureExternalUids(existing.id, category, entry.uids)
                 }
                 updated++
                 return@forEach
             }
             when (entry) {
-                is PsnSyncEntry.Matched -> insertStampedMatchedGame(
+                is SyncEntry.Matched -> insertStampedMatchedGame(
                     game = entry.igdb.toGame(wishlist = false, status = Status.BACKLOG),
-                    stores = setOf(Store.PSN),
-                    externals = externalsWithStoreUids(entry.igdb, PSN_EXTERNAL_CATEGORY, entry.psnUids),
-                    source = Source.PSN_SYNC,
+                    stores = setOf(store),
+                    externals = externalsWithStoreUids(entry.igdb, category, entry.uids),
+                    source = source,
                 )
-                is PsnSyncEntry.Unmatched -> insertStampedMatchedGame(
+                is SyncEntry.Unmatched -> insertStampedMatchedGame(
                     game = Game(name = entry.name, igdbId = null, wishlist = false, status = Status.BACKLOG),
-                    stores = setOf(Store.PSN),
-                    externals = entry.psnUids.map { ExternalGame(gameId = 0, category = PSN_EXTERNAL_CATEGORY, uid = it) },
-                    source = Source.PSN_SYNC,
+                    stores = setOf(store),
+                    externals = entry.uids.map { ExternalGame(gameId = 0, category = category, uid = it) },
+                    source = source,
                 )
             }
             added++
         }
-        return PsnSyncSummary(added = added, updated = updated)
+        return SyncSummary(added = added, updated = updated)
+    }
+
+    /**
+     * Guarantees a `*_SYNC`-tagged Ownership on [store] for an existing Game, clearing Wishlist if set.
+     * A pre-existing (Game, store) Ownership is left in place by the IGNORE insert, then re-tagged with
+     * [source] — the store is the authority on its own ownership. Never touches Status/userRating.
+     */
+    private suspend fun ensureStoreOwnership(game: Game, store: Store, source: Source) {
+        if (game.wishlist) {
+            gameDao.updateGame(game.copy(wishlist = false, status = game.status ?: Status.BACKLOG))
+        }
+        gameDao.insertOwnership(Ownership(gameId = game.id, store = store, source = source))
+        gameDao.setOwnershipSource(game.id, store, source)
     }
 
     /**
@@ -343,70 +244,6 @@ class GameRepository(
         uids.distinct().chunked(UID_QUERY_CHUNK)
             .flatMap { gameDao.externalUidsWithIgdbMatch(PSN_EXTERNAL_CATEGORY, it) }
             .toSet()
-
-    /**
-     * Guarantees a PSN Ownership tagged `PSN_SYNC` on an existing Game, clearing Wishlist if set. A
-     * pre-existing (Game, PSN) Ownership is left in place by the IGNORE insert, then re-tagged `PSN_SYNC`
-     * — PSN is the authority on PSN ownership. Never touches Status/userRating.
-     */
-    private suspend fun ensurePsnOwnership(game: Game) {
-        if (game.wishlist) {
-            gameDao.updateGame(game.copy(wishlist = false, status = game.status ?: Status.BACKLOG))
-        }
-        gameDao.insertOwnership(Ownership(gameId = game.id, store = Store.PSN, source = Source.PSN_SYNC))
-        gameDao.setOwnershipSource(game.id, Store.PSN, Source.PSN_SYNC)
-    }
-
-    /**
-     * Additively syncs the Epic library from already-resolved [entries] (the ViewModel does the Epic +
-     * IGDB networking). Adds Games it hasn't seen, ensures an Epic Ownership tagged `EPIC_SYNC` on ones
-     * it has, and never removes anything or overwrites cached metadata or local state (Status/userRating/
-     * Wishlist). Entries dedup by `igdbId` and by every Epic uid in `external_game`; a Matched entry
-     * landing on an `igdbId`-null Game from an earlier sync upgrades its metadata in place (the
-     * re-match rule: IGDB-sourced fields only, local state untouched).
-     */
-    suspend fun syncEpicGames(entries: List<EpicSyncEntry>): EpicSyncSummary {
-        var added = 0
-        var updated = 0
-        entries.forEach { entry ->
-            val existing = when (entry) {
-                is EpicSyncEntry.Matched -> gameDao.getGameByIgdbId(entry.igdb.igdbId)
-                    ?: entry.epicUids.firstNotNullOfOrNull { gameDao.getGameByExternalUid(EPIC_EXTERNAL_CATEGORY, it) }
-                is EpicSyncEntry.Unmatched ->
-                    entry.epicUids.firstNotNullOfOrNull { gameDao.getGameByExternalUid(EPIC_EXTERNAL_CATEGORY, it) }
-            }
-            if (existing != null) {
-                ensureEpicOwnership(existing)
-                if (entry is EpicSyncEntry.Matched && existing.igdbId == null) {
-                    val current = gameDao.getGame(existing.id) ?: return@forEach
-                    gameDao.replaceMetadata(
-                        current.withMetadataFrom(entry.igdb),
-                        externalsWithStoreUids(entry.igdb, EPIC_EXTERNAL_CATEGORY, entry.epicUids),
-                    )
-                } else {
-                    ensureExternalUids(existing.id, EPIC_EXTERNAL_CATEGORY, entry.epicUids)
-                }
-                updated++
-                return@forEach
-            }
-            when (entry) {
-                is EpicSyncEntry.Matched -> insertStampedMatchedGame(
-                    game = entry.igdb.toGame(wishlist = false, status = Status.BACKLOG),
-                    stores = setOf(Store.EPIC),
-                    externals = externalsWithStoreUids(entry.igdb, EPIC_EXTERNAL_CATEGORY, entry.epicUids),
-                    source = Source.EPIC_SYNC,
-                )
-                is EpicSyncEntry.Unmatched -> insertStampedMatchedGame(
-                    game = Game(name = entry.name, igdbId = null, wishlist = false, status = Status.BACKLOG),
-                    stores = setOf(Store.EPIC),
-                    externals = entry.epicUids.map { ExternalGame(gameId = 0, category = EPIC_EXTERNAL_CATEGORY, uid = it) },
-                    source = Source.EPIC_SYNC,
-                )
-            }
-            added++
-        }
-        return EpicSyncSummary(added = added, updated = updated)
-    }
 
     /**
      * The IGDB external references plus a [category] reference for every [uids] entry IGDB didn't
@@ -438,19 +275,6 @@ class GameRepository(
         uids.distinct().chunked(UID_QUERY_CHUNK)
             .flatMap { gameDao.externalUidsWithIgdbMatch(EPIC_EXTERNAL_CATEGORY, it) }
             .toSet()
-
-    /**
-     * Guarantees an Epic Ownership tagged `EPIC_SYNC` on an existing Game, clearing Wishlist if set. A
-     * pre-existing (Game, Epic) Ownership is left in place by the IGNORE insert, then re-tagged `EPIC_SYNC`
-     * — Epic is the authority on Epic ownership. Never touches Status/userRating.
-     */
-    private suspend fun ensureEpicOwnership(game: Game) {
-        if (game.wishlist) {
-            gameDao.updateGame(game.copy(wishlist = false, status = game.status ?: Status.BACKLOG))
-        }
-        gameDao.insertOwnership(Ownership(gameId = game.id, store = Store.EPIC, source = Source.EPIC_SYNC))
-        gameDao.setOwnershipSource(game.id, Store.EPIC, Source.EPIC_SYNC)
-    }
 
     /**
      * Partitions a sync's id-unmatched tail for the Review picker: rows with any uid already on a Game
@@ -486,31 +310,17 @@ class GameRepository(
         picks: List<SyncReviewPick>,
         bare: List<SyncTailRow>,
         dismissed: List<SyncTailRow>,
-    ): SyncReviewOutcome {
+    ): SyncSummary {
         val category = syncCategoryFor(store)
         dismissed.flatMap { it.uids }.distinct()
             .takeIf { it.isNotEmpty() }
             ?.let { uids -> gameDao.insertSyncDismissals(uids.map { SyncDismissal(category = category, uid = it) }) }
-        if (picks.isEmpty() && bare.isEmpty()) return SyncReviewOutcome(added = 0, updated = 0)
-        return when (store) {
-            Store.STEAM -> syncSteamGames(
-                picks.map { SteamSyncEntry.Matched(it.igdb, it.uids) } +
-                    bare.map { SteamSyncEntry.Unmatched(appid = it.uids.first(), name = it.name) },
-            ).let { SyncReviewOutcome(it.added, it.updated) }
-            Store.GOG -> syncGogGames(
-                picks.map { GogSyncEntry.Matched(it.igdb, it.uids) } +
-                    bare.map { GogSyncEntry.Unmatched(gogId = it.uids.first(), name = it.name) },
-            ).let { SyncReviewOutcome(it.added, it.updated) }
-            Store.PSN -> syncPsnGames(
-                picks.map { PsnSyncEntry.Matched(it.igdb, it.uids) } +
-                    bare.map { PsnSyncEntry.Unmatched(psnUids = it.uids, name = it.name) },
-            ).let { SyncReviewOutcome(it.added, it.updated) }
-            Store.EPIC -> syncEpicGames(
-                picks.map { EpicSyncEntry.Matched(it.igdb, it.uids) } +
-                    bare.map { EpicSyncEntry.Unmatched(epicUids = it.uids, name = it.name) },
-            ).let { SyncReviewOutcome(it.added, it.updated) }
-            else -> error("Store $store has no sync")
-        }
+        if (picks.isEmpty() && bare.isEmpty()) return SyncSummary(added = 0, updated = 0)
+        return syncStore(
+            store,
+            picks.map { SyncEntry.Matched(it.igdb, it.uids) } +
+                bare.map { SyncEntry.Unmatched(uids = it.uids, name = it.name) },
+        )
     }
 
     /** The IGDB external-game category a store's sync keys uids by. Only the four synced stores have one. */
@@ -519,6 +329,15 @@ class GameRepository(
         Store.GOG -> GOG_EXTERNAL_CATEGORY
         Store.PSN -> PSN_EXTERNAL_CATEGORY
         Store.EPIC -> EPIC_EXTERNAL_CATEGORY
+        else -> error("Store $store has no sync")
+    }
+
+    /** The `*_SYNC` [Source] a store's sync tags Ownerships with. Only the four synced stores have one. */
+    private fun syncSourceFor(store: Store): Source = when (store) {
+        Store.STEAM -> Source.STEAM_SYNC
+        Store.GOG -> Source.GOG_SYNC
+        Store.PSN -> Source.PSN_SYNC
+        Store.EPIC -> Source.EPIC_SYNC
         else -> error("Store $store has no sync")
     }
 

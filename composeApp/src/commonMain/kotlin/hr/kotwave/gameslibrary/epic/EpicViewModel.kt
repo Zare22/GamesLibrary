@@ -5,10 +5,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import hr.kotwave.gameslibrary.data.EpicSyncEntry
-import hr.kotwave.gameslibrary.data.EpicSyncSummary
 import hr.kotwave.gameslibrary.data.GameRepository
 import hr.kotwave.gameslibrary.data.Store
+import hr.kotwave.gameslibrary.data.SyncEntry
+import hr.kotwave.gameslibrary.data.SyncSummary
 import hr.kotwave.gameslibrary.data.SyncTailRow
 import hr.kotwave.gameslibrary.igdb.IgdbClient
 import hr.kotwave.gameslibrary.importer.SyncReviewResult
@@ -38,7 +38,7 @@ enum class EpicSyncFailure { TokenRefresh, EpicFetch, CatalogResolve, IgdbMatch,
  * Epic screen state: "Connect Epic Games" opens the sign-in + authorizationCode paste capture
  * ([EpicConnectCapture] + [EpicAuth]), persists the resulting token through [SecureStorage], then the
  * additive sync does the Epic + IGDB networking and hands resolved entries to
- * [GameRepository.syncEpicGames] — the merge lives in `:shared`. Epic rotates the refresh token on
+ * [GameRepository.syncStore] — the merge lives in `:shared`. Epic rotates the refresh token on
  * every refresh, so every [EpicAuth.refresh] result is persisted before it is used.
  */
 class EpicViewModel(
@@ -65,7 +65,7 @@ class EpicViewModel(
     var ownedCount by mutableStateOf<Int?>(null)
         private set
 
-    var lastSummary by mutableStateOf<EpicSyncSummary?>(null)
+    var lastSummary by mutableStateOf<SyncSummary?>(null)
         private set
 
     /** The last sync's needs-review tail: id-unmatched rows the Review picker can settle. */
@@ -128,7 +128,7 @@ class EpicViewModel(
 
     /** Folds a confirmed Review's merge counts into the last summary and drops its settled rows from the tail. */
     fun absorbReview(result: SyncReviewResult) {
-        lastSummary = EpicSyncSummary(
+        lastSummary = SyncSummary(
             added = (lastSummary?.added ?: 0) + result.added,
             updated = (lastSummary?.updated ?: 0) + result.updated,
         )
@@ -154,7 +154,7 @@ class EpicViewModel(
                 val items = epicClient.getLibraryItems(fresh.accessToken)
                 if (items.isEmpty()) {
                     ownedCount = 0
-                    lastSummary = EpicSyncSummary(added = 0, updated = 0)
+                    lastSummary = SyncSummary(added = 0, updated = 0)
                     return@launch
                 }
                 stage = EpicSyncFailure.CatalogResolve
@@ -180,11 +180,11 @@ class EpicViewModel(
                 )
                 val entries = buildList {
                     rowsByGame.forEach { (game, rows) ->
-                        add(EpicSyncEntry.Matched(game, rows.flatMap { it.uids }.distinct()))
+                        add(SyncEntry.Matched(game, rows.flatMap { it.uids }.distinct()))
                     }
-                    split.known.forEach { add(EpicSyncEntry.Unmatched(epicUids = it.uids, name = it.name)) }
+                    split.known.forEach { add(SyncEntry.Unmatched(uids = it.uids, name = it.name)) }
                 }
-                lastSummary = repository.syncEpicGames(entries)
+                lastSummary = repository.syncStore(Store.EPIC, entries)
                 reviewTail = split.needsReview
             } catch (e: CancellationException) {
                 throw e

@@ -34,14 +34,15 @@ class GameRepositoryEpicSyncTest {
 
     @Test
     fun epicSyncAddsMatchedAndUnmatchedGames() = runTest {
-        val summary = repository.syncEpicGames(
+        val summary = repository.syncStore(
+            Store.EPIC,
             listOf(
-                EpicSyncEntry.Matched(sampleIgdb(igdbId = 1905L, name = "World War Z"), epicUids = listOf("catItem1", "offer1")),
-                EpicSyncEntry.Unmatched(epicUids = listOf("fm24item"), name = "Football Manager 2024"),
+                SyncEntry.Matched(sampleIgdb(igdbId = 1905L, name = "World War Z"), uids = listOf("catItem1", "offer1")),
+                SyncEntry.Unmatched(uids = listOf("fm24item"), name = "Football Manager 2024"),
             ),
         )
 
-        assertEquals(EpicSyncSummary(added = 2, updated = 0), summary)
+        assertEquals(SyncSummary(added = 2, updated = 0), summary)
         val owned = repository.ownedGames.first()
         assertEquals(2, owned.size)
         owned.forEach { tile ->
@@ -56,26 +57,27 @@ class GameRepositoryEpicSyncTest {
     @Test
     fun epicResyncIsIdempotent() = runTest {
         val entries = listOf(
-            EpicSyncEntry.Matched(sampleIgdb(igdbId = 1905L), epicUids = listOf("catItem1", "offer1")),
-            EpicSyncEntry.Unmatched(epicUids = listOf("fm24item"), name = "Football Manager 2024"),
+            SyncEntry.Matched(sampleIgdb(igdbId = 1905L), uids = listOf("catItem1", "offer1")),
+            SyncEntry.Unmatched(uids = listOf("fm24item"), name = "Football Manager 2024"),
         )
-        repository.syncEpicGames(entries)
+        repository.syncStore(Store.EPIC, entries)
 
-        val summary = repository.syncEpicGames(entries)
+        val summary = repository.syncStore(Store.EPIC, entries)
 
-        assertEquals(EpicSyncSummary(added = 0, updated = 2), summary)
+        assertEquals(SyncSummary(added = 0, updated = 2), summary)
         assertEquals(2, repository.ownedGames.first().size)
     }
 
     @Test
     fun epicUnmatchedDedupsByUidNotName() = runTest {
-        repository.syncEpicGames(listOf(EpicSyncEntry.Unmatched(epicUids = listOf("kotorItem"), name = "Knights of the Old Republic")))
+        repository.syncStore(Store.EPIC, listOf(SyncEntry.Unmatched(uids = listOf("kotorItem"), name = "Knights of the Old Republic")))
 
-        val summary = repository.syncEpicGames(
-            listOf(EpicSyncEntry.Unmatched(epicUids = listOf("kotorItem"), name = "KOTOR Renamed")),
+        val summary = repository.syncStore(
+            Store.EPIC,
+            listOf(SyncEntry.Unmatched(uids = listOf("kotorItem"), name = "KOTOR Renamed")),
         )
 
-        assertEquals(EpicSyncSummary(added = 0, updated = 1), summary)
+        assertEquals(SyncSummary(added = 0, updated = 1), summary)
         val game = dao.getGameByExternalUid(26, "kotorItem")!!
         assertEquals("Knights of the Old Republic", game.name) // name is never overwritten
         assertEquals(1, repository.ownedGames.first().size)
@@ -86,7 +88,7 @@ class GameRepositoryEpicSyncTest {
         val added = repository.addMatchedGame(sampleIgdb(igdbId = 5L), wishlist = false, stores = setOf(Store.EPIC))
         assertEquals(Source.MANUAL, dao.ownershipsFor(added.gameId).single().source)
 
-        repository.syncEpicGames(listOf(EpicSyncEntry.Matched(sampleIgdb(igdbId = 5L), epicUids = listOf("item5"))))
+        repository.syncStore(Store.EPIC, listOf(SyncEntry.Matched(sampleIgdb(igdbId = 5L), uids = listOf("item5"))))
 
         val ownership = dao.ownershipsFor(added.gameId).single()
         assertEquals(Store.EPIC, ownership.store)
@@ -103,7 +105,7 @@ class GameRepositoryEpicSyncTest {
         )
         repository.setUserRating(added.gameId, 9.0)
 
-        repository.syncEpicGames(listOf(EpicSyncEntry.Matched(sampleIgdb(igdbId = 7L, name = "Changed Name"), epicUids = listOf("item7"))))
+        repository.syncStore(Store.EPIC, listOf(SyncEntry.Matched(sampleIgdb(igdbId = 7L, name = "Changed Name"), uids = listOf("item7"))))
 
         val game = dao.getGame(added.gameId)!!
         assertEquals("Original Name", game.name) // cached metadata is never overwritten by a sync
@@ -116,7 +118,7 @@ class GameRepositoryEpicSyncTest {
     fun epicSyncOnWishlistedGameClearsWishlistAndOwnsIt() = runTest {
         val wished = repository.addMatchedGame(sampleIgdb(igdbId = 8L), wishlist = true)
 
-        repository.syncEpicGames(listOf(EpicSyncEntry.Matched(sampleIgdb(igdbId = 8L), epicUids = listOf("item8"))))
+        repository.syncStore(Store.EPIC, listOf(SyncEntry.Matched(sampleIgdb(igdbId = 8L), uids = listOf("item8"))))
 
         val game = dao.getGame(wished.gameId)!!
         assertEquals(false, game.wishlist)
@@ -129,15 +131,16 @@ class GameRepositoryEpicSyncTest {
     @Test
     fun epicMatchedUpgradesBareGameInPlace() = runTest {
         // A delisted game synced unmatched earlier heals once IGDB gains its row (or the offer returns).
-        repository.syncEpicGames(listOf(EpicSyncEntry.Unmatched(epicUids = listOf("wcfItem"), name = "Wild Card Football")))
+        repository.syncStore(Store.EPIC, listOf(SyncEntry.Unmatched(uids = listOf("wcfItem"), name = "Wild Card Football")))
         val bare = dao.getGameByExternalUid(26, "wcfItem")!!
         repository.setUserRating(bare.id, 9.0)
 
-        val summary = repository.syncEpicGames(
-            listOf(EpicSyncEntry.Matched(sampleIgdb(igdbId = 252L, name = "Wild Card Football"), epicUids = listOf("wcfItem", "wcfOffer"))),
+        val summary = repository.syncStore(
+            Store.EPIC,
+            listOf(SyncEntry.Matched(sampleIgdb(igdbId = 252L, name = "Wild Card Football"), uids = listOf("wcfItem", "wcfOffer"))),
         )
 
-        assertEquals(EpicSyncSummary(added = 0, updated = 1), summary)
+        assertEquals(SyncSummary(added = 0, updated = 1), summary)
         assertEquals(1, repository.ownedGames.first().size)
         val upgraded = dao.getGame(bare.id)!!
         assertEquals(252L, upgraded.igdbId)
@@ -151,22 +154,24 @@ class GameRepositoryEpicSyncTest {
 
     @Test
     fun epicUnmatchedDedupsAcrossAnyUid() = runTest {
-        repository.syncEpicGames(listOf(EpicSyncEntry.Unmatched(epicUids = listOf("catItemX"), name = "Some Game")))
+        repository.syncStore(Store.EPIC, listOf(SyncEntry.Unmatched(uids = listOf("catItemX"), name = "Some Game")))
 
-        val summary = repository.syncEpicGames(
-            listOf(EpicSyncEntry.Unmatched(epicUids = listOf("offerX", "catItemX"), name = "Some Game")),
+        val summary = repository.syncStore(
+            Store.EPIC,
+            listOf(SyncEntry.Unmatched(uids = listOf("offerX", "catItemX"), name = "Some Game")),
         )
 
-        assertEquals(EpicSyncSummary(added = 0, updated = 1), summary)
+        assertEquals(SyncSummary(added = 0, updated = 1), summary)
         assertEquals(1, repository.ownedGames.first().size)
     }
 
     @Test
     fun epicUidsAlreadyMatchedReturnsOnlyIgdbMatchedUids() = runTest {
-        repository.syncEpicGames(
+        repository.syncStore(
+            Store.EPIC,
             listOf(
-                EpicSyncEntry.Matched(sampleIgdb(igdbId = 1905L), epicUids = listOf("catItem1", "offer1")),
-                EpicSyncEntry.Unmatched(epicUids = listOf("fm24item"), name = "Bare"),
+                SyncEntry.Matched(sampleIgdb(igdbId = 1905L), uids = listOf("catItem1", "offer1")),
+                SyncEntry.Unmatched(uids = listOf("fm24item"), name = "Bare"),
             ),
         )
 

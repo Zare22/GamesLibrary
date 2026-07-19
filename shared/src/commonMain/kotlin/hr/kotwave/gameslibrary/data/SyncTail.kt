@@ -16,6 +16,3 @@ data class SyncTailSplit(val known: List<SyncTailRow>, val needsReview: List<Syn
 
 /** A Review pick: the user-chosen IGDB match for a tail row, with the row's store uids. */
 data class SyncReviewPick(val igdb: IgdbGame, val uids: List<String>)
-
-/** The merge outcome of a confirmed sync Review, in the sync summaries' added/updated shape. */
-data class SyncReviewOutcome(val added: Int, val updated: Int)
