@@ -6,9 +6,9 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import hr.kotwave.gameslibrary.data.GameRepository
+import hr.kotwave.gameslibrary.data.Store
 import hr.kotwave.gameslibrary.data.sync.ImportEntry
 import hr.kotwave.gameslibrary.data.sync.ImportSummary
-import hr.kotwave.gameslibrary.data.Store
 import hr.kotwave.gameslibrary.data.sync.SyncReviewPick
 import hr.kotwave.gameslibrary.data.sync.SyncTailRow
 import hr.kotwave.gameslibrary.igdb.IgdbClient

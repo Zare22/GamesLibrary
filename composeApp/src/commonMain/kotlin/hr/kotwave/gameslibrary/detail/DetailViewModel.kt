@@ -10,9 +10,9 @@ import androidx.navigation.toRoute
 import hr.kotwave.gameslibrary.data.GameRepository
 import hr.kotwave.gameslibrary.data.GameWithOwnerships
 import hr.kotwave.gameslibrary.data.IgdbSearchResult
-import hr.kotwave.gameslibrary.data.sync.RematchResult
 import hr.kotwave.gameslibrary.data.Status
 import hr.kotwave.gameslibrary.data.Store
+import hr.kotwave.gameslibrary.data.sync.RematchResult
 import hr.kotwave.gameslibrary.igdb.IgdbClient
 import hr.kotwave.gameslibrary.navigation.Route
 import hr.kotwave.gameslibrary.search.IgdbSearchState
