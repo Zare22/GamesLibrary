@@ -14,10 +14,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -37,7 +35,6 @@ import hr.kotwave.gameslibrary.importer.ReviewPhase
 import hr.kotwave.gameslibrary.resources.Res
 import hr.kotwave.gameslibrary.resources.cd_back
 import hr.kotwave.gameslibrary.resources.common_cancel
-import hr.kotwave.gameslibrary.resources.error_igdb_unreachable
 import hr.kotwave.gameslibrary.resources.epic_account
 import hr.kotwave.gameslibrary.resources.epic_connect
 import hr.kotwave.gameslibrary.resources.epic_connect_note
@@ -55,18 +52,11 @@ import hr.kotwave.gameslibrary.resources.epic_sync_fail_epic
 import hr.kotwave.gameslibrary.resources.epic_sync_fail_igdb
 import hr.kotwave.gameslibrary.resources.epic_sync_fail_merge
 import hr.kotwave.gameslibrary.resources.epic_sync_fail_token
-import hr.kotwave.gameslibrary.resources.store_connected
-import hr.kotwave.gameslibrary.resources.store_disconnect
-import hr.kotwave.gameslibrary.resources.store_sync_now
-import hr.kotwave.gameslibrary.resources.store_sync_prompt
-import hr.kotwave.gameslibrary.resources.store_syncing
-import hr.kotwave.gameslibrary.resources.sync_stat_added
-import hr.kotwave.gameslibrary.resources.sync_stat_already
-import hr.kotwave.gameslibrary.resources.sync_stat_review
-import hr.kotwave.gameslibrary.resources.sync_stat_synced
+import hr.kotwave.gameslibrary.store.ConnectedStoreCard
+import hr.kotwave.gameslibrary.store.ConnectingRow
+import hr.kotwave.gameslibrary.store.StoreBrand
+import hr.kotwave.gameslibrary.store.StoreConnectPrompt
 import hr.kotwave.gameslibrary.ui.components.GlassSurface
-import hr.kotwave.gameslibrary.ui.components.PrimaryButton
-import hr.kotwave.gameslibrary.ui.components.actionWidth
 import hr.kotwave.gameslibrary.ui.icons.AppIcons
 import hr.kotwave.gameslibrary.ui.model.glyph
 import hr.kotwave.gameslibrary.ui.theme.AppTheme
@@ -118,9 +108,18 @@ fun EpicScreen(
 
         Spacer(Modifier.height(tokens.spacing.md))
         if (viewModel.connected) {
-            ConnectedCard(
+            val stage = viewModel.syncFailure
+            ConnectedStoreCard(
                 viewModel = viewModel,
-                epic = epic,
+                brand = StoreBrand(
+                    accent = epic,
+                    glyph = Store.EPIC.glyph,
+                    avatarDark = Color(0xFF15171D),
+                    avatarLight = Color(0xFF2A2E38),
+                ),
+                accountLabel = stringResource(Res.string.epic_account),
+                ownedCountLabel = { count -> pluralStringResource(Res.plurals.epic_owned_count, count, count) },
+                syncFailureMessage = if (stage != null) stage.message() else null,
                 reviewFailed = importViewModel.failed,
                 onReview = { importViewModel.startFromSyncTail(Store.EPIC, viewModel.reviewTail) },
             )
@@ -211,33 +210,16 @@ private fun ConnectSection(viewModel: EpicViewModel, epic: Color) {
                 }
                 EpicConnectState.Exchanging -> ConnectingRow(epic, stringResource(Res.string.epic_finishing))
                 else -> {
-                    Text(
-                        stringResource(Res.string.epic_connect_note),
-                        style = AppTheme.type.caption.copy(fontSize = 11.5.sp),
-                        color = tokens.colors.faint,
+                    val failure = state as? EpicConnectState.Failed
+                    StoreConnectPrompt(
+                        note = stringResource(Res.string.epic_connect_note),
+                        connectLabel = stringResource(Res.string.epic_connect),
+                        onConnect = viewModel::connect,
+                        failureMessage = if (failure != null) failure.reason.message() else null,
                     )
-                    Spacer(Modifier.height(tokens.spacing.md))
-                    PrimaryButton(
-                        text = stringResource(Res.string.epic_connect),
-                        onClick = viewModel::connect,
-                        modifier = Modifier.actionWidth(),
-                    )
-                    if (state is EpicConnectState.Failed) {
-                        Spacer(Modifier.height(tokens.spacing.sm))
-                        Text(state.reason.message(), style = AppTheme.type.caption, color = tokens.colors.error)
-                    }
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun ConnectingRow(epic: Color, label: String) {
-    val tokens = AppTheme.tokens
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm)) {
-        CircularProgressIndicator(Modifier.size(18.dp), color = epic, strokeWidth = 2.dp)
-        Text(label, style = AppTheme.type.body.copy(fontSize = 13.sp), color = tokens.colors.muted)
     }
 }
 
@@ -255,139 +237,4 @@ private fun EpicSyncFailure.message(): String = when (this) {
     EpicSyncFailure.CatalogResolve -> stringResource(Res.string.epic_sync_fail_catalog)
     EpicSyncFailure.IgdbMatch -> stringResource(Res.string.epic_sync_fail_igdb)
     EpicSyncFailure.Merge -> stringResource(Res.string.epic_sync_fail_merge)
-}
-
-@Composable
-private fun ConnectedCard(viewModel: EpicViewModel, epic: Color, reviewFailed: Boolean, onReview: () -> Unit) {
-    val tokens = AppTheme.tokens
-    val ok = tokens.status.playing
-    val avatarShape = RoundedCornerShape(tokens.radii.tile)
-    GlassSurface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(tokens.radii.xl)) {
-        Column(Modifier.fillMaxWidth().padding(tokens.spacing.md)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm)) {
-                Box(
-                    Modifier.size(46.dp).clip(avatarShape)
-                        .background(Brush.linearGradient(listOf(Color(0xFF2A2E38), Color(0xFF15171D))))
-                        .border(1.dp, epic.copy(alpha = 0.40f), avatarShape),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(Store.EPIC.glyph, style = AppTheme.type.brand.copy(fontSize = 20.sp), color = Color.White)
-                }
-                Column(Modifier.weight(1f)) {
-                    Text(stringResource(Res.string.epic_account), style = AppTheme.type.bodyStrong, color = tokens.colors.text)
-                    Text(stringResource(Res.string.store_connected), style = AppTheme.type.caption, color = tokens.colors.faint)
-                }
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs)) {
-                    Box(Modifier.size(8.dp).clip(CircleShape).background(ok))
-                    Text(stringResource(Res.string.store_connected), style = AppTheme.type.caption.copy(fontSize = 11.5.sp), color = ok)
-                }
-            }
-
-            Divider()
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    val count = viewModel.ownedCount
-                    Text(
-                        if (count != null) pluralStringResource(Res.plurals.epic_owned_count, count, count) else stringResource(Res.string.store_sync_prompt),
-                        style = AppTheme.type.body.copy(fontSize = 12.5.sp),
-                        color = tokens.colors.muted,
-                    )
-                }
-                SyncButton(syncing = viewModel.syncing, epic = epic, onClick = viewModel::sync)
-            }
-
-            viewModel.lastSummary?.let { summary ->
-                Divider()
-                Row(horizontalArrangement = Arrangement.spacedBy(tokens.spacing.lg)) {
-                    SyncStat(summary.added.toString(), stringResource(Res.string.sync_stat_added), tokens.status.playing)
-                    SyncStat(summary.updated.toString(), stringResource(Res.string.sync_stat_already), tokens.colors.text)
-                    SyncStat(summary.total.toString(), stringResource(Res.string.sync_stat_synced), tokens.colors.text)
-                    if (viewModel.reviewTail.isNotEmpty()) {
-                        ReviewStat(viewModel.reviewTail.size, enabled = !viewModel.syncing, onClick = onReview)
-                    }
-                }
-            }
-
-            viewModel.syncFailure?.let { failure ->
-                Spacer(Modifier.height(tokens.spacing.sm))
-                Text(
-                    failure.message(),
-                    style = AppTheme.type.caption,
-                    color = tokens.colors.error,
-                )
-            }
-
-            if (reviewFailed) {
-                Spacer(Modifier.height(tokens.spacing.sm))
-                Text(
-                    stringResource(Res.string.error_igdb_unreachable),
-                    style = AppTheme.type.caption,
-                    color = tokens.colors.error,
-                )
-            }
-
-            Spacer(Modifier.height(tokens.spacing.md))
-            Text(
-                stringResource(Res.string.store_disconnect),
-                style = AppTheme.type.caption,
-                color = tokens.colors.faint,
-                modifier = Modifier.clickable(onClick = viewModel::disconnect),
-            )
-        }
-    }
-}
-
-@Composable
-private fun SyncButton(syncing: Boolean, epic: Color, onClick: () -> Unit) {
-    val tokens = AppTheme.tokens
-    val shape = RoundedCornerShape(tokens.radii.md)
-    Row(
-        Modifier.clip(shape)
-            .background(epic.copy(alpha = 0.12f))
-            .border(1.dp, epic.copy(alpha = 0.45f), shape)
-            .clickable(enabled = !syncing, onClick = onClick)
-            .padding(horizontal = tokens.spacing.md, vertical = tokens.spacing.sm),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs),
-    ) {
-        Icon(AppIcons.Sync, null, Modifier.size(15.dp), tint = AppTheme.tokens.store.glyph(Store.EPIC))
-        Text(
-            if (syncing) stringResource(Res.string.store_syncing) else stringResource(Res.string.store_sync_now),
-            style = AppTheme.type.button.copy(fontSize = 13.5.sp),
-            color = AppTheme.tokens.store.glyph(Store.EPIC),
-        )
-    }
-}
-
-@Composable
-private fun SyncStat(value: String, label: String, color: Color) {
-    Column {
-        Text(value, style = AppTheme.type.numeric.copy(fontSize = 18.sp), color = color)
-        Text(label, style = AppTheme.type.caption.copy(fontSize = 10.sp), color = AppTheme.tokens.colors.faint)
-    }
-}
-
-@Composable
-private fun ReviewStat(count: Int, enabled: Boolean, onClick: () -> Unit) {
-    val tokens = AppTheme.tokens
-    Column(
-        Modifier.clip(RoundedCornerShape(tokens.radii.sm))
-            .clickable(enabled = enabled, onClick = onClick)
-            .padding(horizontal = tokens.spacing.micro),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(tokens.spacing.micro)) {
-            Text("$count", style = AppTheme.type.numeric.copy(fontSize = 18.sp), color = tokens.colors.warning)
-            Icon(AppIcons.ChevronRight, null, Modifier.size(14.dp), tint = tokens.colors.warning)
-        }
-        Text(stringResource(Res.string.sync_stat_review), style = AppTheme.type.caption.copy(fontSize = 10.sp), color = AppTheme.tokens.colors.faint)
-    }
-}
-
-@Composable
-private fun Divider() {
-    val tokens = AppTheme.tokens
-    Spacer(Modifier.height(tokens.spacing.md))
-    Box(Modifier.fillMaxWidth().height(1.dp).background(tokens.colors.border))
-    Spacer(Modifier.height(tokens.spacing.md))
 }

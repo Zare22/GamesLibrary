@@ -3,7 +3,6 @@ package hr.kotwave.gameslibrary.steam
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import hr.kotwave.gameslibrary.data.GameRepository
 import hr.kotwave.gameslibrary.data.Store
@@ -11,9 +10,10 @@ import hr.kotwave.gameslibrary.data.sync.SyncEntry
 import hr.kotwave.gameslibrary.data.sync.SyncSummary
 import hr.kotwave.gameslibrary.data.sync.SyncTailRow
 import hr.kotwave.gameslibrary.igdb.IgdbClient
-import hr.kotwave.gameslibrary.importer.SyncReviewResult
 import hr.kotwave.gameslibrary.secure.STEAM_ID_KEY
 import hr.kotwave.gameslibrary.secure.SecureStorage
+import hr.kotwave.gameslibrary.store.StoreSyncResult
+import hr.kotwave.gameslibrary.store.StoreSyncViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -34,9 +34,10 @@ enum class SteamConnectFailure { Verification, Network }
 enum class SteamSyncStage { SteamFetch, IgdbMatch, Merge }
 
 /**
- * Steam screen state: "Sign in through Steam" (OpenID, [SteamAuthFlow] + [SteamOpenId]) persists a
- * verified SteamID64 through [SecureStorage], then the additive sync does the Steam + IGDB networking
- * and hands resolved entries to [GameRepository.syncStore] — the merge lives in `:shared`.
+ * Steam's Sync slice: "Sign in through Steam" (OpenID, [SteamAuthFlow] + [SteamOpenId]) persists a
+ * verified SteamID64 through [SecureStorage]; the shared [StoreSyncViewModel] then drives the additive
+ * sync, calling [resolve] to do the Steam + IGDB networking and hand resolved entries to
+ * [GameRepository.syncStore] — the merge lives in `:shared`.
  */
 class SteamViewModel(
     private val repository: GameRepository,
@@ -46,12 +47,12 @@ class SteamViewModel(
     private val openId: SteamOpenId,
     private val authFlow: SteamAuthFlow,
     private val bounce: SteamBounce,
-) : ViewModel() {
+) : StoreSyncViewModel<SteamSyncStage>() {
 
     var steamId by mutableStateOf<String?>(null)
         private set
 
-    val connected: Boolean get() = steamId != null
+    override val connected: Boolean get() = steamId != null
 
     /** The signed-in player's display name + avatar; null until fetched (cosmetic, never blocks sign-in). */
     var persona by mutableStateOf<SteamPlayerSummary?>(null)
@@ -60,23 +61,7 @@ class SteamViewModel(
     var connectState by mutableStateOf<SteamConnectState>(SteamConnectState.Idle)
         private set
 
-    var syncing by mutableStateOf(false)
-        private set
-
-    /** Games owned on Steam from the last sync; null until a sync has run. */
-    var ownedCount by mutableStateOf<Int?>(null)
-        private set
-
-    var lastSummary by mutableStateOf<SyncSummary?>(null)
-        private set
-
-    /** The last sync's needs-review tail: id-unmatched rows the Review picker can settle. */
-    var reviewTail by mutableStateOf<List<SyncTailRow>>(emptyList())
-        private set
-
-    /** Which stage of the last sync failed, or null if it succeeded or hasn't run. */
-    var syncFailure by mutableStateOf<SteamSyncStage?>(null)
-        private set
+    override val initialStage = SteamSyncStage.SteamFetch
 
     private var connectJob: Job? = null
 
@@ -118,7 +103,7 @@ class SteamViewModel(
                 persona = runCatching { steamClient.getPlayerSummary(id) }.getOrNull()
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 connectState = SteamConnectState.Failed(SteamConnectFailure.Network)
             }
         }
@@ -129,71 +114,37 @@ class SteamViewModel(
         connectState = SteamConnectState.Idle
     }
 
-    fun disconnect() {
-        viewModelScope.launch {
-            secureStorage.remove(STEAM_ID_KEY)
-            steamId = null
-            persona = null
-            ownedCount = null
-            lastSummary = null
-            reviewTail = emptyList()
-            syncFailure = null
-            connectState = SteamConnectState.Idle
-        }
-    }
-
-    /** Folds a confirmed Review's merge counts into the last summary and drops its settled rows from the tail. */
-    fun absorbReview(result: SyncReviewResult) {
-        lastSummary = SyncSummary(
-            added = (lastSummary?.added ?: 0) + result.added,
-            updated = (lastSummary?.updated ?: 0) + result.updated,
-        )
-        reviewTail = reviewTail.filterNot { row -> row.uids.any { it in result.handledUids } }
+    override suspend fun clearConnection() {
+        secureStorage.remove(STEAM_ID_KEY)
+        steamId = null
+        persona = null
+        connectState = SteamConnectState.Idle
     }
 
     /**
      * Pulls the owned games, matches them to IGDB by Steam appid, and additively syncs. A private
      * profile yields zero owned games (the privacy-empty state), not an error.
      */
-    fun sync() {
-        if (syncing) return
-        val id = steamId ?: return
-        syncing = true
-        syncFailure = null
-        reviewTail = emptyList()
-        viewModelScope.launch {
-            var stage = SteamSyncStage.SteamFetch
-            try {
-                val owned = steamClient.getOwnedGames(id)
-                ownedCount = owned.size
-                if (owned.isEmpty()) {
-                    lastSummary = SyncSummary(added = 0, updated = 0)
-                    return@launch
-                }
-                stage = SteamSyncStage.IgdbMatch
-                val matched = igdbClient.matchBySteamAppids(owned.map { it.appid.toString() })
-                val matchedAppids = matched
-                    .flatMap { game -> game.externalGames.filter { it.category == STEAM_EXTERNAL_CATEGORY }.map { it.uid } }
-                    .toSet()
-                stage = SteamSyncStage.Merge
-                val split = repository.splitSyncTail(
-                    Store.STEAM,
-                    owned.filter { it.appid.toString() !in matchedAppids }
-                        .map { SyncTailRow(name = it.name, uids = listOf(it.appid.toString())) },
-                )
-                val entries = buildList {
-                    matched.forEach { add(SyncEntry.Matched(it)) }
-                    split.known.forEach { add(SyncEntry.Unmatched(uids = it.uids, name = it.name)) }
-                }
-                lastSummary = repository.syncStore(Store.STEAM, entries)
-                reviewTail = split.needsReview
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                syncFailure = stage
-            } finally {
-                syncing = false
-            }
+    override suspend fun resolve(setStage: (SteamSyncStage) -> Unit): StoreSyncResult {
+        val id = steamId ?: return StoreSyncResult(SyncSummary(0, 0), emptyList())
+        val owned = steamClient.getOwnedGames(id)
+        ownedCount = owned.size
+        if (owned.isEmpty()) return StoreSyncResult(SyncSummary(0, 0), emptyList())
+        setStage(SteamSyncStage.IgdbMatch)
+        val matched = igdbClient.matchBySteamAppids(owned.map { it.appid.toString() })
+        val matchedAppids = matched
+            .flatMap { game -> game.externalGames.filter { it.category == STEAM_EXTERNAL_CATEGORY }.map { it.uid } }
+            .toSet()
+        setStage(SteamSyncStage.Merge)
+        val split = repository.splitSyncTail(
+            Store.STEAM,
+            owned.filter { it.appid.toString() !in matchedAppids }
+                .map { SyncTailRow(name = it.name, uids = listOf(it.appid.toString())) },
+        )
+        val entries = buildList {
+            matched.forEach { add(SyncEntry.Matched(it)) }
+            split.known.forEach { add(SyncEntry.Unmatched(uids = it.uids, name = it.name)) }
         }
+        return StoreSyncResult(repository.syncStore(Store.STEAM, entries), split.needsReview)
     }
 }

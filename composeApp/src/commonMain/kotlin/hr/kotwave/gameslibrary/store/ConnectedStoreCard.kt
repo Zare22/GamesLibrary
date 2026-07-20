@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -23,8 +24,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil3.compose.AsyncImage
 import hr.kotwave.gameslibrary.resources.Res
 import hr.kotwave.gameslibrary.resources.error_igdb_unreachable
 import hr.kotwave.gameslibrary.resources.store_connected
@@ -43,15 +47,25 @@ import hr.kotwave.gameslibrary.ui.icons.AppIcons
 import hr.kotwave.gameslibrary.ui.theme.AppTheme
 import org.jetbrains.compose.resources.stringResource
 
-/** Per-store brand slots the shared store-sync UI renders from: the accent, its badge [glyph], and the avatar gradient's dark end. */
-data class StoreBrand(val accent: Color, val glyph: String, val avatarDark: Color)
+/**
+ * Per-store brand slots the shared store-sync UI renders from: the accent, its badge [glyph], and the
+ * avatar gradient's two ends — [avatarLight] defaults to the accent, which a store whose accent is too
+ * light to sit under a white glyph overrides.
+ */
+data class StoreBrand(
+    val accent: Color,
+    val glyph: String,
+    val avatarDark: Color,
+    val avatarLight: Color = accent,
+)
 
 /**
  * The connected-account card shared by every store's Sync screen: account row, owned-count + sync
  * button, the last summary's stats, and the failure / disconnect affordances. Brand-specific bits come
  * through [brand] and the pre-resolved string slots ([accountLabel], [ownedCountLabel], [syncFailureMessage]),
  * so the card stays store-agnostic; it reads sync state off [viewModel] and drives [StoreSyncViewModel.sync]
- * / [StoreSyncViewModel.disconnect] directly.
+ * / [StoreSyncViewModel.disconnect] directly. A store that knows the signed-in account fills the avatar
+ * with [avatarUrl] instead of the brand glyph and names the connection with [accountSubline].
  */
 @Composable
 fun ConnectedStoreCard(
@@ -63,6 +77,8 @@ fun ConnectedStoreCard(
     reviewFailed: Boolean,
     onReview: () -> Unit,
     modifier: Modifier = Modifier,
+    avatarUrl: String? = null,
+    accountSubline: String? = null,
 ) {
     val tokens = AppTheme.tokens
     val ok = tokens.status.playing
@@ -72,15 +88,36 @@ fun ConnectedStoreCard(
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm)) {
                 Box(
                     Modifier.size(46.dp).clip(avatarShape)
-                        .background(Brush.linearGradient(listOf(brand.accent, brand.avatarDark)))
+                        .background(Brush.linearGradient(listOf(brand.avatarLight, brand.avatarDark)))
                         .border(1.dp, brand.accent.copy(alpha = 0.40f), avatarShape),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text(brand.glyph, style = AppTheme.type.brand.copy(fontSize = 20.sp), color = Color.White)
+                    if (avatarUrl != null) {
+                        AsyncImage(
+                            model = avatarUrl,
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize().clip(avatarShape),
+                        )
+                    } else {
+                        Text(brand.glyph, style = AppTheme.type.brand.copy(fontSize = 20.sp), color = Color.White)
+                    }
                 }
                 Column(Modifier.weight(1f)) {
-                    Text(accountLabel, style = AppTheme.type.bodyStrong, color = tokens.colors.text)
-                    Text(stringResource(Res.string.store_connected), style = AppTheme.type.caption, color = tokens.colors.faint)
+                    Text(
+                        accountLabel,
+                        style = AppTheme.type.bodyStrong,
+                        color = tokens.colors.text,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        accountSubline ?: stringResource(Res.string.store_connected),
+                        style = AppTheme.type.caption,
+                        color = tokens.colors.faint,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
                 }
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs)) {
                     Box(Modifier.size(8.dp).clip(CircleShape).background(ok))

@@ -27,12 +27,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil3.compose.AsyncImage
 import hr.kotwave.gameslibrary.data.Store
 import hr.kotwave.gameslibrary.importer.ImportPhase
 import hr.kotwave.gameslibrary.importer.ImportViewModel
@@ -41,7 +38,6 @@ import hr.kotwave.gameslibrary.importer.ReviewPhase
 import hr.kotwave.gameslibrary.resources.Res
 import hr.kotwave.gameslibrary.resources.cd_back
 import hr.kotwave.gameslibrary.resources.common_cancel
-import hr.kotwave.gameslibrary.resources.error_igdb_unreachable
 import hr.kotwave.gameslibrary.resources.steam_connect_note
 import hr.kotwave.gameslibrary.resources.steam_connecting
 import hr.kotwave.gameslibrary.resources.steam_fail_network
@@ -64,19 +60,13 @@ import hr.kotwave.gameslibrary.resources.steam_signed_in
 import hr.kotwave.gameslibrary.resources.steam_sync_fail_igdb
 import hr.kotwave.gameslibrary.resources.steam_sync_fail_merge
 import hr.kotwave.gameslibrary.resources.steam_sync_fail_steam
-import hr.kotwave.gameslibrary.resources.store_connected
-import hr.kotwave.gameslibrary.resources.store_disconnect
-import hr.kotwave.gameslibrary.resources.store_sync_now
-import hr.kotwave.gameslibrary.resources.store_sync_prompt
-import hr.kotwave.gameslibrary.resources.store_syncing
-import hr.kotwave.gameslibrary.resources.sync_stat_added
-import hr.kotwave.gameslibrary.resources.sync_stat_already
-import hr.kotwave.gameslibrary.resources.sync_stat_review
-import hr.kotwave.gameslibrary.resources.sync_stat_synced
+import hr.kotwave.gameslibrary.store.ConnectedStoreCard
+import hr.kotwave.gameslibrary.store.StoreBrand
 import hr.kotwave.gameslibrary.ui.components.GlassSurface
 import hr.kotwave.gameslibrary.ui.components.PrimaryButton
 import hr.kotwave.gameslibrary.ui.components.actionWidth
 import hr.kotwave.gameslibrary.ui.icons.AppIcons
+import hr.kotwave.gameslibrary.ui.model.glyph
 import hr.kotwave.gameslibrary.ui.theme.AppTheme
 import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
@@ -129,11 +119,17 @@ fun SteamScreen(
 
         Spacer(Modifier.height(tokens.spacing.md))
         if (viewModel.connected) {
-            ConnectedCard(
+            val stage = viewModel.syncFailure
+            ConnectedStoreCard(
                 viewModel = viewModel,
-                steam = steam,
+                brand = StoreBrand(accent = steam, glyph = Store.STEAM.glyph, avatarDark = Color(0xFF0E1722)),
+                accountLabel = viewModel.persona?.personaName ?: viewModel.steamId.orEmpty(),
+                ownedCountLabel = { count -> pluralStringResource(Res.plurals.steam_owned_count, count, count) },
+                syncFailureMessage = if (stage != null) stage.message() else null,
                 reviewFailed = importViewModel.failed,
                 onReview = { importViewModel.startFromSyncTail(Store.STEAM, viewModel.reviewTail) },
+                avatarUrl = viewModel.persona?.avatarUrl,
+                accountSubline = stringResource(Res.string.steam_signed_in),
             )
         } else {
             ConnectSection(viewModel = viewModel, steam = steam)
@@ -274,151 +270,6 @@ internal fun SteamSyncStage.message(): String = when (this) {
 }
 
 @Composable
-private fun ConnectedCard(viewModel: SteamViewModel, steam: Color, reviewFailed: Boolean, onReview: () -> Unit) {
-    val tokens = AppTheme.tokens
-    val ok = tokens.status.playing
-    val avatarShape = RoundedCornerShape(tokens.radii.tile)
-    GlassSurface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(tokens.radii.xl)) {
-        Column(Modifier.fillMaxWidth().padding(tokens.spacing.md)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm)) {
-                Box(
-                    Modifier.size(46.dp).clip(avatarShape)
-                        .background(Brush.linearGradient(listOf(steam, Color(0xFF0E1722))))
-                        .border(1.dp, steam.copy(alpha = 0.40f), avatarShape),
-                ) {
-                    viewModel.persona?.avatarUrl?.let { avatar ->
-                        AsyncImage(
-                            model = avatar,
-                            contentDescription = null,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize().clip(avatarShape),
-                        )
-                    }
-                }
-                Column(Modifier.weight(1f)) {
-                    Text(
-                        viewModel.persona?.personaName ?: viewModel.steamId.orEmpty(),
-                        style = AppTheme.type.bodyStrong,
-                        color = tokens.colors.text,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(
-                        stringResource(Res.string.steam_signed_in),
-                        style = AppTheme.type.caption,
-                        color = tokens.colors.faint,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs)) {
-                    Box(Modifier.size(8.dp).clip(CircleShape).background(ok))
-                    Text(stringResource(Res.string.store_connected), style = AppTheme.type.caption.copy(fontSize = 11.5.sp), color = ok)
-                }
-            }
-
-            Divider()
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    val count = viewModel.ownedCount
-                    Text(
-                        if (count != null) pluralStringResource(Res.plurals.steam_owned_count, count, count) else stringResource(Res.string.store_sync_prompt),
-                        style = AppTheme.type.body.copy(fontSize = 12.5.sp),
-                        color = tokens.colors.muted,
-                    )
-                }
-                SyncButton(syncing = viewModel.syncing, steam = steam, onClick = viewModel::sync)
-            }
-
-            viewModel.lastSummary?.let { summary ->
-                Divider()
-                Row(horizontalArrangement = Arrangement.spacedBy(tokens.spacing.lg)) {
-                    SyncStat(summary.added.toString(), stringResource(Res.string.sync_stat_added), tokens.status.playing)
-                    SyncStat(summary.updated.toString(), stringResource(Res.string.sync_stat_already), tokens.colors.text)
-                    SyncStat(summary.total.toString(), stringResource(Res.string.sync_stat_synced), tokens.colors.text)
-                    if (viewModel.reviewTail.isNotEmpty()) {
-                        ReviewStat(viewModel.reviewTail.size, enabled = !viewModel.syncing, onClick = onReview)
-                    }
-                }
-            }
-
-            viewModel.syncFailure?.let { stage ->
-                Spacer(Modifier.height(tokens.spacing.sm))
-                Text(
-                    stage.message(),
-                    style = AppTheme.type.caption,
-                    color = tokens.colors.error,
-                )
-            }
-
-            if (reviewFailed) {
-                Spacer(Modifier.height(tokens.spacing.sm))
-                Text(
-                    stringResource(Res.string.error_igdb_unreachable),
-                    style = AppTheme.type.caption,
-                    color = tokens.colors.error,
-                )
-            }
-
-            Spacer(Modifier.height(tokens.spacing.md))
-            Text(
-                stringResource(Res.string.store_disconnect),
-                style = AppTheme.type.caption,
-                color = tokens.colors.faint,
-                modifier = Modifier.clickable(onClick = viewModel::disconnect),
-            )
-        }
-    }
-}
-
-@Composable
-private fun SyncButton(syncing: Boolean, steam: Color, onClick: () -> Unit) {
-    val tokens = AppTheme.tokens
-    val shape = RoundedCornerShape(tokens.radii.md)
-    Row(
-        Modifier.clip(shape)
-            .background(steam.copy(alpha = 0.12f))
-            .border(1.dp, steam.copy(alpha = 0.45f), shape)
-            .clickable(enabled = !syncing, onClick = onClick)
-            .padding(horizontal = tokens.spacing.md, vertical = tokens.spacing.sm),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs),
-    ) {
-        Icon(AppIcons.Sync, null, Modifier.size(15.dp), tint = steam)
-        Text(
-            if (syncing) stringResource(Res.string.store_syncing) else stringResource(Res.string.store_sync_now),
-            style = AppTheme.type.button.copy(fontSize = 13.5.sp),
-            color = steam,
-        )
-    }
-}
-
-@Composable
-private fun SyncStat(value: String, label: String, color: Color) {
-    Column {
-        Text(value, style = AppTheme.type.numeric.copy(fontSize = 18.sp), color = color)
-        Text(label, style = AppTheme.type.caption.copy(fontSize = 10.sp), color = AppTheme.tokens.colors.faint)
-    }
-}
-
-@Composable
-private fun ReviewStat(count: Int, enabled: Boolean, onClick: () -> Unit) {
-    val tokens = AppTheme.tokens
-    Column(
-        Modifier.clip(RoundedCornerShape(tokens.radii.sm))
-            .clickable(enabled = enabled, onClick = onClick)
-            .padding(horizontal = tokens.spacing.micro),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(tokens.spacing.micro)) {
-            Text("$count", style = AppTheme.type.numeric.copy(fontSize = 18.sp), color = SteamWarn)
-            Icon(AppIcons.ChevronRight, null, Modifier.size(14.dp), tint = SteamWarn)
-        }
-        Text(stringResource(Res.string.sync_stat_review), style = AppTheme.type.caption.copy(fontSize = 10.sp), color = AppTheme.tokens.colors.faint)
-    }
-}
-
-@Composable
 private fun PrivacyHelper(highlighted: Boolean) {
     val tokens = AppTheme.tokens
     val uriHandler = LocalUriHandler.current
@@ -484,10 +335,3 @@ private fun PrivacyStep(number: String, text: String) {
     }
 }
 
-@Composable
-private fun Divider() {
-    val tokens = AppTheme.tokens
-    Spacer(Modifier.height(tokens.spacing.md))
-    Box(Modifier.fillMaxWidth().height(1.dp).background(tokens.colors.border))
-    Spacer(Modifier.height(tokens.spacing.md))
-}
