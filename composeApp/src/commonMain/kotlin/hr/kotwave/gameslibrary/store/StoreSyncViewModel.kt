@@ -5,10 +5,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import hr.kotwave.gameslibrary.data.Store
 import hr.kotwave.gameslibrary.data.sync.SyncSummary
 import hr.kotwave.gameslibrary.data.sync.SyncTailRow
 import hr.kotwave.gameslibrary.importer.SyncReviewResult
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 /** The outcome of a store's [StoreSyncViewModel.resolve]: the merged summary and the id-unmatched Review tail. */
@@ -16,7 +18,7 @@ data class StoreSyncResult(val summary: SyncSummary, val reviewTail: List<SyncTa
 
 /**
  * The shared skeleton behind every store's additive Sync: owns the sync state, the [sync] scaffold,
- * [absorbReview], and [disconnect]. A subclass supplies the store-specific connect flow plus the
+ * the [review] round trip, and [disconnect]. A subclass supplies the store-specific connect flow plus the
  * auth + entry resolution ([resolve]) and connection teardown ([clearConnection]); [F] is the store's
  * own sync-failure-stage enum, so each store keeps its exact stage set.
  */
@@ -40,6 +42,9 @@ abstract class StoreSyncViewModel<F : Any> : ViewModel() {
     var syncFailure by mutableStateOf<F?>(null)
         private set
 
+    /** The store this slice syncs, named when its Review tail goes back through the Import funnel. */
+    abstract val store: Store
+
     abstract val connected: Boolean
 
     /** The stage a sync starts in: the store's first pipeline step (token refresh, or the fetch when there is no token). */
@@ -57,6 +62,8 @@ abstract class StoreSyncViewModel<F : Any> : ViewModel() {
 
     /** Maps a caught sync exception to a failure stage; defaults to the stage the sync had reached. */
     protected open fun classifyFailure(error: Exception, stage: F): F = stage
+
+    private var reviewJob: Job? = null
 
     fun sync() {
         if (syncing || !connected) return
@@ -79,13 +86,23 @@ abstract class StoreSyncViewModel<F : Any> : ViewModel() {
         }
     }
 
-    /** Folds a confirmed Review's merge counts into the last summary and drops its settled rows from the tail. */
-    fun absorbReview(result: SyncReviewResult) {
-        lastSummary = SyncSummary(
-            added = (lastSummary?.added ?: 0) + result.added,
-            updated = (lastSummary?.updated ?: 0) + result.updated,
-        )
-        reviewTail = reviewTail.filterNot { row -> row.uids.any { it in result.handledUids } }
+    /**
+     * Sends the last sync's needs-review tail through [runReview] and folds the outcome back in: its
+     * merge counts join the last summary, its settled rows leave the tail. A null outcome — the run
+     * ended without a confirm — leaves both untouched, so the tail is re-offered.
+     */
+    fun review(runReview: suspend (Store, List<SyncTailRow>) -> SyncReviewResult?) {
+        if (reviewJob?.isActive == true) return
+        val rows = reviewTail
+        if (rows.isEmpty()) return
+        reviewJob = viewModelScope.launch {
+            val result = runReview(store, rows) ?: return@launch
+            lastSummary = SyncSummary(
+                added = (lastSummary?.added ?: 0) + result.added,
+                updated = (lastSummary?.updated ?: 0) + result.updated,
+            )
+            reviewTail = reviewTail.filterNot { row -> row.uids.any { it in result.handledUids } }
+        }
     }
 
     fun disconnect() {

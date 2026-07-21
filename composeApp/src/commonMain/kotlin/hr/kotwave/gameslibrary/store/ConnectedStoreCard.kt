@@ -29,6 +29,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import hr.kotwave.gameslibrary.importer.ImportViewModel
 import hr.kotwave.gameslibrary.resources.Res
 import hr.kotwave.gameslibrary.resources.error_igdb_unreachable
 import hr.kotwave.gameslibrary.resources.store_connected
@@ -64,18 +65,18 @@ data class StoreBrand(
  * button, the last summary's stats, and the failure / disconnect affordances. Brand-specific bits come
  * through [brand] and the pre-resolved string slots ([accountLabel], [ownedCountLabel], [syncFailureMessage]),
  * so the card stays store-agnostic; it reads sync state off [viewModel] and drives [StoreSyncViewModel.sync]
- * / [StoreSyncViewModel.disconnect] directly. A store that knows the signed-in account fills the avatar
- * with [avatarUrl] instead of the brand glyph and names the connection with [accountSubline].
+ * / [StoreSyncViewModel.disconnect] directly. Tapping the needs-review stat runs the tail through
+ * [importViewModel]'s funnel, which answers [viewModel] directly. A store that knows the signed-in account
+ * fills the avatar with [avatarUrl] instead of the brand glyph and names the connection with [accountSubline].
  */
 @Composable
 fun ConnectedStoreCard(
     viewModel: StoreSyncViewModel<*>,
+    importViewModel: ImportViewModel,
     brand: StoreBrand,
     accountLabel: String,
     ownedCountLabel: @Composable (Int) -> String,
     syncFailureMessage: String?,
-    reviewFailed: Boolean,
-    onReview: () -> Unit,
     modifier: Modifier = Modifier,
     avatarUrl: String? = null,
     accountSubline: String? = null,
@@ -146,7 +147,11 @@ fun ConnectedStoreCard(
                     SyncStat(summary.updated.toString(), stringResource(Res.string.sync_stat_already), tokens.colors.text)
                     SyncStat(summary.total.toString(), stringResource(Res.string.sync_stat_synced), tokens.colors.text)
                     if (viewModel.reviewTail.isNotEmpty()) {
-                        ReviewStat(viewModel.reviewTail.size, enabled = !viewModel.syncing, onClick = onReview)
+                        ReviewStat(
+                            count = viewModel.reviewTail.size,
+                            enabled = !viewModel.syncing,
+                            onClick = { viewModel.review(importViewModel::reviewSyncTail) },
+                        )
                     }
                 }
             }
@@ -156,7 +161,7 @@ fun ConnectedStoreCard(
                 Text(message, style = AppTheme.type.caption, color = tokens.colors.error)
             }
 
-            if (reviewFailed) {
+            if (importViewModel.failed) {
                 Spacer(Modifier.height(tokens.spacing.sm))
                 Text(
                     stringResource(Res.string.error_igdb_unreachable),

@@ -45,6 +45,8 @@ class PsnViewModel(
 
     private var token by mutableStateOf<PsnToken?>(null)
 
+    override val store = Store.PSN
+
     override val connected: Boolean get() = token != null
 
     val signInUrl: String get() = psnAuth.signInUrl()

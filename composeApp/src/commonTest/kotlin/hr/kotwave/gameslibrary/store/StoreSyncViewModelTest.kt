@@ -1,5 +1,6 @@
 package hr.kotwave.gameslibrary.store
 
+import hr.kotwave.gameslibrary.data.Store
 import hr.kotwave.gameslibrary.data.sync.SyncSummary
 import hr.kotwave.gameslibrary.data.sync.SyncTailRow
 import hr.kotwave.gameslibrary.importer.SyncReviewResult
@@ -88,7 +89,7 @@ class StoreSyncViewModelTest {
     }
 
     @Test
-    fun absorbReviewFoldsCountsAndDropsHandledRows() = runTest {
+    fun reviewFoldsTheReturnedOutcomeAndDropsItsSettledRows() = runTest {
         val handled = SyncTailRow(name = "Celeste", uids = listOf("100"))
         val kept = SyncTailRow(name = "Tunic", uids = listOf("200"))
         val vm = TestSyncVM { _ ->
@@ -97,10 +98,41 @@ class StoreSyncViewModelTest {
         }
         vm.sync()
 
-        vm.absorbReview(SyncReviewResult(added = 1, updated = 1, handledUids = setOf("100")))
+        var reviewed: Pair<Store, List<SyncTailRow>>? = null
+        vm.review { store, rows ->
+            reviewed = store to rows
+            SyncReviewResult(added = 1, updated = 1, handledUids = setOf("100"))
+        }
 
+        assertEquals(Store.STEAM to listOf(handled, kept), reviewed)
         assertEquals(SyncSummary(added = 2, updated = 1), vm.lastSummary)
         assertEquals(listOf(kept), vm.reviewTail)
+    }
+
+    @Test
+    fun anAbandonedReviewLeavesTheSummaryAndTailIntact() = runTest {
+        val row = SyncTailRow(name = "Celeste", uids = listOf("100"))
+        val vm = TestSyncVM { _ -> StoreSyncResult(SyncSummary(added = 1, updated = 0), listOf(row)) }
+        vm.sync()
+
+        vm.review { _, _ -> null }
+
+        assertEquals(SyncSummary(added = 1, updated = 0), vm.lastSummary)
+        assertEquals(listOf(row), vm.reviewTail)
+    }
+
+    @Test
+    fun reviewIsANoOpWithoutATail() = runTest {
+        val vm = TestSyncVM { _ -> StoreSyncResult(SyncSummary(0, 0), emptyList()) }
+        vm.sync()
+
+        var ran = false
+        vm.review { _, _ ->
+            ran = true
+            null
+        }
+
+        assertFalse(ran)
     }
 }
 
@@ -109,6 +141,7 @@ private enum class TestStage { First, Match, Merge }
 private class TestSyncVM(
     private val onResolve: suspend TestSyncVM.((TestStage) -> Unit) -> StoreSyncResult,
 ) : StoreSyncViewModel<TestStage>() {
+    override val store = Store.STEAM
     override val connected = true
     override val initialStage = TestStage.First
     override suspend fun resolve(setStage: (TestStage) -> Unit): StoreSyncResult = onResolve(this, setStage)

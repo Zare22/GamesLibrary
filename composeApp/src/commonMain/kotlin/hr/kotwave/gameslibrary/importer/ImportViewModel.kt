@@ -13,6 +13,7 @@ import hr.kotwave.gameslibrary.data.sync.SyncReviewPick
 import hr.kotwave.gameslibrary.data.sync.SyncTailRow
 import hr.kotwave.gameslibrary.igdb.IgdbClient
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -54,10 +55,6 @@ class ImportViewModel(
     var target by mutableStateOf<ImportTarget>(ImportTarget.Paste)
         private set
 
-    /** The last confirmed sync-tail Review's outcome, for the hosting store screen to absorb. */
-    var syncOutcome by mutableStateOf<SyncReviewResult?>(null)
-        private set
-
     var pasteText by mutableStateOf("")
         private set
 
@@ -82,6 +79,7 @@ class ImportViewModel(
 
     private var matchJob: Job? = null
     private var confirmJob: Job? = null
+    private var syncTailCompletion: CompletableDeferred<SyncReviewResult?>? = null
 
     /** Non-blank lines in the paste box, for the live "N lines" counter on Intake. */
     val lineCount: Int get() = pasteText.lineSequence().count { it.isNotBlank() }
@@ -135,12 +133,25 @@ class ImportViewModel(
 
     /**
      * Sync-tail intake: matches a sync's needs-review [rows] for [selected] through the same funnel,
-     * carrying each row's store uids so Confirm can merge through the store's sync (`*_SYNC`).
+     * carrying each row's store uids so Confirm can merge through the store's sync (`*_SYNC`), and
+     * suspends until the run ends. Returns the confirmed Review's outcome, or null if the run ended
+     * without one — the user left Review, or Matching couldn't reach IGDB.
      */
-    fun startFromSyncTail(selected: Store, rows: List<SyncTailRow>) {
+    suspend fun reviewSyncTail(selected: Store, rows: List<SyncTailRow>): SyncReviewResult? {
+        if (rows.isEmpty()) return null
+        finishSyncTail(null)
         store = selected
         target = ImportTarget.SyncTail(selected)
+        val completion = CompletableDeferred<SyncReviewResult?>()
+        syncTailCompletion = completion
         runMatching(rows.map { ParsedLine(title = it.name, raw = it.name) }, rows.map { it.uids })
+        return completion.await()
+    }
+
+    /** Hands [result] to the parked [reviewSyncTail] caller, if any, and ends the run. */
+    private fun finishSyncTail(result: SyncReviewResult?) {
+        syncTailCompletion?.complete(result)
+        syncTailCompletion = null
     }
 
     /**
@@ -173,6 +184,7 @@ class ImportViewModel(
             } catch (_: Exception) {
                 failed = true
                 phase = ImportPhase.Intake
+                finishSyncTail(null)
             }
         }
     }
@@ -248,9 +260,9 @@ class ImportViewModel(
                 val dismissedRows = dismissed.map { SyncTailRow(it.rawTitle, it.uids) }
                 val outcome = repository.confirmSyncReview(selected, picks, bare, dismissedRows)
                 val handled = (picks.flatMap { it.uids } + bare.flatMap { it.uids } + dismissedRows.flatMap { it.uids }).toSet()
-                syncOutcome = SyncReviewResult(outcome.added, outcome.updated, handled)
                 candidates = emptyList()
                 phase = ImportPhase.Intake
+                finishSyncTail(SyncReviewResult(outcome.added, outcome.updated, handled))
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
@@ -261,17 +273,13 @@ class ImportViewModel(
         }
     }
 
-    /** Marks the last sync-tail outcome absorbed by the hosting store screen. */
-    fun consumeSyncOutcome() {
-        syncOutcome = null
-    }
-
     /** Returns from Matching/Review to Intake (cancelling any in-flight matching), keeping the paste. */
     fun backToIntake() {
         matchJob?.cancel()
         candidates = emptyList()
         failed = false
         phase = ImportPhase.Intake
+        finishSyncTail(null)
     }
 
     /** Clears everything for a fresh Import after one completes. */
@@ -287,5 +295,6 @@ class ImportViewModel(
         failed = false
         importing = false
         phase = ImportPhase.Intake
+        finishSyncTail(null)
     }
 }

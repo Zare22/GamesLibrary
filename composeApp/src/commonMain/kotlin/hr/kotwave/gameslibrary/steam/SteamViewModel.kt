@@ -52,6 +52,8 @@ class SteamViewModel(
     var steamId by mutableStateOf<String?>(null)
         private set
 
+    override val store = Store.STEAM
+
     override val connected: Boolean get() = steamId != null
 
     /** The signed-in player's display name + avatar; null until fetched (cosmetic, never blocks sign-in). */

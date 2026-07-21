@@ -21,7 +21,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -88,12 +87,6 @@ fun SteamScreen(
     viewModel: SteamViewModel = koinViewModel(),
     importViewModel: ImportViewModel = koinViewModel(),
 ) {
-    importViewModel.syncOutcome?.let { outcome ->
-        LaunchedEffect(outcome) {
-            viewModel.absorbReview(outcome)
-            importViewModel.consumeSyncOutcome()
-        }
-    }
     when (importViewModel.phase) {
         ImportPhase.Matching -> {
             MatchingPhase(importViewModel, modifier)
@@ -122,12 +115,11 @@ fun SteamScreen(
             val stage = viewModel.syncFailure
             ConnectedStoreCard(
                 viewModel = viewModel,
+                importViewModel = importViewModel,
                 brand = StoreBrand(accent = steam, glyph = Store.STEAM.glyph, avatarDark = Color(0xFF0E1722)),
                 accountLabel = viewModel.persona?.personaName ?: viewModel.steamId.orEmpty(),
                 ownedCountLabel = { count -> pluralStringResource(Res.plurals.steam_owned_count, count, count) },
                 syncFailureMessage = if (stage != null) stage.message() else null,
-                reviewFailed = importViewModel.failed,
-                onReview = { importViewModel.startFromSyncTail(Store.STEAM, viewModel.reviewTail) },
                 avatarUrl = viewModel.persona?.avatarUrl,
                 accountSubline = stringResource(Res.string.steam_signed_in),
             )

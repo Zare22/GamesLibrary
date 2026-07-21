@@ -47,6 +47,8 @@ class EpicViewModel(
 
     private var token by mutableStateOf<EpicToken?>(null)
 
+    override val store = Store.EPIC
+
     override val connected: Boolean get() = token != null
 
     val signInUrl: String get() = epicAuth.signInUrl()

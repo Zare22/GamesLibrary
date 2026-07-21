@@ -50,6 +50,8 @@ class GogViewModel(
 
     private var token by mutableStateOf<GogToken?>(null)
 
+    override val store = Store.GOG
+
     override val connected: Boolean get() = token != null
 
     var connectState by mutableStateOf<GogConnectState>(GogConnectState.Idle)

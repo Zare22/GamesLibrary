@@ -19,7 +19,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -77,12 +76,6 @@ fun EpicScreen(
     viewModel: EpicViewModel = koinViewModel(),
     importViewModel: ImportViewModel = koinViewModel(),
 ) {
-    importViewModel.syncOutcome?.let { outcome ->
-        LaunchedEffect(outcome) {
-            viewModel.absorbReview(outcome)
-            importViewModel.consumeSyncOutcome()
-        }
-    }
     when (importViewModel.phase) {
         ImportPhase.Matching -> {
             MatchingPhase(importViewModel, modifier)
@@ -111,6 +104,7 @@ fun EpicScreen(
             val stage = viewModel.syncFailure
             ConnectedStoreCard(
                 viewModel = viewModel,
+                importViewModel = importViewModel,
                 brand = StoreBrand(
                     accent = epic,
                     glyph = Store.EPIC.glyph,
@@ -120,8 +114,6 @@ fun EpicScreen(
                 accountLabel = stringResource(Res.string.epic_account),
                 ownedCountLabel = { count -> pluralStringResource(Res.plurals.epic_owned_count, count, count) },
                 syncFailureMessage = if (stage != null) stage.message() else null,
-                reviewFailed = importViewModel.failed,
-                onReview = { importViewModel.startFromSyncTail(Store.EPIC, viewModel.reviewTail) },
             )
         } else {
             ConnectSection(viewModel = viewModel, epic = epic)
